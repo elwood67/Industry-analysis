@@ -14,8 +14,9 @@ logger = logging.getLogger(__name__)
 def load_historical_data(base_path="Data/stock_scores"):
     """Load all historical JSON files including the latest."""
     try:
-        # Get all JSON files
+        # Get all JSON files EXCEPT 'latest'
         json_files = glob.glob(os.path.join(base_path, "market_analysis_*.json"))
+        json_files = [f for f in json_files if 'latest' not in f]  # Filter out 'latest'
         
         all_data = []
         for file_path in json_files:
@@ -24,15 +25,8 @@ def load_historical_data(base_path="Data/stock_scores"):
                     data = json.load(file)
                     df = pd.DataFrame(data['stocks'])
                     
-                    # Get date from filename
-                    if 'latest' in file_path:
-                        # Use file modification time for latest file
-                        timestamp = os.path.getmtime(file_path)
-                        date_str = datetime.fromtimestamp(timestamp).strftime('%Y%m%d')
-                    else:
-                        # Extract date from filename
-                        date_str = os.path.basename(file_path).split('_')[2].split('.')[0]
-                    
+                    # Extract date from filename (we don't need the 'latest' logic anymore)
+                    date_str = os.path.basename(file_path).split('_')[2].split('.')[0]
                     df['date'] = pd.to_datetime(date_str, format='%Y%m%d')
                     all_data.append(df)
                     logger.debug(f"Successfully processed {file_path}")
@@ -49,7 +43,7 @@ def get_time_period_options():
     """Return available time period options."""
     return {
         "1 Day": 1,
-        "1 Week": 5,
+        "1 Week": 7,
         "1 Month": 21,
         "2 Months": 42,
         "3 Months": 63,
@@ -305,3 +299,4 @@ def main():
         logger.error(f"Application error: {str(e)}")
 
 if __name__ == "__main__":
+    main()
