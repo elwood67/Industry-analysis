@@ -313,7 +313,7 @@ def create_leadership_score_chart(leaders_df):
         return None
 
 def main():
-    st.title("Industry Lead-Lag Analysis")
+    st.title("Industry Cross-Correlation")
     
     try:
         # Load data
