@@ -4,7 +4,7 @@ import plotly.express as px
 import os
 
 def load_data():
-    file_path = r"industry_analysis\data\stock_sectors.csv"
+    file_path = r"data\industry_classification\stock_sectors.csv"
     df = pd.read_csv(file_path)
     return df
 
