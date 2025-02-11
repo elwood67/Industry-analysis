@@ -235,7 +235,7 @@ def create_leader_follower_chart(leader, follower, pivot_data, lag_days):
         ))
         
         fig.update_layout(
-            title=f'Cross-Correlation Relationship: {leader} → {follower}<br>' +
+            title=f'Lead-Lag Relationship: {leader} → {follower}<br>' +
                   f'<sup>Correlation: {correlation:.2f} | Lag: {lag_days} days</sup>',
             xaxis_title='Date',
             yaxis_title='Score',
