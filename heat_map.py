@@ -9,10 +9,10 @@ import numpy as np
 def load_data():
     """Load and merge market data and scores"""
     # Load market data
-    market_df = pd.read_csv(r"data\industry_classification\stock_sectors.csv")
+    market_df = pd.read_csv("./data/industry_classification/stock_sectors.csv")
     
     # Load scores
-    with open(r"Data\stock_scores\market_analysis_latest.json", 'r') as file:
+    with open("./data/stock_scores/market_analysis_latest.json", 'r') as file:
         scores_df = pd.DataFrame(json.load(file)['stocks'])
     
     # Merge data
