@@ -67,6 +67,12 @@ def categorize_market_cap(cap):
     else:
         return "Nano Cap"
 
+def get_last_business_day(date):
+    """Get the most recent business day from a given date."""
+    while date.weekday() > 4:  # 5 is Saturday, 6 is Sunday
+        date = date - timedelta(days=1)
+    return date
+
 def process_data(df, selected_caps, score_type, time_period_days):
     """Process the dataframe to calculate score changes over time."""
     try:
@@ -81,17 +87,23 @@ def process_data(df, selected_caps, score_type, time_period_days):
             raise ValueError(f"Not enough historical data for {time_period_days} day comparison. " 
                            f"Need at least {time_period_days * 2} days, but only have {date_range} days.")
         
-        # Get the three dates
-        latest_date = filtered_df['date'].max()
-        middle_date = latest_date - timedelta(days=time_period_days)
-        earliest_date = middle_date - timedelta(days=time_period_days)
+        # Get the latest business day from our data
+        latest_date = get_last_business_day(filtered_df['date'].max())
         
-        # Verify we have data for all required dates
-        required_dates = [latest_date, middle_date, earliest_date]
-        missing_dates = [date for date in required_dates 
-                        if date not in filtered_df['date'].unique()]
-        if missing_dates:
-            raise ValueError(f"Missing data for dates: {missing_dates}")
+        # Calculate middle and earliest dates based on available trading days
+        available_dates = sorted(filtered_df['date'].unique())
+        available_dates = [d for d in available_dates if d.weekday() < 5]  # Remove weekends
+        
+        # Find index of latest date and calculate other dates
+        try:
+            latest_idx = available_dates.index(latest_date)
+            middle_idx = max(0, latest_idx - time_period_days)
+            earliest_idx = max(0, middle_idx - time_period_days)
+            
+            middle_date = available_dates[middle_idx]
+            earliest_date = available_dates[earliest_idx]
+        except ValueError:
+            raise ValueError(f"Missing data for latest business day: {latest_date}")
         
         score_col = f"{score_type.lower()}_score"
         
