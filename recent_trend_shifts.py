@@ -34,7 +34,7 @@ def categorize_market_cap(cap):
         return "Unknown"
 
 @st.cache_data
-def load_and_process_historical_data(base_path="C:/Users/davet/Documents/new_dev/Industry-analysis/Data/stock_scores"):
+def load_and_process_historical_data(base_path="Data/stock_scores"):
     """Load data from the optimized parquet file."""
     try:
         file_path = Path(base_path) / 'historical_data.parquet.gzip'
