@@ -4,8 +4,8 @@ import plotly.graph_objects as go
 import json
 import os
 from datetime import datetime
-import glob
 import logging
+from pathlib import Path
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -35,31 +35,22 @@ COLORS = [
     '#994499',  # Dark purple
 ]
 
-def load_historical_data(base_path="Data/stock_scores"):
-    """Load and process all historical JSON files."""
+@st.cache_data
+def load_historical_data(base_path="C:/Users/davet/Documents/new_dev/Industry-analysis/Data/stock_scores"):
+    """Load data from the optimized parquet file."""
     try:
-        json_files = glob.glob(os.path.join(base_path, "market_analysis_*.json"))
-        json_files = [f for f in json_files if 'latest' not in f]
-        json_files.sort(key=lambda x: os.path.getmtime(x))
+        file_path = Path(base_path) / 'historical_data.parquet.gzip'
+        if not file_path.exists():
+            raise ValueError("Historical data file not found. Please run the optimizer first.")
+            
+        df = pd.read_parquet(file_path)
         
-        all_data = []
-        for file_path in json_files:
-            try:
-                with open(file_path, 'r') as file:
-                    data = json.load(file)
-                    df = pd.DataFrame(data['stocks'])
-                    
-                    # Extract date from filename
-                    date_str = os.path.basename(file_path).split('_')[2].split('.')[0]
-                    df['date'] = date_str
-                    
-                    all_data.append(df)
-                    logger.debug(f"Successfully processed {file_path}")
-            except Exception as e:
-                logger.error(f"Error processing file {file_path}: {str(e)}")
-                continue
+        # Convert date to string format for consistent plotting
+        df['date'] = df['date'].dt.strftime('%Y-%m-%d')
         
-        return pd.concat(all_data, ignore_index=True)
+        logger.debug(f"Successfully loaded data with shape: {df.shape}")
+        return df
+        
     except Exception as e:
         logger.error(f"Error loading historical data: {str(e)}")
         raise
@@ -67,7 +58,7 @@ def load_historical_data(base_path="Data/stock_scores"):
 def create_comparison_chart(df, selected_categories, category_type, score_type):
     """Create a comparison chart for selected categories."""
     # Calculate average scores for each category by date
-    grouped = df.groupby(['date', category_type])[score_type].mean().reset_index()
+    grouped = df.groupby(['date', category_type], observed=True)[score_type].mean().reset_index()
     
     # Pivot the data for plotting
     pivot_data = grouped.pivot(index='date', columns=category_type, values=score_type)
@@ -95,7 +86,7 @@ def create_comparison_chart(df, selected_categories, category_type, score_type):
         yaxis_title=score_type.replace('_', ' ').title(),
         template='plotly_dark',
         height=600,
-        hovermode='closest',  # Changed to 'closest' for individual line hover
+        hovermode='closest',
         showlegend=True,
         legend=dict(
             yanchor="top",
@@ -107,7 +98,9 @@ def create_comparison_chart(df, selected_categories, category_type, score_type):
             type='category',
             tickangle=-45,
             showgrid=True,
-            gridcolor='rgba(128, 128, 128, 0.2)'
+            gridcolor='rgba(128, 128, 128, 0.2)',
+            tickmode='auto',
+            nticks=20  # Adjust this value to control number of x-axis labels
         ),
         yaxis=dict(
             showgrid=True,
@@ -134,7 +127,7 @@ def main():
         # Score type selection
         score_type = st.sidebar.radio(
             "Select Score Type",
-            ["net_score", "bullish_score", "bearish_score"],
+            ["bullish_score", "bearish_score"],
             format_func=lambda x: x.replace('_', ' ').title()
         )
         
@@ -161,6 +154,11 @@ def main():
         # Create and display chart
         fig = create_comparison_chart(df, selected_categories, category_type, score_type)
         st.plotly_chart(fig, use_container_width=True)
+        
+        # Add data summary
+        st.sidebar.markdown("### Data Summary")
+        st.sidebar.markdown(f"Date Range: {df['date'].min()} to {df['date'].max()}")
+        st.sidebar.markdown(f"Total Trading Days: {len(df['date'].unique())}")
         
     except Exception as e:
         logger.error(f"Application error: {str(e)}")

@@ -5,7 +5,7 @@ import json
 import os
 import logging
 from datetime import datetime
-import glob
+from pathlib import Path
 import numpy as np
 
 # Set up logging
@@ -33,23 +33,25 @@ def categorize_market_cap(cap):
         logger.error(f"Error in market cap categorization: {str(e)}")
         return "Unknown"
 
-def load_and_process_historical_data(base_path="Data/stock_scores"):
-    """Load and process all historical JSON files."""
+@st.cache_data
+def load_and_process_historical_data(base_path="C:/Users/davet/Documents/new_dev/Industry-analysis/Data/stock_scores"):
+    """Load data from the optimized parquet file."""
     try:
-        json_files = glob.glob(os.path.join(base_path, "market_analysis_*.json"))
-        json_files = [f for f in json_files if 'latest' not in f]
-        json_files.sort(key=lambda x: os.path.getmtime(x))
+        file_path = Path(base_path) / 'historical_data.parquet.gzip'
+        if not file_path.exists():
+            raise ValueError("Historical data file not found. Please run the optimizer first.")
+            
+        df = pd.read_parquet(file_path)
         
-        all_data = []
-        for file_path in json_files:
-            with open(file_path, 'r') as file:
-                data = json.load(file)
-                df = pd.DataFrame(data['stocks'])
-                df['date'] = datetime.fromtimestamp(os.path.getmtime(file_path))
-                df['market_cap_category'] = df['market_cap_B'].apply(categorize_market_cap)
-                all_data.append(df)
+        # Ensure date is datetime
+        df['date'] = pd.to_datetime(df['date'])
         
-        return pd.concat(all_data, ignore_index=True)
+        # Add market cap categories
+        df['market_cap_category'] = df['market_cap_B'].apply(categorize_market_cap)
+        
+        logger.debug(f"Successfully loaded data with shape: {df.shape}")
+        return df
+        
     except Exception as e:
         logger.error(f"Error loading historical data: {str(e)}")
         raise
@@ -302,10 +304,16 @@ def main():
     
     try:
         # Load data
-        df = load_and_process_historical_data()
+        with st.spinner("Loading historical data..."):
+            df = load_and_process_historical_data()
+        
+        # Add data summary to sidebar
+        st.sidebar.markdown("### Data Summary")
+        st.sidebar.markdown(f"Date Range: {df['date'].min().strftime('%Y-%m-%d')} to {df['date'].max().strftime('%Y-%m-%d')}")
+        st.sidebar.markdown(f"Total Trading Days: {len(df['date'].unique())}")
         
         # Sidebar controls
-        st.sidebar.header("Analysis Controls")
+        st.sidebar.markdown("### Analysis Controls")
         
         # Market cap filter
         cap_categories = [
@@ -397,6 +405,3 @@ def main():
     except Exception as e:
         logger.error(f"Application error: {str(e)}")
         st.error("An error occurred while analyzing the data. Check the logs for details.")
-
-if __name__ == "__main__":
-    main()
