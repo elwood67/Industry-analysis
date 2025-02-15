@@ -157,7 +157,6 @@ def create_change_chart(industry_metrics, score_type, time_period):
                 hoverinfo='text'
             ))
         
-        # Update layout
         fig.update_layout(
             title=f'Industry {score_type} Score Changes ({time_period})',
             xaxis_title=f'{score_type} Score Change',
@@ -168,7 +167,12 @@ def create_change_chart(industry_metrics, score_type, time_period):
             bargap=0.1,
             margin=dict(l=20, r=20, t=40, b=20),
             plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)'
+            paper_bgcolor='rgba(0,0,0,0)',
+            yaxis=dict(
+                showgrid=True,
+                gridcolor='rgba(128, 128, 128, 0.2)',
+                gridwidth=1
+            )
         )
         
         return fig
