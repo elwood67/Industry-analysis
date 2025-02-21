@@ -119,8 +119,10 @@ def create_change_chart(industry_metrics, score_type, time_period):
         # Create hover text
         def create_hover_text(row, period_type):
             change_col = 'current_change' if period_type == 'current' else 'previous_change'
+            score_col = f"{score_type.lower()}_score_latest"
             return (
                 f"<b>{row['industry']}</b><br>"
+                f"Current Score: {row[score_col]:.1f}<br>"
                 f"{period_type.title()} Period Change: {row[change_col]:.1f}<br>"
                 f"Stock Count: {int(row['symbol_latest'])}"
             )
