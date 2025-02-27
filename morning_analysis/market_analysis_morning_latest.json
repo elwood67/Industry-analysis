@@ -1,0 +1,5035 @@
+{
+  "analysis_date": "2025-02-27 11:04:15",
+  "analysis_time_of_day": "morning",
+  "total_stocks_analyzed": 5743,
+  "runtime_seconds": 2618,
+  "market_summary": {
+    "stocks_up_today": 2872,
+    "stocks_down_today": 2545,
+    "avg_price_change": 0.3974672035522047,
+    "strongly_bullish_stocks": 166,
+    "strongly_bearish_stocks": 311,
+    "average_bullish_score": 31.501151159866115,
+    "average_bearish_score": 47.50388556761532,
+    "average_net_score": -16.00273440774921,
+    "high_volatility_stocks": 2398,
+    "near_52w_high_stocks": 2322,
+    "strong_volume_stocks": 322,
+    "gapping_up_stocks": 1914,
+    "gapping_down_stocks": 1097
+  },
+  "sector_statistics": {
+    "Basic Materials": {
+      "stock_count": 266,
+      "avg_price_change": 0.6543348017409436,
+      "avg_bullish_score": 31.31439710387079,
+      "avg_bearish_score": 48.49624060150375,
+      "avg_net_score": -17.181843497632972
+    },
+    "Communication Services": {
+      "stock_count": 259,
+      "avg_price_change": 0.0961861851214979,
+      "avg_bullish_score": 31.302731302731303,
+      "avg_bearish_score": 48.548548548548546,
+      "avg_net_score": -17.24581724581724
+    },
+    "Consumer Cyclical": {
+      "stock_count": 567,
+      "avg_price_change": 0.42816537825438006,
+      "avg_bullish_score": 32.608269645306684,
+      "avg_bearish_score": 49.53295447122607,
+      "avg_net_score": -16.924684825919396
+    },
+    "Consumer Defensive": {
+      "stock_count": 236,
+      "avg_price_change": -0.6308407919712841,
+      "avg_bullish_score": 38.13559322033898,
+      "avg_bearish_score": 44.130571249215315,
+      "avg_net_score": -5.994978028876332
+    },
+    "Energy": {
+      "stock_count": 250,
+      "avg_price_change": -0.18793993917181193,
+      "avg_bullish_score": 25.066666666666663,
+      "avg_bearish_score": 54.48888888888888,
+      "avg_net_score": -29.422222222222224
+    },
+    "Financial Services": {
+      "stock_count": 1204,
+      "avg_price_change": 0.20640253430193778,
+      "avg_bullish_score": 32.0444198351175,
+      "avg_bearish_score": 39.153439153439145,
+      "avg_net_score": -7.109019318321647
+    },
+    "Healthcare": {
+      "stock_count": 1154,
+      "avg_price_change": 0.31895397604013886,
+      "avg_bullish_score": 30.245843764041336,
+      "avg_bearish_score": 52.94627383015598,
+      "avg_net_score": -22.70043006611464
+    },
+    "Industrials": {
+      "stock_count": 649,
+      "avg_price_change": 0.6121811690213171,
+      "avg_bullish_score": 28.48256577070136,
+      "avg_bearish_score": 52.12007076413855,
+      "avg_net_score": -23.637504993437194
+    },
+    "Real Estate": {
+      "stock_count": 273,
+      "avg_price_change": 0.35086587157389826,
+      "avg_bullish_score": 39.750373083706414,
+      "avg_bearish_score": 35.30050196716863,
+      "avg_net_score": 4.449871116537786
+    },
+    "Technology": {
+      "stock_count": 776,
+      "avg_price_change": 1.2428631048125645,
+      "avg_bullish_score": 29.75849560901107,
+      "avg_bearish_score": 51.680030546009924,
+      "avg_net_score": -21.921534936998853
+    },
+    "Utilities": {
+      "stock_count": 109,
+      "avg_price_change": -0.3648919922134729,
+      "avg_bullish_score": 44.07067618076791,
+      "avg_bearish_score": 31.29459734964322,
+      "avg_net_score": 12.776078831124698
+    }
+  },
+  "industry_statistics": {
+    "Advertising Agencies": {
+      "stock_count": 41,
+      "sector": "Communication Services",
+      "avg_price_change": 0.7472369887169966,
+      "avg_bullish_score": 28.99728997289973,
+      "avg_bearish_score": 51.671183378500444,
+      "avg_net_score": -22.673893405600722
+    },
+    "Aerospace & Defense": {
+      "stock_count": 69,
+      "sector": "Industrials",
+      "avg_price_change": 1.3365365435251706,
+      "avg_bullish_score": 29.20021470746108,
+      "avg_bearish_score": 50.72463768115941,
+      "avg_net_score": -21.524422973698343
+    },
+    "Agricultural Inputs": {
+      "stock_count": 15,
+      "sector": "Basic Materials",
+      "avg_price_change": -2.076018697360019,
+      "avg_bullish_score": 26.66666666666666,
+      "avg_bearish_score": 53.33333333333333,
+      "avg_net_score": -26.666666666666668
+    },
+    "Airlines": {
+      "stock_count": 18,
+      "sector": "Industrials",
+      "avg_price_change": 0.7251560679550697,
+      "avg_bullish_score": 31.06995884773662,
+      "avg_bearish_score": 46.70781893004115,
+      "avg_net_score": -15.637860082304522
+    },
+    "Airports & Air Services": {
+      "stock_count": 9,
+      "sector": "Industrials",
+      "avg_price_change": 2.61857182493907,
+      "avg_bullish_score": 26.74897119341564,
+      "avg_bearish_score": 51.85185185185185,
+      "avg_net_score": -25.102880658436213
+    },
+    "Aluminum": {
+      "stock_count": 3,
+      "sector": "Basic Materials",
+      "avg_price_change": -0.8039660975951546,
+      "avg_bullish_score": 41.97530864197531,
+      "avg_bearish_score": 39.50617283950617,
+      "avg_net_score": 2.4691358024691374
+    },
+    "Apparel Manufacturing": {
+      "stock_count": 24,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": -0.9689508754915354,
+      "avg_bullish_score": 32.40740740740741,
+      "avg_bearish_score": 51.85185185185185,
+      "avg_net_score": -19.444444444444446
+    },
+    "Apparel Retail": {
+      "stock_count": 31,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": 0.34967463599945764,
+      "avg_bullish_score": 26.762246117084818,
+      "avg_bearish_score": 58.42293906810037,
+      "avg_net_score": -31.66069295101553
+    },
+    "Asset Management": {
+      "stock_count": 470,
+      "sector": "Financial Services",
+      "avg_price_change": 0.06439999164155605,
+      "avg_bullish_score": 35.75256107171001,
+      "avg_bearish_score": 31.914893617021274,
+      "avg_net_score": 3.837667454688731
+    },
+    "Auto & Truck Dealerships": {
+      "stock_count": 30,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": 0.635068457324796,
+      "avg_bullish_score": 22.09876543209875,
+      "avg_bearish_score": 52.83950617283951,
+      "avg_net_score": -30.74074074074074
+    },
+    "Auto Manufacturers": {
+      "stock_count": 39,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": 1.7729359482906806,
+      "avg_bullish_score": 39.31623931623931,
+      "avg_bearish_score": 46.34377967711302,
+      "avg_net_score": -7.027540360873695
+    },
+    "Auto Parts": {
+      "stock_count": 52,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": -0.5977072145859235,
+      "avg_bullish_score": 37.39316239316239,
+      "avg_bearish_score": 44.58689458689458,
+      "avg_net_score": -7.1937321937321945
+    },
+    "Banks - Diversified": {
+      "stock_count": 19,
+      "sector": "Financial Services",
+      "avg_price_change": 0.5809390672311284,
+      "avg_bullish_score": 44.444444444444436,
+      "avg_bearish_score": 30.799220272904478,
+      "avg_net_score": 13.64522417153996
+    },
+    "Banks - Regional": {
+      "stock_count": 357,
+      "sector": "Financial Services",
+      "avg_price_change": 0.1669107495917063,
+      "avg_bullish_score": 22.88619151364249,
+      "avg_bearish_score": 51.291627762215995,
+      "avg_net_score": -28.40543624857351
+    },
+    "Beverages - Brewers": {
+      "stock_count": 6,
+      "sector": "Consumer Defensive",
+      "avg_price_change": 3.0810782282937463,
+      "avg_bullish_score": 69.75308641975307,
+      "avg_bearish_score": 23.456790123456788,
+      "avg_net_score": 46.2962962962963
+    },
+    "Beverages - Non-Alcoholic": {
+      "stock_count": 15,
+      "sector": "Consumer Defensive",
+      "avg_price_change": -3.655708374061981,
+      "avg_bullish_score": 42.716049382716044,
+      "avg_bearish_score": 36.29629629629629,
+      "avg_net_score": 6.419753086419754
+    },
+    "Beverages - Wineries & Distilleries": {
+      "stock_count": 10,
+      "sector": "Consumer Defensive",
+      "avg_price_change": -1.2962471619710414,
+      "avg_bullish_score": 27.40740740740741,
+      "avg_bearish_score": 59.62962962962963,
+      "avg_net_score": -32.22222222222222
+    },
+    "Biotechnology": {
+      "stock_count": 654,
+      "sector": "Healthcare",
+      "avg_price_change": 0.4587430472860987,
+      "avg_bullish_score": 29.561671763506624,
+      "avg_bearish_score": 54.85332427228452,
+      "avg_net_score": -25.29165250877789
+    },
+    "Broadcasting": {
+      "stock_count": 15,
+      "sector": "Communication Services",
+      "avg_price_change": -0.14864301521802328,
+      "avg_bullish_score": 29.876543209876544,
+      "avg_bearish_score": 55.06172839506173,
+      "avg_net_score": -25.185185185185183
+    },
+    "Building Materials": {
+      "stock_count": 16,
+      "sector": "Basic Materials",
+      "avg_price_change": -0.8658098664058348,
+      "avg_bullish_score": 27.08333333333333,
+      "avg_bearish_score": 54.39814814814815,
+      "avg_net_score": -27.314814814814813
+    },
+    "Building Products & Equipment": {
+      "stock_count": 33,
+      "sector": "Industrials",
+      "avg_price_change": -0.39066574909405616,
+      "avg_bullish_score": 29.51739618406285,
+      "avg_bearish_score": 53.872053872053876,
+      "avg_net_score": -24.354657687991022
+    },
+    "Business Equipment & Supplies": {
+      "stock_count": 5,
+      "sector": "Industrials",
+      "avg_price_change": 0.589568076824003,
+      "avg_bullish_score": 37.77777777777777,
+      "avg_bearish_score": 40.74074074074074,
+      "avg_net_score": -2.9629629629629677
+    },
+    "Capital Markets": {
+      "stock_count": 67,
+      "sector": "Financial Services",
+      "avg_price_change": 1.146046234161522,
+      "avg_bullish_score": 27.694859038142617,
+      "avg_bearish_score": 53.123272526257594,
+      "avg_net_score": -25.428413488114984
+    },
+    "Chemicals": {
+      "stock_count": 17,
+      "sector": "Basic Materials",
+      "avg_price_change": 0.362152231834487,
+      "avg_bullish_score": 27.233115468409583,
+      "avg_bearish_score": 56.86274509803922,
+      "avg_net_score": -29.629629629629633
+    },
+    "Coking Coal": {
+      "stock_count": 7,
+      "sector": "Basic Materials",
+      "avg_price_change": 0.4618296962581203,
+      "avg_bullish_score": 24.867724867724867,
+      "avg_bearish_score": 45.50264550264551,
+      "avg_net_score": -20.634920634920636
+    },
+    "Communication Equipment": {
+      "stock_count": 57,
+      "sector": "Technology",
+      "avg_price_change": 2.32345961979069,
+      "avg_bullish_score": 27.940220922677064,
+      "avg_bearish_score": 50.35737491877842,
+      "avg_net_score": -22.41715399610137
+    },
+    "Computer Hardware": {
+      "stock_count": 33,
+      "sector": "Technology",
+      "avg_price_change": 1.5383547226952443,
+      "avg_bullish_score": 29.292929292929287,
+      "avg_bearish_score": 53.31088664421998,
+      "avg_net_score": -24.017957351290686
+    },
+    "Confectioners": {
+      "stock_count": 4,
+      "sector": "Consumer Defensive",
+      "avg_price_change": -2.7839040608909933,
+      "avg_bullish_score": 37.96296296296296,
+      "avg_bearish_score": 38.888888888888886,
+      "avg_net_score": -0.9259259259259238
+    },
+    "Conglomerates": {
+      "stock_count": 25,
+      "sector": "Industrials",
+      "avg_price_change": -0.3467533828889482,
+      "avg_bullish_score": 31.259259259259252,
+      "avg_bearish_score": 49.33333333333333,
+      "avg_net_score": -18.074074074074073
+    },
+    "Consulting Services": {
+      "stock_count": 15,
+      "sector": "Industrials",
+      "avg_price_change": 0.1898266175579139,
+      "avg_bullish_score": 33.827160493827165,
+      "avg_bearish_score": 56.04938271604938,
+      "avg_net_score": -22.222222222222225
+    },
+    "Consumer Electronics": {
+      "stock_count": 18,
+      "sector": "Technology",
+      "avg_price_change": 0.7073170402905694,
+      "avg_bullish_score": 31.89300411522633,
+      "avg_bearish_score": 44.8559670781893,
+      "avg_net_score": -12.962962962962965
+    },
+    "Copper": {
+      "stock_count": 7,
+      "sector": "Basic Materials",
+      "avg_price_change": 2.9638827962497842,
+      "avg_bullish_score": 37.03703703703703,
+      "avg_bearish_score": 48.14814814814815,
+      "avg_net_score": -11.11111111111111
+    },
+    "Credit Services": {
+      "stock_count": 49,
+      "sector": "Financial Services",
+      "avg_price_change": 0.9562239452936184,
+      "avg_bullish_score": 31.141345427059715,
+      "avg_bearish_score": 45.880574452003025,
+      "avg_net_score": -14.73922902494331
+    },
+    "Department Stores": {
+      "stock_count": 4,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": -1.721308064279133,
+      "avg_bullish_score": 24.074074074074073,
+      "avg_bearish_score": 37.96296296296296,
+      "avg_net_score": -13.88888888888889
+    },
+    "Diagnostics & Research": {
+      "stock_count": 58,
+      "sector": "Healthcare",
+      "avg_price_change": 0.1827818538078997,
+      "avg_bullish_score": 28.033205619412517,
+      "avg_bearish_score": 51.213282247765,
+      "avg_net_score": -23.18007662835249
+    },
+    "Discount Stores": {
+      "stock_count": 9,
+      "sector": "Consumer Defensive",
+      "avg_price_change": -2.1436196192259533,
+      "avg_bullish_score": 19.75308641975309,
+      "avg_bearish_score": 52.67489711934156,
+      "avg_net_score": -32.92181069958848
+    },
+    "Drug Manufacturers - General": {
+      "stock_count": 19,
+      "sector": "Healthcare",
+      "avg_price_change": -0.7603401903420706,
+      "avg_bullish_score": 48.343079922027286,
+      "avg_bearish_score": 26.705653021442494,
+      "avg_net_score": 21.637426900584796
+    },
+    "Drug Manufacturers - Specialty & Generic": {
+      "stock_count": 82,
+      "sector": "Healthcare",
+      "avg_price_change": 0.32118583421202174,
+      "avg_bullish_score": 30.66847335140018,
+      "avg_bearish_score": 52.439024390243894,
+      "avg_net_score": -21.770551038843724
+    },
+    "Education & Training Services": {
+      "stock_count": 41,
+      "sector": "Consumer Defensive",
+      "avg_price_change": 0.8751094096901276,
+      "avg_bullish_score": 36.31436314363143,
+      "avg_bearish_score": 45.52845528455285,
+      "avg_net_score": -9.214092140921409
+    },
+    "Electrical Equipment & Parts": {
+      "stock_count": 45,
+      "sector": "Industrials",
+      "avg_price_change": 1.0520272967433304,
+      "avg_bullish_score": 27.242798353909457,
+      "avg_bearish_score": 56.131687242798336,
+      "avg_net_score": -28.8888888888889
+    },
+    "Electronic Components": {
+      "stock_count": 48,
+      "sector": "Technology",
+      "avg_price_change": 1.315065943319946,
+      "avg_bullish_score": 31.481481481481485,
+      "avg_bearish_score": 50.771604938271594,
+      "avg_net_score": -19.290123456790123
+    },
+    "Electronic Gaming & Multimedia": {
+      "stock_count": 21,
+      "sector": "Communication Services",
+      "avg_price_change": 0.6227183624504965,
+      "avg_bullish_score": 33.86243386243385,
+      "avg_bearish_score": 47.44268077601411,
+      "avg_net_score": -13.580246913580245
+    },
+    "Electronics & Computer Distribution": {
+      "stock_count": 9,
+      "sector": "Technology",
+      "avg_price_change": -0.3469153232642444,
+      "avg_bullish_score": 28.806584362139915,
+      "avg_bearish_score": 49.79423868312757,
+      "avg_net_score": -20.98765432098766
+    },
+    "Engineering & Construction": {
+      "stock_count": 44,
+      "sector": "Industrials",
+      "avg_price_change": 1.2401623163551425,
+      "avg_bullish_score": 26.346801346801342,
+      "avg_bearish_score": 55.8080808080808,
+      "avg_net_score": -29.461279461279467
+    },
+    "Entertainment": {
+      "stock_count": 50,
+      "sector": "Communication Services",
+      "avg_price_change": -0.9743262659125344,
+      "avg_bullish_score": 25.62962962962963,
+      "avg_bearish_score": 54.88888888888888,
+      "avg_net_score": -29.25925925925926
+    },
+    "Farm & Heavy Construction Machinery": {
+      "stock_count": 27,
+      "sector": "Industrials",
+      "avg_price_change": 2.7218765547074235,
+      "avg_bullish_score": 28.25788751714677,
+      "avg_bearish_score": 51.440329218106996,
+      "avg_net_score": -23.18244170096022
+    },
+    "Farm Products": {
+      "stock_count": 21,
+      "sector": "Consumer Defensive",
+      "avg_price_change": 0.5262837660168952,
+      "avg_bullish_score": 36.15520282186948,
+      "avg_bearish_score": 48.85361552028218,
+      "avg_net_score": -12.6984126984127
+    },
+    "Financial Conglomerates": {
+      "stock_count": 4,
+      "sector": "Financial Services",
+      "avg_price_change": 8.600771027624258,
+      "avg_bullish_score": 37.96296296296297,
+      "avg_bearish_score": 43.51851851851852,
+      "avg_net_score": -5.555555555555557
+    },
+    "Financial Data & Stock Exchanges": {
+      "stock_count": 15,
+      "sector": "Financial Services",
+      "avg_price_change": -1.9711381900512492,
+      "avg_bullish_score": 25.185185185185187,
+      "avg_bearish_score": 49.87654320987654,
+      "avg_net_score": -24.691358024691358
+    },
+    "Food Distribution": {
+      "stock_count": 14,
+      "sector": "Consumer Defensive",
+      "avg_price_change": -0.6901704878581566,
+      "avg_bullish_score": 35.44973544973545,
+      "avg_bearish_score": 40.74074074074074,
+      "avg_net_score": -5.2910052910052885
+    },
+    "Footwear & Accessories": {
+      "stock_count": 15,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": -0.2799562009183171,
+      "avg_bullish_score": 26.17283950617284,
+      "avg_bearish_score": 59.75308641975309,
+      "avg_net_score": -33.58024691358025
+    },
+    "Furnishings, Fixtures & Appliances": {
+      "stock_count": 33,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": 1.157039530700094,
+      "avg_bullish_score": 30.864197530864196,
+      "avg_bearish_score": 46.8013468013468,
+      "avg_net_score": -15.937149270482601
+    },
+    "Gambling": {
+      "stock_count": 19,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": 2.189080817479026,
+      "avg_bullish_score": 36.45224171539961,
+      "avg_bearish_score": 40.93567251461988,
+      "avg_net_score": -4.483430799220273
+    },
+    "Gold": {
+      "stock_count": 46,
+      "sector": "Basic Materials",
+      "avg_price_change": 1.9727926247636718,
+      "avg_bullish_score": 35.185185185185176,
+      "avg_bearish_score": 46.1352657004831,
+      "avg_net_score": -10.950080515297905
+    },
+    "Grocery Stores": {
+      "stock_count": 11,
+      "sector": "Consumer Defensive",
+      "avg_price_change": -3.3301762482102077,
+      "avg_bullish_score": 33.67003367003367,
+      "avg_bearish_score": 57.23905723905723,
+      "avg_net_score": -23.569023569023567
+    },
+    "Health Information Services": {
+      "stock_count": 57,
+      "sector": "Healthcare",
+      "avg_price_change": 0.9873253818252928,
+      "avg_bullish_score": 28.97985705003249,
+      "avg_bearish_score": 54.51591942820012,
+      "avg_net_score": -25.53606237816764
+    },
+    "Healthcare Plans": {
+      "stock_count": 11,
+      "sector": "Healthcare",
+      "avg_price_change": -2.2109206883207975,
+      "avg_bullish_score": 30.303030303030297,
+      "avg_bearish_score": 52.188552188552194,
+      "avg_net_score": -21.885521885521886
+    },
+    "Home Improvement Retail": {
+      "stock_count": 8,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": -1.7380088828078093,
+      "avg_bullish_score": 37.5,
+      "avg_bearish_score": 45.83333333333333,
+      "avg_net_score": -8.333333333333332
+    },
+    "Household & Personal Products": {
+      "stock_count": 30,
+      "sector": "Consumer Defensive",
+      "avg_price_change": -0.13288209977295126,
+      "avg_bullish_score": 40.37037037037036,
+      "avg_bearish_score": 38.148148148148145,
+      "avg_net_score": 2.222222222222221
+    },
+    "Industrial Distribution": {
+      "stock_count": 20,
+      "sector": "Industrials",
+      "avg_price_change": 0.7068508048419557,
+      "avg_bullish_score": 28.88888888888888,
+      "avg_bearish_score": 47.222222222222214,
+      "avg_net_score": -18.333333333333332
+    },
+    "Information Technology Services": {
+      "stock_count": 68,
+      "sector": "Technology",
+      "avg_price_change": 0.43752535069118376,
+      "avg_bullish_score": 24.673202614379083,
+      "avg_bearish_score": 52.83224400871459,
+      "avg_net_score": -28.159041394335514
+    },
+    "Infrastructure Operations": {
+      "stock_count": 3,
+      "sector": "Industrials",
+      "avg_price_change": 0.5144979772105854,
+      "avg_bullish_score": 46.913580246913575,
+      "avg_bearish_score": 46.913580246913575,
+      "avg_net_score": 0.0
+    },
+    "Insurance - Diversified": {
+      "stock_count": 14,
+      "sector": "Financial Services",
+      "avg_price_change": 0.44016715978914334,
+      "avg_bullish_score": 39.41798941798941,
+      "avg_bearish_score": 36.24338624338623,
+      "avg_net_score": 3.1746031746031766
+    },
+    "Insurance - Life": {
+      "stock_count": 16,
+      "sector": "Financial Services",
+      "avg_price_change": 1.079907394874051,
+      "avg_bullish_score": 32.407407407407405,
+      "avg_bearish_score": 34.953703703703695,
+      "avg_net_score": -2.546296296296296
+    },
+    "Insurance - Property & Casualty": {
+      "stock_count": 43,
+      "sector": "Financial Services",
+      "avg_price_change": -0.27077329358737956,
+      "avg_bullish_score": 41.515934539190354,
+      "avg_bearish_score": 36.7786391042205,
+      "avg_net_score": 4.737295434969851
+    },
+    "Insurance - Reinsurance": {
+      "stock_count": 9,
+      "sector": "Financial Services",
+      "avg_price_change": 1.0564379207416665,
+      "avg_bullish_score": 37.44855967078189,
+      "avg_bearish_score": 31.687242798353907,
+      "avg_net_score": 5.761316872427985
+    },
+    "Insurance - Specialty": {
+      "stock_count": 18,
+      "sector": "Financial Services",
+      "avg_price_change": -0.07003276337014869,
+      "avg_bullish_score": 47.53086419753086,
+      "avg_bearish_score": 31.069958847736626,
+      "avg_net_score": 16.46090534979424
+    },
+    "Insurance Brokers": {
+      "stock_count": 17,
+      "sector": "Financial Services",
+      "avg_price_change": 1.3779404942915021,
+      "avg_bullish_score": 45.96949891067538,
+      "avg_bearish_score": 37.69063180827886,
+      "avg_net_score": 8.278867102396516
+    },
+    "Integrated Freight & Logistics": {
+      "stock_count": 25,
+      "sector": "Industrials",
+      "avg_price_change": -2.2277350681020556,
+      "avg_bullish_score": 24.296296296296294,
+      "avg_bearish_score": 53.48148148148148,
+      "avg_net_score": -29.185185185185183
+    },
+    "Internet Content & Information": {
+      "stock_count": 69,
+      "sector": "Communication Services",
+      "avg_price_change": -0.20418794152992714,
+      "avg_bullish_score": 30.488459473966724,
+      "avg_bearish_score": 52.33494363929146,
+      "avg_net_score": -21.84648416532475
+    },
+    "Internet Retail": {
+      "stock_count": 43,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": 2.4091405380361586,
+      "avg_bullish_score": 41.68819982773471,
+      "avg_bearish_score": 44.44444444444445,
+      "avg_net_score": -2.756244616709733
+    },
+    "Leisure": {
+      "stock_count": 30,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": 0.723887183631884,
+      "avg_bullish_score": 32.09876543209876,
+      "avg_bearish_score": 51.23456790123458,
+      "avg_net_score": -19.135802469135804
+    },
+    "Lodging": {
+      "stock_count": 14,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": 0.003054408750106002,
+      "avg_bullish_score": 33.86243386243386,
+      "avg_bearish_score": 47.88359788359787,
+      "avg_net_score": -14.021164021164022
+    },
+    "Lumber & Wood Production": {
+      "stock_count": 5,
+      "sector": "Basic Materials",
+      "avg_price_change": -0.6697971479962272,
+      "avg_bullish_score": 17.037037037037035,
+      "avg_bearish_score": 51.1111111111111,
+      "avg_net_score": -34.074074074074076
+    },
+    "Luxury Goods": {
+      "stock_count": 11,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": 1.8534301507562219,
+      "avg_bullish_score": 37.03703703703704,
+      "avg_bearish_score": 50.84175084175084,
+      "avg_net_score": -13.804713804713804
+    },
+    "Marine Shipping": {
+      "stock_count": 34,
+      "sector": "Industrials",
+      "avg_price_change": 1.4314187400701004,
+      "avg_bullish_score": 42.48366013071895,
+      "avg_bearish_score": 39.106753812636164,
+      "avg_net_score": 3.3769063180827876
+    },
+    "Medical Care Facilities": {
+      "stock_count": 51,
+      "sector": "Healthcare",
+      "avg_price_change": -1.1573410131731126,
+      "avg_bullish_score": 25.41757443718228,
+      "avg_bearish_score": 54.901960784313715,
+      "avg_net_score": -29.484386347131448
+    },
+    "Medical Devices": {
+      "stock_count": 145,
+      "sector": "Healthcare",
+      "avg_price_change": 0.1506436793386498,
+      "avg_bullish_score": 32.8735632183908,
+      "avg_bearish_score": 50.574712643678154,
+      "avg_net_score": -17.70114942528735
+    },
+    "Medical Distribution": {
+      "stock_count": 12,
+      "sector": "Healthcare",
+      "avg_price_change": -0.3999205720220879,
+      "avg_bullish_score": 38.88888888888888,
+      "avg_bearish_score": 42.59259259259259,
+      "avg_net_score": -3.703703703703706
+    },
+    "Medical Instruments & Supplies": {
+      "stock_count": 59,
+      "sector": "Healthcare",
+      "avg_price_change": 0.8325382371291962,
+      "avg_bullish_score": 29.441305712492152,
+      "avg_bearish_score": 48.7758945386064,
+      "avg_net_score": -19.334588826114253
+    },
+    "Metal Fabrication": {
+      "stock_count": 19,
+      "sector": "Industrials",
+      "avg_price_change": -0.1699919311972781,
+      "avg_bullish_score": 26.51072124756335,
+      "avg_bearish_score": 55.945419103313846,
+      "avg_net_score": -29.434697855750485
+    },
+    "Mortgage Finance": {
+      "stock_count": 16,
+      "sector": "Financial Services",
+      "avg_price_change": -0.6182273668813076,
+      "avg_bullish_score": 30.09259259259259,
+      "avg_bearish_score": 49.30555555555555,
+      "avg_net_score": -19.212962962962965
+    },
+    "Oil & Gas Drilling": {
+      "stock_count": 9,
+      "sector": "Energy",
+      "avg_price_change": -2.7324999831410652,
+      "avg_bullish_score": 14.403292181069958,
+      "avg_bearish_score": 62.96296296296297,
+      "avg_net_score": -48.559670781893004
+    },
+    "Oil & Gas E&P": {
+      "stock_count": 85,
+      "sector": "Energy",
+      "avg_price_change": -0.07379763468905938,
+      "avg_bullish_score": 25.88235294117647,
+      "avg_bearish_score": 55.72984749455336,
+      "avg_net_score": -29.847494553376904
+    },
+    "Oil & Gas Equipment & Services": {
+      "stock_count": 48,
+      "sector": "Energy",
+      "avg_price_change": -0.336870404151595,
+      "avg_bullish_score": 23.37962962962963,
+      "avg_bearish_score": 58.87345679012346,
+      "avg_net_score": -35.49382716049383
+    },
+    "Oil & Gas Integrated": {
+      "stock_count": 21,
+      "sector": "Energy",
+      "avg_price_change": -0.02058033369771837,
+      "avg_bullish_score": 26.45502645502645,
+      "avg_bearish_score": 46.20811287477953,
+      "avg_net_score": -19.75308641975309
+    },
+    "Oil & Gas Midstream": {
+      "stock_count": 52,
+      "sector": "Energy",
+      "avg_price_change": 0.30356196245966827,
+      "avg_bullish_score": 24.14529914529914,
+      "avg_bearish_score": 51.06837606837605,
+      "avg_net_score": -26.923076923076927
+    },
+    "Oil & Gas Refining & Marketing": {
+      "stock_count": 19,
+      "sector": "Energy",
+      "avg_price_change": -2.8773394349165287,
+      "avg_bullish_score": 29.239766081871338,
+      "avg_bearish_score": 49.902534113060426,
+      "avg_net_score": -20.662768031189085
+    },
+    "Other Industrial Metals & Mining": {
+      "stock_count": 44,
+      "sector": "Basic Materials",
+      "avg_price_change": 1.5060073109625094,
+      "avg_bullish_score": 26.93602693602693,
+      "avg_bearish_score": 56.81818181818182,
+      "avg_net_score": -29.882154882154886
+    },
+    "Other Precious Metals & Mining": {
+      "stock_count": 16,
+      "sector": "Basic Materials",
+      "avg_price_change": 1.3480870786343924,
+      "avg_bullish_score": 24.07407407407407,
+      "avg_bearish_score": 53.472222222222214,
+      "avg_net_score": -29.398148148148145
+    },
+    "Packaged Foods": {
+      "stock_count": 65,
+      "sector": "Consumer Defensive",
+      "avg_price_change": -0.8341827601412081,
+      "avg_bullish_score": 39.77207977207977,
+      "avg_bearish_score": 44.102564102564095,
+      "avg_net_score": -4.330484330484329
+    },
+    "Packaging & Containers": {
+      "stock_count": 25,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": -0.22498249343242008,
+      "avg_bullish_score": 40.59259259259259,
+      "avg_bearish_score": 40.74074074074074,
+      "avg_net_score": -0.1481481481481478
+    },
+    "Paper & Paper Products": {
+      "stock_count": 5,
+      "sector": "Basic Materials",
+      "avg_price_change": -1.5869779513418567,
+      "avg_bullish_score": 37.037037037037045,
+      "avg_bearish_score": 42.22222222222222,
+      "avg_net_score": -5.185185185185182
+    },
+    "Personal Services": {
+      "stock_count": 15,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": 3.6960728056665855,
+      "avg_bullish_score": 35.80246913580246,
+      "avg_bearish_score": 47.407407407407405,
+      "avg_net_score": -11.604938271604938
+    },
+    "Pharmaceutical Retailers": {
+      "stock_count": 6,
+      "sector": "Healthcare",
+      "avg_price_change": 1.1138815432695497,
+      "avg_bullish_score": 43.20987654320987,
+      "avg_bearish_score": 40.74074074074074,
+      "avg_net_score": 2.4691358024691348
+    },
+    "Pollution & Treatment Controls": {
+      "stock_count": 18,
+      "sector": "Industrials",
+      "avg_price_change": -1.130174924574252,
+      "avg_bullish_score": 22.633744855967077,
+      "avg_bearish_score": 57.20164609053498,
+      "avg_net_score": -34.5679012345679
+    },
+    "Publishing": {
+      "stock_count": 9,
+      "sector": "Communication Services",
+      "avg_price_change": -0.7689960328483261,
+      "avg_bullish_score": 23.868312757201647,
+      "avg_bearish_score": 57.61316872427983,
+      "avg_net_score": -33.74485596707819
+    },
+    "REIT - Diversified": {
+      "stock_count": 18,
+      "sector": "Real Estate",
+      "avg_price_change": 1.3018751364182433,
+      "avg_bullish_score": 44.65020576131687,
+      "avg_bearish_score": 29.01234567901234,
+      "avg_net_score": 15.637860082304526
+    },
+    "REIT - Healthcare Facilities": {
+      "stock_count": 17,
+      "sector": "Real Estate",
+      "avg_price_change": 0.6101754225700035,
+      "avg_bullish_score": 46.40522875816993,
+      "avg_bearish_score": 28.322440087145967,
+      "avg_net_score": 18.082788671023962
+    },
+    "REIT - Hotel & Motel": {
+      "stock_count": 19,
+      "sector": "Real Estate",
+      "avg_price_change": 0.24304345865667412,
+      "avg_bullish_score": 23.39181286549707,
+      "avg_bearish_score": 55.94541910331383,
+      "avg_net_score": -32.55360623781676
+    },
+    "REIT - Industrial": {
+      "stock_count": 17,
+      "sector": "Real Estate",
+      "avg_price_change": -0.6620533144765719,
+      "avg_bullish_score": 44.008714596949886,
+      "avg_bearish_score": 33.11546840958606,
+      "avg_net_score": 10.893246187363836
+    },
+    "REIT - Mortgage": {
+      "stock_count": 43,
+      "sector": "Real Estate",
+      "avg_price_change": 0.40989807463068384,
+      "avg_bullish_score": 45.65030146425495,
+      "avg_bearish_score": 24.03100775193798,
+      "avg_net_score": 21.619293712316967
+    },
+    "REIT - Office": {
+      "stock_count": 24,
+      "sector": "Real Estate",
+      "avg_price_change": 0.47754471945736005,
+      "avg_bullish_score": 33.641975308641975,
+      "avg_bearish_score": 43.20987654320987,
+      "avg_net_score": -9.567901234567902
+    },
+    "REIT - Residential": {
+      "stock_count": 20,
+      "sector": "Real Estate",
+      "avg_price_change": -0.5588448970669274,
+      "avg_bullish_score": 49.44444444444444,
+      "avg_bearish_score": 20.37037037037037,
+      "avg_net_score": 29.074074074074076
+    },
+    "REIT - Retail": {
+      "stock_count": 30,
+      "sector": "Real Estate",
+      "avg_price_change": -0.4170296120807073,
+      "avg_bullish_score": 34.32098765432099,
+      "avg_bearish_score": 33.7037037037037,
+      "avg_net_score": 0.6172839506172854
+    },
+    "REIT - Specialty": {
+      "stock_count": 19,
+      "sector": "Real Estate",
+      "avg_price_change": 0.26902366568561736,
+      "avg_bullish_score": 43.66471734892787,
+      "avg_bearish_score": 36.64717348927875,
+      "avg_net_score": 7.017543859649123
+    },
+    "Railroads": {
+      "stock_count": 11,
+      "sector": "Industrials",
+      "avg_price_change": 0.49009070569180757,
+      "avg_bullish_score": 12.79461279461279,
+      "avg_bearish_score": 56.22895622895623,
+      "avg_net_score": -43.43434343434343
+    },
+    "Real Estate - Development": {
+      "stock_count": 14,
+      "sector": "Real Estate",
+      "avg_price_change": 0.9426366268202767,
+      "avg_bullish_score": 35.18518518518518,
+      "avg_bearish_score": 50.0,
+      "avg_net_score": -14.814814814814813
+    },
+    "Real Estate - Diversified": {
+      "stock_count": 4,
+      "sector": "Real Estate",
+      "avg_price_change": -0.02217203428225012,
+      "avg_bullish_score": 11.11111111111111,
+      "avg_bearish_score": 50.925925925925924,
+      "avg_net_score": -39.81481481481481
+    },
+    "Real Estate Services": {
+      "stock_count": 48,
+      "sector": "Real Estate",
+      "avg_price_change": 0.9214636456189211,
+      "avg_bullish_score": 39.81481481481482,
+      "avg_bearish_score": 39.96913580246913,
+      "avg_net_score": -0.15432098765432004
+    },
+    "Recreational Vehicles": {
+      "stock_count": 14,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": -0.6701723901385144,
+      "avg_bullish_score": 25.132275132275133,
+      "avg_bearish_score": 52.116402116402114,
+      "avg_net_score": -26.98412698412698
+    },
+    "Rental & Leasing Services": {
+      "stock_count": 22,
+      "sector": "Industrials",
+      "avg_price_change": 0.6535731566621348,
+      "avg_bullish_score": 36.19528619528619,
+      "avg_bearish_score": 45.95959595959596,
+      "avg_net_score": -9.764309764309765
+    },
+    "Residential Construction": {
+      "stock_count": 21,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": -1.0598570004769945,
+      "avg_bullish_score": 24.514991181657848,
+      "avg_bearish_score": 55.731922398589056,
+      "avg_net_score": -31.216931216931215
+    },
+    "Resorts & Casinos": {
+      "stock_count": 18,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": 0.083296059955758,
+      "avg_bullish_score": 29.01234567901234,
+      "avg_bearish_score": 46.91358024691358,
+      "avg_net_score": -17.901234567901238
+    },
+    "Restaurants": {
+      "stock_count": 53,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": -0.3396237941927141,
+      "avg_bullish_score": 35.150244584206845,
+      "avg_bearish_score": 48.42767295597484,
+      "avg_net_score": -13.277428371767995
+    },
+    "Scientific & Technical Instruments": {
+      "stock_count": 32,
+      "sector": "Technology",
+      "avg_price_change": 1.5645696924394015,
+      "avg_bullish_score": 34.49074074074073,
+      "avg_bearish_score": 47.453703703703695,
+      "avg_net_score": -12.962962962962964
+    },
+    "Security & Protection Services": {
+      "stock_count": 22,
+      "sector": "Industrials",
+      "avg_price_change": 1.0204267955682966,
+      "avg_bullish_score": 30.30303030303029,
+      "avg_bearish_score": 50.67340067340067,
+      "avg_net_score": -20.370370370370367
+    },
+    "Semiconductor Equipment & Materials": {
+      "stock_count": 30,
+      "sector": "Technology",
+      "avg_price_change": 2.275915075893268,
+      "avg_bullish_score": 35.432098765432094,
+      "avg_bearish_score": 51.97530864197532,
+      "avg_net_score": -16.54320987654321
+    },
+    "Semiconductors": {
+      "stock_count": 66,
+      "sector": "Technology",
+      "avg_price_change": 2.248708838127622,
+      "avg_bullish_score": 33.61391694725028,
+      "avg_bearish_score": 47.811447811447806,
+      "avg_net_score": -14.19753086419753
+    },
+    "Shell Companies": {
+      "stock_count": 90,
+      "sector": "Financial Services",
+      "avg_price_change": -0.16855685707619153,
+      "avg_bullish_score": 39.34156378600823,
+      "avg_bearish_score": 17.695473251028808,
+      "avg_net_score": 21.646090534979418
+    },
+    "Silver": {
+      "stock_count": 3,
+      "sector": "Basic Materials",
+      "avg_price_change": 3.6811849875101257,
+      "avg_bullish_score": 45.67901234567901,
+      "avg_bearish_score": 38.2716049382716,
+      "avg_net_score": 7.407407407407409
+    },
+    "Software - Application": {
+      "stock_count": 237,
+      "sector": "Technology",
+      "avg_price_change": 1.3414314066407127,
+      "avg_bullish_score": 29.395218002812936,
+      "avg_bearish_score": 52.5550867323019,
+      "avg_net_score": -23.15986872948898
+    },
+    "Software - Infrastructure": {
+      "stock_count": 153,
+      "sector": "Technology",
+      "avg_price_change": 0.3553823500173458,
+      "avg_bullish_score": 28.346647300895665,
+      "avg_bearish_score": 53.35269910433309,
+      "avg_net_score": -25.00605180343742
+    },
+    "Solar": {
+      "stock_count": 25,
+      "sector": "Technology",
+      "avg_price_change": 1.5054336313188728,
+      "avg_bullish_score": 32.888888888888886,
+      "avg_bearish_score": 53.48148148148149,
+      "avg_net_score": -20.59259259259259
+    },
+    "Specialty Business Services": {
+      "stock_count": 39,
+      "sector": "Industrials",
+      "avg_price_change": -0.7666662953640165,
+      "avg_bullish_score": 24.121557454890784,
+      "avg_bearish_score": 54.22602089268756,
+      "avg_net_score": -30.104463437796774
+    },
+    "Specialty Chemicals": {
+      "stock_count": 55,
+      "sector": "Basic Materials",
+      "avg_price_change": -0.08572992796823621,
+      "avg_bullish_score": 32.92929292929293,
+      "avg_bearish_score": 44.78114478114478,
+      "avg_net_score": -11.85185185185185
+    },
+    "Specialty Industrial Machinery": {
+      "stock_count": 80,
+      "sector": "Industrials",
+      "avg_price_change": 1.3441861056525983,
+      "avg_bullish_score": 27.5,
+      "avg_bearish_score": 53.703703703703695,
+      "avg_net_score": -26.203703703703706
+    },
+    "Specialty Retail": {
+      "stock_count": 46,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": -0.5698801860844825,
+      "avg_bullish_score": 25.603864734299513,
+      "avg_bearish_score": 58.37359098228662,
+      "avg_net_score": -32.76972624798713
+    },
+    "Staffing & Employment Services": {
+      "stock_count": 21,
+      "sector": "Industrials",
+      "avg_price_change": 0.9183590161845675,
+      "avg_bullish_score": 33.156966490299816,
+      "avg_bearish_score": 50.44091710758378,
+      "avg_net_score": -17.28395061728395
+    },
+    "Steel": {
+      "stock_count": 26,
+      "sector": "Basic Materials",
+      "avg_price_change": 0.6283585083697465,
+      "avg_bullish_score": 38.88888888888888,
+      "avg_bearish_score": 37.179487179487175,
+      "avg_net_score": 1.7094017094017104
+    },
+    "Telecom Services": {
+      "stock_count": 54,
+      "sector": "Communication Services",
+      "avg_price_change": 1.0435392273010697,
+      "avg_bullish_score": 39.986282578875176,
+      "avg_bearish_score": 32.57887517146777,
+      "avg_net_score": 7.407407407407411
+    },
+    "Textile Manufacturing": {
+      "stock_count": 3,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": 0.9406445400238272,
+      "avg_bullish_score": 28.39506172839506,
+      "avg_bearish_score": 56.79012345679013,
+      "avg_net_score": -28.395061728395063
+    },
+    "Thermal Coal": {
+      "stock_count": 7,
+      "sector": "Energy",
+      "avg_price_change": 1.2445175322938826,
+      "avg_bullish_score": 35.44973544973544,
+      "avg_bearish_score": 49.20634920634921,
+      "avg_net_score": -13.756613756613758
+    },
+    "Tobacco": {
+      "stock_count": 10,
+      "sector": "Consumer Defensive",
+      "avg_price_change": -1.1272766424675917,
+      "avg_bullish_score": 42.592592592592595,
+      "avg_bearish_score": 40.0,
+      "avg_net_score": 2.5925925925925952
+    },
+    "Tools & Accessories": {
+      "stock_count": 10,
+      "sector": "Industrials",
+      "avg_price_change": 0.27695999761408907,
+      "avg_bullish_score": 24.07407407407407,
+      "avg_bearish_score": 44.07407407407407,
+      "avg_net_score": -20.0
+    },
+    "Travel Services": {
+      "stock_count": 19,
+      "sector": "Consumer Cyclical",
+      "avg_price_change": 0.9100092871199758,
+      "avg_bullish_score": 28.26510721247563,
+      "avg_bearish_score": 53.021442495126706,
+      "avg_net_score": -24.75633528265107
+    },
+    "Trucking": {
+      "stock_count": 16,
+      "sector": "Industrials",
+      "avg_price_change": -0.13538603225791773,
+      "avg_bullish_score": 14.351851851851851,
+      "avg_bearish_score": 62.5,
+      "avg_net_score": -48.14814814814815
+    },
+    "Uranium": {
+      "stock_count": 9,
+      "sector": "Energy",
+      "avg_price_change": 3.163935160738945,
+      "avg_bullish_score": 22.22222222222222,
+      "avg_bearish_score": 63.786008230452666,
+      "avg_net_score": -41.56378600823045
+    },
+    "Utilities - Diversified": {
+      "stock_count": 11,
+      "sector": "Utilities",
+      "avg_price_change": -0.2944686935031027,
+      "avg_bullish_score": 44.78114478114478,
+      "avg_bearish_score": 40.4040404040404,
+      "avg_net_score": 4.377104377104377
+    },
+    "Utilities - Independent Power Producers": {
+      "stock_count": 6,
+      "sector": "Utilities",
+      "avg_price_change": 3.9816138805985926,
+      "avg_bullish_score": 37.03703703703704,
+      "avg_bearish_score": 50.617283950617285,
+      "avg_net_score": -13.580246913580245
+    },
+    "Utilities - Regulated Electric": {
+      "stock_count": 38,
+      "sector": "Utilities",
+      "avg_price_change": -0.03813003452937804,
+      "avg_bullish_score": 50.09746588693957,
+      "avg_bearish_score": 18.031189083820657,
+      "avg_net_score": 32.06627680311891
+    },
+    "Utilities - Regulated Gas": {
+      "stock_count": 16,
+      "sector": "Utilities",
+      "avg_price_change": -1.136917976209372,
+      "avg_bullish_score": 37.5,
+      "avg_bearish_score": 34.25925925925926,
+      "avg_net_score": 3.24074074074074
+    },
+    "Utilities - Regulated Water": {
+      "stock_count": 14,
+      "sector": "Utilities",
+      "avg_price_change": -0.9652775465024632,
+      "avg_bullish_score": 45.23809523809523,
+      "avg_bearish_score": 32.804232804232804,
+      "avg_net_score": 12.433862433862439
+    },
+    "Utilities - Renewable": {
+      "stock_count": 24,
+      "sector": "Utilities",
+      "avg_price_change": -1.1548126770890403,
+      "avg_bullish_score": 39.66049382716049,
+      "avg_bearish_score": 40.432098765432094,
+      "avg_net_score": -0.7716049382716056
+    },
+    "Waste Management": {
+      "stock_count": 19,
+      "sector": "Industrials",
+      "avg_price_change": -0.7702169776429543,
+      "avg_bullish_score": 25.146198830409357,
+      "avg_bearish_score": 57.50487329434698,
+      "avg_net_score": -32.35867446393762
+    }
+  },
+  "top_movers_today": [
+    {
+      "symbol": "ENVB",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 2.299999952316284,
+      "change_pct": 94.91525886045815,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 40.74074074074074,
+      "net_score": 44.44444444444445
+    },
+    {
+      "symbol": "QRTEB",
+      "sector": "Consumer Cyclical",
+      "industry": "Internet Retail",
+      "last_price": 9.720000267028809,
+      "change_pct": 91.33859080725529,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 33.33333333333333,
+      "net_score": 51.85185185185186
+    },
+    {
+      "symbol": "PRCH",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 6.599999904632568,
+      "change_pct": 74.14247944756337,
+      "bullish_score": 100.0,
+      "bearish_score": 25.925925925925924,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "MULN",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Manufacturers",
+      "last_price": 4.039999961853027,
+      "change_pct": 71.18644667096426,
+      "bullish_score": 51.85185185185185,
+      "bearish_score": 74.07407407407408,
+      "net_score": -22.22222222222223
+    },
+    {
+      "symbol": "NKLA",
+      "sector": "Industrials",
+      "industry": "Farm & Heavy Construction Machinery",
+      "last_price": 0.2847000062465668,
+      "change_pct": 55.573775324035154,
+      "bullish_score": 14.814814814814813,
+      "bearish_score": 74.07407407407408,
+      "net_score": -59.25925925925927
+    },
+    {
+      "symbol": "RENB",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 1.190000057220459,
+      "change_pct": 53.945673257979074,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 18.51851851851852,
+      "net_score": 66.66666666666667
+    },
+    {
+      "symbol": "LBGJ",
+      "sector": "Industrials",
+      "industry": "Specialty Industrial Machinery",
+      "last_price": 1.4199999570846558,
+      "change_pct": 39.215684670386295,
+      "bullish_score": 51.85185185185185,
+      "bearish_score": 74.07407407407408,
+      "net_score": -22.22222222222223
+    },
+    {
+      "symbol": "TZUP",
+      "sector": "Communication Services",
+      "industry": "Advertising Agencies",
+      "last_price": 3.1700000762939453,
+      "change_pct": 38.42795323580865,
+      "bullish_score": 74.07407407407408,
+      "bearish_score": 33.33333333333333,
+      "net_score": 40.74074074074075
+    },
+    {
+      "symbol": "PCLA",
+      "sector": "Communication Services",
+      "industry": "Telecom Services",
+      "last_price": 8.380000114440918,
+      "change_pct": 35.598711119927714,
+      "bullish_score": 59.25925925925925,
+      "bearish_score": 22.22222222222222,
+      "net_score": 37.03703703703703
+    },
+    {
+      "symbol": "RILY",
+      "sector": "Financial Services",
+      "industry": "Financial Conglomerates",
+      "last_price": 5.639999866485596,
+      "change_pct": 35.57692484037418,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "HCTI",
+      "sector": "Healthcare",
+      "industry": "Health Information Services",
+      "last_price": 0.5099999904632568,
+      "change_pct": 34.21052549024037,
+      "bullish_score": 62.96296296296296,
+      "bearish_score": 55.55555555555556,
+      "net_score": 7.407407407407405
+    },
+    {
+      "symbol": "TRNR",
+      "sector": "Consumer Cyclical",
+      "industry": "Personal Services",
+      "last_price": 1.25,
+      "change_pct": 31.578949019519275,
+      "bullish_score": 62.96296296296296,
+      "bearish_score": 55.55555555555556,
+      "net_score": 7.407407407407405
+    },
+    {
+      "symbol": "GOTU",
+      "sector": "Consumer Defensive",
+      "industry": "Education & Training Services",
+      "last_price": 3.319999933242798,
+      "change_pct": 31.225295288010123,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "MLEC",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 0.8500000238418579,
+      "change_pct": 30.76923923379602,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 37.03703703703704,
+      "net_score": 44.44444444444444
+    },
+    {
+      "symbol": "SLRX",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 1.4500000476837158,
+      "change_pct": 29.464289420569422,
+      "bullish_score": 59.25925925925925,
+      "bearish_score": 51.85185185185185,
+      "net_score": 7.407407407407405
+    },
+    {
+      "symbol": "ALBT",
+      "sector": "Real Estate",
+      "industry": "Real Estate Services",
+      "last_price": 8.329999923706055,
+      "change_pct": 28.351313058226445,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 18.51851851851852,
+      "net_score": 66.66666666666667
+    },
+    {
+      "symbol": "NUKK",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 13.289999961853027,
+      "change_pct": 28.281857164805334,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 92.5925925925926,
+      "net_score": -59.25925925925927
+    },
+    {
+      "symbol": "COMM",
+      "sector": "Technology",
+      "industry": "Communication Equipment",
+      "last_price": 6.170000076293945,
+      "change_pct": 26.175874125908226,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "CHRO",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 2.2300000190734863,
+      "change_pct": 25.280901961608993,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 33.33333333333333,
+      "net_score": 51.85185185185186
+    },
+    {
+      "symbol": "SSTI",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 16.90999984741211,
+      "change_pct": 23.61110723816484,
+      "bullish_score": 88.88888888888889,
+      "bearish_score": 29.629629629629626,
+      "net_score": 59.25925925925926
+    },
+    {
+      "symbol": "ZI",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 11.729999542236328,
+      "change_pct": 23.08499339883232,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "PDSB",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 1.5399999618530271,
+      "change_pct": 22.22222011976558,
+      "bullish_score": 66.66666666666666,
+      "bearish_score": 51.85185185185185,
+      "net_score": 14.81481481481481
+    },
+    {
+      "symbol": "COEP",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 11.279999732971191,
+      "change_pct": 21.16003463548286,
+      "bullish_score": 29.629629629629626,
+      "bearish_score": 40.74074074074074,
+      "net_score": -11.111111111111114
+    },
+    {
+      "symbol": "ASPI",
+      "sector": "Basic Materials",
+      "industry": "Chemicals",
+      "last_price": 5.099999904632568,
+      "change_pct": 21.140139154899586,
+      "bullish_score": 62.96296296296296,
+      "bearish_score": 55.55555555555556,
+      "net_score": 7.407407407407405
+    },
+    {
+      "symbol": "AKTS",
+      "sector": "Technology",
+      "industry": "Communication Equipment",
+      "last_price": 0.0154999997466802,
+      "change_pct": 21.093751080024536,
+      "bullish_score": 66.66666666666666,
+      "bearish_score": 14.814814814814813,
+      "net_score": 51.85185185185185
+    },
+    {
+      "symbol": "ACMR",
+      "sector": "Technology",
+      "industry": "Semiconductor Equipment & Materials",
+      "last_price": 27.690000534057617,
+      "change_pct": 20.706189578975653,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "MPLN",
+      "sector": "Healthcare",
+      "industry": "Health Information Services",
+      "last_price": 23.51000022888184,
+      "change_pct": 19.887809776362687,
+      "bullish_score": 22.22222222222222,
+      "bearish_score": 66.66666666666666,
+      "net_score": -44.444444444444436
+    },
+    {
+      "symbol": "TOI",
+      "sector": "Healthcare",
+      "industry": "Medical Care Facilities",
+      "last_price": 0.9559999704360962,
+      "change_pct": 19.649554539218062,
+      "bullish_score": 77.77777777777779,
+      "bearish_score": 33.33333333333333,
+      "net_score": 44.44444444444446
+    },
+    {
+      "symbol": "SOAR",
+      "sector": "Industrials",
+      "industry": "Airports & Air Services",
+      "last_price": 2.5299999713897705,
+      "change_pct": 19.3396277341102,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 55.55555555555556,
+      "net_score": -22.22222222222223
+    },
+    {
+      "symbol": "SYTA",
+      "sector": "Technology",
+      "industry": "Communication Equipment",
+      "last_price": 4.170000076293945,
+      "change_pct": 19.14285932268416,
+      "bullish_score": 70.37037037037037,
+      "bearish_score": 55.55555555555556,
+      "net_score": 14.81481481481481
+    },
+    {
+      "symbol": "STSS",
+      "sector": "Healthcare",
+      "industry": "Medical Instruments & Supplies",
+      "last_price": 0.3319999873638153,
+      "change_pct": 18.571423553690636,
+      "bullish_score": 29.629629629629626,
+      "bearish_score": 48.148148148148145,
+      "net_score": -18.51851851851852
+    },
+    {
+      "symbol": "CEVA",
+      "sector": "Technology",
+      "industry": "Semiconductors",
+      "last_price": 38.43999862670898,
+      "change_pct": 18.276918851412226,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "HURN",
+      "sector": "Industrials",
+      "industry": "Consulting Services",
+      "last_price": 148.17999267578125,
+      "change_pct": 18.231860297527525,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "OTLY",
+      "sector": "Consumer Defensive",
+      "industry": "Packaged Foods",
+      "last_price": 8.079999923706055,
+      "change_pct": 18.128651220117508,
+      "bullish_score": 14.814814814814813,
+      "bearish_score": 62.96296296296296,
+      "net_score": -48.14814814814815
+    },
+    {
+      "symbol": "RR",
+      "sector": "Industrials",
+      "industry": "Specialty Industrial Machinery",
+      "last_price": 2.0299999713897705,
+      "change_pct": 18.023252187386475,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 62.96296296296296,
+      "net_score": -37.03703703703704
+    },
+    {
+      "symbol": "NXTT",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 1.309999942779541,
+      "change_pct": 18.018011342065687,
+      "bullish_score": 74.07407407407408,
+      "bearish_score": 40.74074074074074,
+      "net_score": 33.333333333333336
+    },
+    {
+      "symbol": "INVX",
+      "sector": "Energy",
+      "industry": "Oil & Gas Equipment & Services",
+      "last_price": 18.93000030517578,
+      "change_pct": 17.28625167927045,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "AIM",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 0.1400000005960464,
+      "change_pct": 16.66666977107536,
+      "bullish_score": 59.25925925925925,
+      "bearish_score": 51.85185185185185,
+      "net_score": 7.407407407407405
+    },
+    {
+      "symbol": "EYEN",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 1.7599999904632568,
+      "change_pct": 16.55629149529345,
+      "bullish_score": 51.85185185185185,
+      "bearish_score": 48.148148148148145,
+      "net_score": 3.7037037037037024
+    },
+    {
+      "symbol": "LNTH",
+      "sector": "Healthcare",
+      "industry": "Drug Manufacturers - Specialty & Generic",
+      "last_price": 93.25,
+      "change_pct": 16.48968950033329,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "MKZR",
+      "sector": "Real Estate",
+      "industry": "REIT - Diversified",
+      "last_price": 1.919999957084656,
+      "change_pct": 16.363635444115676,
+      "bullish_score": 29.629629629629626,
+      "bearish_score": 48.148148148148145,
+      "net_score": -18.51851851851852
+    },
+    {
+      "symbol": "NNE",
+      "sector": "Industrials",
+      "industry": "Specialty Industrial Machinery",
+      "last_price": 29.63999938964844,
+      "change_pct": 16.235291724111534,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 62.96296296296296,
+      "net_score": -37.03703703703704
+    },
+    {
+      "symbol": "SPHL",
+      "sector": "Consumer Cyclical",
+      "industry": "Residential Construction",
+      "last_price": 3.3399999141693115,
+      "change_pct": 15.972214633668202,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 14.814814814814813,
+      "net_score": 66.66666666666667
+    },
+    {
+      "symbol": "PW",
+      "sector": "Real Estate",
+      "industry": "REIT - Specialty",
+      "last_price": 1.25,
+      "change_pct": 15.740736141617106,
+      "bullish_score": 74.07407407407408,
+      "bearish_score": 44.44444444444444,
+      "net_score": 29.629629629629633
+    },
+    {
+      "symbol": "AENT",
+      "sector": "Communication Services",
+      "industry": "Entertainment",
+      "last_price": 4.230000019073486,
+      "change_pct": 15.57376830261543,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 55.55555555555556,
+      "net_score": -29.629629629629633
+    },
+    {
+      "symbol": "HTCO",
+      "sector": "Industrials",
+      "industry": "Marine Shipping",
+      "last_price": 2.8299999237060547,
+      "change_pct": 15.510198719448965,
+      "bullish_score": 14.814814814814813,
+      "bearish_score": 62.96296296296296,
+      "net_score": -48.14814814814815
+    },
+    {
+      "symbol": "MCTR",
+      "sector": "Communication Services",
+      "industry": "Advertising Agencies",
+      "last_price": 6.539999961853027,
+      "change_pct": 15.343913119093578,
+      "bullish_score": 74.07407407407408,
+      "bearish_score": 37.03703703703704,
+      "net_score": 37.03703703703704
+    },
+    {
+      "symbol": "SKYT",
+      "sector": "Technology",
+      "industry": "Semiconductors",
+      "last_price": 10.1899995803833,
+      "change_pct": 15.271486476164831,
+      "bullish_score": 77.77777777777779,
+      "bearish_score": 40.74074074074074,
+      "net_score": 37.037037037037045
+    },
+    {
+      "symbol": "AXON",
+      "sector": "Industrials",
+      "industry": "Aerospace & Defense",
+      "last_price": 572.4000244140625,
+      "change_pct": 15.252196002919227,
+      "bullish_score": 37.03703703703704,
+      "bearish_score": 81.48148148148148,
+      "net_score": -44.44444444444444
+    },
+    {
+      "symbol": "MDGL",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 355.8800048828125,
+      "change_pct": 14.989180946791404,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 25.925925925925924,
+      "net_score": 59.25925925925927
+    },
+    {
+      "symbol": "XPEV",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Manufacturers",
+      "last_price": 21.989999771118164,
+      "change_pct": 14.950343626867957,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "KPTI",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 9.829999923706056,
+      "change_pct": 14.769415123148711,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 40.74074074074074,
+      "net_score": 44.44444444444445
+    },
+    {
+      "symbol": "SKYQ",
+      "sector": "Energy",
+      "industry": "Oil & Gas Integrated",
+      "last_price": 0.824999988079071,
+      "change_pct": 14.58332712451642,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 70.37037037037037,
+      "net_score": -44.44444444444444
+    },
+    {
+      "symbol": "YYGH",
+      "sector": "Consumer Cyclical",
+      "industry": "Personal Services",
+      "last_price": 1.830000042915344,
+      "change_pct": 14.375000977888686,
+      "bullish_score": 51.85185185185185,
+      "bearish_score": 29.629629629629626,
+      "net_score": 22.22222222222222
+    },
+    {
+      "symbol": "LTRY",
+      "sector": "Consumer Cyclical",
+      "industry": "Gambling",
+      "last_price": 1.5299999713897705,
+      "change_pct": 14.179099498386893,
+      "bullish_score": 48.148148148148145,
+      "bearish_score": 40.74074074074074,
+      "net_score": 7.407407407407405
+    },
+    {
+      "symbol": "BCAN",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 6.019999980926514,
+      "change_pct": 14.015146623356367,
+      "bullish_score": 62.96296296296296,
+      "bearish_score": 25.925925925925924,
+      "net_score": 37.03703703703704
+    },
+    {
+      "symbol": "ASTE",
+      "sector": "Industrials",
+      "industry": "Farm & Heavy Construction Machinery",
+      "last_price": 35.4900016784668,
+      "change_pct": 13.859485375678226,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 25.925925925925924,
+      "net_score": 66.66666666666667
+    },
+    {
+      "symbol": "TMQ",
+      "sector": "Basic Materials",
+      "industry": "Other Industrial Metals & Mining",
+      "last_price": 1.4800000190734863,
+      "change_pct": 13.84615948919734,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "HWH",
+      "sector": "Consumer Cyclical",
+      "industry": "Leisure",
+      "last_price": 1.8600000143051147,
+      "change_pct": 13.414636007878578,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 37.03703703703704,
+      "net_score": 44.44444444444444
+    },
+    {
+      "symbol": "AERT",
+      "sector": "Industrials",
+      "industry": "Consulting Services",
+      "last_price": 0.550000011920929,
+      "change_pct": 13.40206096879053,
+      "bullish_score": 77.77777777777779,
+      "bearish_score": 48.148148148148145,
+      "net_score": 29.62962962962964
+    },
+    {
+      "symbol": "MOB",
+      "sector": "Technology",
+      "industry": "Communication Equipment",
+      "last_price": 2.289999961853028,
+      "change_pct": 13.366335815640618,
+      "bullish_score": 14.814814814814813,
+      "bearish_score": 62.96296296296296,
+      "net_score": -48.14814814814815
+    },
+    {
+      "symbol": "SPPL",
+      "sector": "Industrials",
+      "industry": "Specialty Industrial Machinery",
+      "last_price": 0.5149999856948853,
+      "change_pct": 13.186806780807615,
+      "bullish_score": 51.85185185185185,
+      "bearish_score": 74.07407407407408,
+      "net_score": -22.22222222222223
+    },
+    {
+      "symbol": "EFOI",
+      "sector": "Consumer Cyclical",
+      "industry": "Furnishings, Fixtures & Appliances",
+      "last_price": 2.240000009536743,
+      "change_pct": 13.131312523164528,
+      "bullish_score": 55.55555555555556,
+      "bearish_score": 22.22222222222222,
+      "net_score": 33.333333333333336
+    },
+    {
+      "symbol": "JBI",
+      "sector": "Industrials",
+      "industry": "Building Products & Equipment",
+      "last_price": 9.109999656677246,
+      "change_pct": 13.027285141388134,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 25.925925925925924,
+      "net_score": 59.25925925925927
+    },
+    {
+      "symbol": "LX",
+      "sector": "Financial Services",
+      "industry": "Credit Services",
+      "last_price": 9.119999885559082,
+      "change_pct": 13.011155271892916,
+      "bullish_score": 66.66666666666666,
+      "bearish_score": 22.22222222222222,
+      "net_score": 44.444444444444436
+    },
+    {
+      "symbol": "MWG",
+      "sector": "Industrials",
+      "industry": "Rental & Leasing Services",
+      "last_price": 0.3499999940395355,
+      "change_pct": 12.903223015391262,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "SGHT",
+      "sector": "Healthcare",
+      "industry": "Medical Devices",
+      "last_price": 2.809999942779541,
+      "change_pct": 12.851402892256726,
+      "bullish_score": 55.55555555555556,
+      "bearish_score": 40.74074074074074,
+      "net_score": 14.814814814814817
+    },
+    {
+      "symbol": "HUMA",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 3.430000066757202,
+      "change_pct": 12.828950980198384,
+      "bullish_score": 44.44444444444444,
+      "bearish_score": 74.07407407407408,
+      "net_score": -29.629629629629633
+    },
+    {
+      "symbol": "INTU",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 625.510009765625,
+      "change_pct": 12.576715488493262,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 25.925925925925924,
+      "net_score": 59.25925925925927
+    },
+    {
+      "symbol": "ATHA",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 0.4390000104904175,
+      "change_pct": 12.564109382780142,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 81.48148148148148,
+      "net_score": -48.14814814814815
+    },
+    {
+      "symbol": "BPTH",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 0.1800000071525573,
+      "change_pct": 12.50000698491942,
+      "bullish_score": 22.22222222222222,
+      "bearish_score": 48.148148148148145,
+      "net_score": -25.925925925925924
+    },
+    {
+      "symbol": "PSIX",
+      "sector": "Industrials",
+      "industry": "Specialty Industrial Machinery",
+      "last_price": 34.209999084472656,
+      "change_pct": 12.421947884942819,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 62.96296296296296,
+      "net_score": -37.03703703703704
+    },
+    {
+      "symbol": "BASE",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "last_price": 18.26000022888184,
+      "change_pct": 12.369232177734402,
+      "bullish_score": 62.96296296296296,
+      "bearish_score": 55.55555555555556,
+      "net_score": 7.407407407407405
+    },
+    {
+      "symbol": "MASI",
+      "sector": "Healthcare",
+      "industry": "Medical Devices",
+      "last_price": 190.47000122070312,
+      "change_pct": 12.345174450518414,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 25.925925925925924,
+      "net_score": 59.25925925925927
+    },
+    {
+      "symbol": "GRI",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 8.199999809265137,
+      "change_pct": 12.32876157554832,
+      "bullish_score": 22.22222222222222,
+      "bearish_score": 74.07407407407408,
+      "net_score": -51.851851851851855
+    },
+    {
+      "symbol": "SMCI",
+      "sector": "Technology",
+      "industry": "Computer Hardware",
+      "last_price": 51.11000061035156,
+      "change_pct": 12.231004793249944,
+      "bullish_score": 59.25925925925925,
+      "bearish_score": 29.629629629629626,
+      "net_score": 29.629629629629626
+    },
+    {
+      "symbol": "SOPA",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 1.559999942779541,
+      "change_pct": 12.230212865769907,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 62.96296296296296,
+      "net_score": -37.03703703703704
+    },
+    {
+      "symbol": "KTTA",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 1.2899999618530271,
+      "change_pct": 12.17391205194538,
+      "bullish_score": 22.22222222222222,
+      "bearish_score": 48.148148148148145,
+      "net_score": -25.925925925925924
+    },
+    {
+      "symbol": "KRKR",
+      "sector": "Communication Services",
+      "industry": "Advertising Agencies",
+      "last_price": 4.519999980926514,
+      "change_pct": 12.158802620545428,
+      "bullish_score": 51.85185185185185,
+      "bearish_score": 37.03703703703704,
+      "net_score": 14.81481481481481
+    },
+    {
+      "symbol": "GLXG",
+      "sector": "Industrials",
+      "industry": "Staffing & Employment Services",
+      "last_price": 0.953000009059906,
+      "change_pct": 12.117644979879572,
+      "bullish_score": 74.07407407407408,
+      "bearish_score": 44.44444444444444,
+      "net_score": 29.629629629629633
+    },
+    {
+      "symbol": "RVYL",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "last_price": 0.9300000071525574,
+      "change_pct": 12.048195885857528,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 92.5925925925926,
+      "net_score": -66.66666666666667
+    },
+    {
+      "symbol": "SPAI",
+      "sector": "Industrials",
+      "industry": "Aerospace & Defense",
+      "last_price": 4.0,
+      "change_pct": 12.044820022352587,
+      "bullish_score": 66.66666666666666,
+      "bearish_score": 14.814814814814813,
+      "net_score": 51.85185185185185
+    },
+    {
+      "symbol": "SLNH",
+      "sector": "Financial Services",
+      "industry": "Capital Markets",
+      "last_price": 1.309999942779541,
+      "change_pct": 11.96581118205593,
+      "bullish_score": 51.85185185185185,
+      "bearish_score": 74.07407407407408,
+      "net_score": -22.22222222222223
+    },
+    {
+      "symbol": "VERI",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "last_price": 2.75,
+      "change_pct": 11.788616152684028,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 62.96296296296296,
+      "net_score": -37.03703703703704
+    },
+    {
+      "symbol": "SPGC",
+      "sector": "Consumer Cyclical",
+      "industry": "Leisure",
+      "last_price": 0.7319999933242798,
+      "change_pct": 11.755729053106911,
+      "bullish_score": 37.03703703703704,
+      "bearish_score": 51.85185185185185,
+      "net_score": -14.81481481481481
+    },
+    {
+      "symbol": "JACK",
+      "sector": "Consumer Cyclical",
+      "industry": "Restaurants",
+      "last_price": 37.93999862670898,
+      "change_pct": 11.75257076319447,
+      "bullish_score": 44.44444444444444,
+      "bearish_score": 74.07407407407408,
+      "net_score": -29.629629629629633
+    },
+    {
+      "symbol": "EYE",
+      "sector": "Consumer Cyclical",
+      "industry": "Specialty Retail",
+      "last_price": 12.770000457763672,
+      "change_pct": 11.625882221717788,
+      "bullish_score": 70.37037037037037,
+      "bearish_score": 33.33333333333333,
+      "net_score": 37.03703703703704
+    },
+    {
+      "symbol": "EXOD",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "last_price": 44.47999954223633,
+      "change_pct": 11.590564127299485,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 62.96296296296296,
+      "net_score": -37.03703703703704
+    },
+    {
+      "symbol": "AGFY",
+      "sector": "Industrials",
+      "industry": "Farm & Heavy Construction Machinery",
+      "last_price": 21.0,
+      "change_pct": 11.583423700986106,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 55.55555555555556,
+      "net_score": -29.629629629629633
+    },
+    {
+      "symbol": "PGHL",
+      "sector": "Industrials",
+      "industry": "Engineering & Construction",
+      "last_price": 0.8240000009536743,
+      "change_pct": 11.502026517533004,
+      "bullish_score": 66.66666666666666,
+      "bearish_score": 14.814814814814813,
+      "net_score": 51.85185185185185
+    },
+    {
+      "symbol": "TC",
+      "sector": "Communication Services",
+      "industry": "Advertising Agencies",
+      "last_price": 0.9900000095367432,
+      "change_pct": 11.235957915637584,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 25.925925925925924,
+      "net_score": 66.66666666666667
+    },
+    {
+      "symbol": "INTZ",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "last_price": 1.190000057220459,
+      "change_pct": 11.214953166906039,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 55.55555555555556,
+      "net_score": -22.22222222222223
+    },
+    {
+      "symbol": "GSAT",
+      "sector": "Communication Services",
+      "industry": "Telecom Services",
+      "last_price": 21.739999771118164,
+      "change_pct": 11.088401175948182,
+      "bullish_score": 44.44444444444444,
+      "bearish_score": 44.44444444444444,
+      "net_score": 0.0
+    },
+    {
+      "symbol": "QUIK",
+      "sector": "Technology",
+      "industry": "Semiconductors",
+      "last_price": 7.309999942779541,
+      "change_pct": 10.925641479824645,
+      "bullish_score": 51.85185185185185,
+      "bearish_score": 59.25925925925925,
+      "net_score": -7.407407407407405
+    },
+    {
+      "symbol": "SPXC",
+      "sector": "Industrials",
+      "industry": "Building Products & Equipment",
+      "last_price": 151.2100067138672,
+      "change_pct": 10.906565039890648,
+      "bullish_score": 62.96296296296296,
+      "bearish_score": 55.55555555555556,
+      "net_score": 7.407407407407405
+    },
+    {
+      "symbol": "PBM",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 1.340000033378601,
+      "change_pct": 10.743800920098634,
+      "bullish_score": 70.37037037037037,
+      "bearish_score": 48.148148148148145,
+      "net_score": 22.22222222222222
+    },
+    {
+      "symbol": "ARBB",
+      "sector": "Technology",
+      "industry": "Information Technology Services",
+      "last_price": 0.4650000035762787,
+      "change_pct": 10.714290022444706,
+      "bullish_score": 51.85185185185185,
+      "bearish_score": 55.55555555555556,
+      "net_score": -3.7037037037037095
+    },
+    {
+      "symbol": "BTDR",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 10.25,
+      "change_pct": 10.691141972441498,
+      "bullish_score": 37.03703703703704,
+      "bearish_score": 74.07407407407408,
+      "net_score": -37.03703703703704
+    },
+    {
+      "symbol": "ATGL",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "last_price": 31.01000022888184,
+      "change_pct": 10.631464392564617,
+      "bullish_score": 55.55555555555556,
+      "bearish_score": 33.33333333333333,
+      "net_score": 22.22222222222223
+    },
+    {
+      "symbol": "NRG",
+      "sector": "Utilities",
+      "industry": "Utilities - Independent Power Producers",
+      "last_price": 113.33000183105467,
+      "change_pct": 10.630612192612276,
+      "bullish_score": 77.77777777777779,
+      "bearish_score": 25.925925925925924,
+      "net_score": 51.85185185185186
+    }
+  ],
+  "top_bullish_stocks": [
+    {
+      "symbol": "GOGL",
+      "sector": "Industrials",
+      "industry": "Marine Shipping",
+      "last_price": 9.81999969482422,
+      "change_pct": 4.468086099344104,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "NIO",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Manufacturers",
+      "last_price": 4.71999979019165,
+      "change_pct": 10.538637266398654,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "LOGC",
+      "sector": "Consumer Cyclical",
+      "industry": "Internet Retail",
+      "last_price": 8.90999984741211,
+      "change_pct": 3.2444928071629686,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "SNN",
+      "sector": "Healthcare",
+      "industry": "Medical Devices",
+      "last_price": 28.920000076293945,
+      "change_pct": 2.8815348571856747,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "ACMR",
+      "sector": "Technology",
+      "industry": "Semiconductor Equipment & Materials",
+      "last_price": 27.690000534057617,
+      "change_pct": 20.706189578975653,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "DOLE",
+      "sector": "Consumer Defensive",
+      "industry": "Farm Products",
+      "last_price": 14.6899995803833,
+      "change_pct": 4.555155736371308,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "ICCC",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 5.480000019073486,
+      "change_pct": 7.450982775426063,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "BGS",
+      "sector": "Consumer Defensive",
+      "industry": "Packaged Foods",
+      "last_price": 7.03000020980835,
+      "change_pct": 2.928261908292562,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "COMM",
+      "sector": "Technology",
+      "industry": "Communication Equipment",
+      "last_price": 6.170000076293945,
+      "change_pct": 26.175874125908226,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "XIN",
+      "sector": "Real Estate",
+      "industry": "Real Estate - Development",
+      "last_price": 3.0899999141693115,
+      "change_pct": 8.421053247988963,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "UVE",
+      "sector": "Financial Services",
+      "industry": "Insurance - Property & Casualty",
+      "last_price": 22.40999984741211,
+      "change_pct": 9.263771805593258,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "TIPT",
+      "sector": "Financial Services",
+      "industry": "Insurance - Specialty",
+      "last_price": 21.899999618530277,
+      "change_pct": 1.061373056883097,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "CEVA",
+      "sector": "Technology",
+      "industry": "Semiconductors",
+      "last_price": 38.43999862670898,
+      "change_pct": 18.276918851412226,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "ZI",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 11.729999542236328,
+      "change_pct": 23.08499339883232,
+      "bullish_score": 100.0,
+      "bearish_score": 18.51851851851852,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "PLOW",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Parts",
+      "last_price": 27.549999237060547,
+      "change_pct": 2.378295775835859,
+      "bullish_score": 100.0,
+      "bearish_score": 25.925925925925924,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "PRCH",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 6.599999904632568,
+      "change_pct": 74.14247944756337,
+      "bullish_score": 100.0,
+      "bearish_score": 25.925925925925924,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "MWG",
+      "sector": "Industrials",
+      "industry": "Rental & Leasing Services",
+      "last_price": 0.3499999940395355,
+      "change_pct": 12.903223015391262,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "STN",
+      "sector": "Industrials",
+      "industry": "Engineering & Construction",
+      "last_price": 89.33000183105469,
+      "change_pct": 6.675428839130282,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "TGB",
+      "sector": "Basic Materials",
+      "industry": "Copper",
+      "last_price": 2.25,
+      "change_pct": 8.695655679332305,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "KOP",
+      "sector": "Basic Materials",
+      "industry": "Specialty Chemicals",
+      "last_price": 32.27000045776367,
+      "change_pct": 1.096492420529982,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "ACR",
+      "sector": "Real Estate",
+      "industry": "REIT - Mortgage",
+      "last_price": 20.40999984741211,
+      "change_pct": 0.8897692004390612,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "RILY",
+      "sector": "Financial Services",
+      "industry": "Financial Conglomerates",
+      "last_price": 5.639999866485596,
+      "change_pct": 35.57692484037418,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "AVA",
+      "sector": "Utilities",
+      "industry": "Utilities - Diversified",
+      "last_price": 39.90999984741211,
+      "change_pct": 4.585953896744255,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "DB",
+      "sector": "Financial Services",
+      "industry": "Banks - Regional",
+      "last_price": 21.700000762939453,
+      "change_pct": 1.4492818239211225,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "CSIQ",
+      "sector": "Technology",
+      "industry": "Solar",
+      "last_price": 11.739999771118164,
+      "change_pct": 6.052394713318754,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "ALX",
+      "sector": "Real Estate",
+      "industry": "REIT - Retail",
+      "last_price": 213.92999267578125,
+      "change_pct": 2.5551229224896055,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "LI",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Manufacturers",
+      "last_price": 32.915000915527344,
+      "change_pct": 10.30496228959561,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "JAZZ",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 144.1699981689453,
+      "change_pct": 3.2218801882969883,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "LNTH",
+      "sector": "Healthcare",
+      "industry": "Drug Manufacturers - Specialty & Generic",
+      "last_price": 93.25,
+      "change_pct": 16.48968950033329,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "LYG",
+      "sector": "Financial Services",
+      "industry": "Banks - Regional",
+      "last_price": 3.660000085830689,
+      "change_pct": 3.098595351885347,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "JKS",
+      "sector": "Technology",
+      "industry": "Solar",
+      "last_price": 23.86000061035156,
+      "change_pct": 6.375391376369266,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "HURN",
+      "sector": "Industrials",
+      "industry": "Consulting Services",
+      "last_price": 148.17999267578125,
+      "change_pct": 18.231860297527525,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "CCU",
+      "sector": "Consumer Defensive",
+      "industry": "Beverages - Brewers",
+      "last_price": 13.800000190734863,
+      "change_pct": 5.504589229575507,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "GOTU",
+      "sector": "Consumer Defensive",
+      "industry": "Education & Training Services",
+      "last_price": 3.319999933242798,
+      "change_pct": 31.225295288010123,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "INVX",
+      "sector": "Energy",
+      "industry": "Oil & Gas Equipment & Services",
+      "last_price": 18.93000030517578,
+      "change_pct": 17.28625167927045,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "NATH",
+      "sector": "Consumer Cyclical",
+      "industry": "Restaurants",
+      "last_price": 104.7699966430664,
+      "change_pct": 3.948800170043376,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "XPEV",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Manufacturers",
+      "last_price": 21.989999771118164,
+      "change_pct": 14.950343626867957,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "BBWI",
+      "sector": "Consumer Cyclical",
+      "industry": "Specialty Retail",
+      "last_price": 41.08000183105469,
+      "change_pct": 1.1075578417658383,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 18.51851851851852,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "QRTEA",
+      "sector": "Consumer Cyclical",
+      "industry": "Internet Retail",
+      "last_price": 0.403899997472763,
+      "change_pct": 5.182290094251374,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 25.925925925925924,
+      "net_score": 66.66666666666667
+    },
+    {
+      "symbol": "TC",
+      "sector": "Communication Services",
+      "industry": "Advertising Agencies",
+      "last_price": 0.9900000095367432,
+      "change_pct": 11.235957915637584,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 25.925925925925924,
+      "net_score": 66.66666666666667
+    },
+    {
+      "symbol": "OKYO",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 1.1799999475479126,
+      "change_pct": 4.424774559935751,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 25.925925925925924,
+      "net_score": 66.66666666666667
+    },
+    {
+      "symbol": "ASTE",
+      "sector": "Industrials",
+      "industry": "Farm & Heavy Construction Machinery",
+      "last_price": 35.4900016784668,
+      "change_pct": 13.859485375678226,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 25.925925925925924,
+      "net_score": 66.66666666666667
+    },
+    {
+      "symbol": "TRIN",
+      "sector": "Financial Services",
+      "industry": "Asset Management",
+      "last_price": 16.540000915527344,
+      "change_pct": 5.082599466596749,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 25.925925925925924,
+      "net_score": 66.66666666666667
+    },
+    {
+      "symbol": "DLO",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "last_price": 14.0,
+      "change_pct": 8.527134992233854,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 25.925925925925924,
+      "net_score": 66.66666666666667
+    },
+    {
+      "symbol": "HIT",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 6.949999809265137,
+      "change_pct": 1.1644821694133833,
+      "bullish_score": 92.5925925925926,
+      "bearish_score": 25.925925925925924,
+      "net_score": 66.66666666666667
+    },
+    {
+      "symbol": "TSBK",
+      "sector": "Financial Services",
+      "industry": "Banks - Regional",
+      "last_price": 32.040000915527344,
+      "change_pct": 4.296880311449192,
+      "bullish_score": 88.88888888888889,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "VICR",
+      "sector": "Technology",
+      "industry": "Electronic Components",
+      "last_price": 64.70999908447266,
+      "change_pct": 7.064858628035653,
+      "bullish_score": 88.88888888888889,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 81.48148148148148
+    },
+    {
+      "symbol": "AHCO",
+      "sector": "Healthcare",
+      "industry": "Medical Devices",
+      "last_price": 11.100000381469728,
+      "change_pct": 4.3233084896999285,
+      "bullish_score": 88.88888888888889,
+      "bearish_score": 18.51851851851852,
+      "net_score": 70.37037037037037
+    },
+    {
+      "symbol": "ECX",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Parts",
+      "last_price": 2.3299999237060547,
+      "change_pct": 8.372084667645607,
+      "bullish_score": 88.88888888888889,
+      "bearish_score": 18.51851851851852,
+      "net_score": 70.37037037037037
+    },
+    {
+      "symbol": "TXO",
+      "sector": "Energy",
+      "industry": "Oil & Gas E&P",
+      "last_price": 20.209999084472656,
+      "change_pct": 2.4328411220121193,
+      "bullish_score": 88.88888888888889,
+      "bearish_score": 18.51851851851852,
+      "net_score": 70.37037037037037
+    },
+    {
+      "symbol": "KALV",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 10.859999656677246,
+      "change_pct": 0.788863491009284,
+      "bullish_score": 88.88888888888889,
+      "bearish_score": 18.51851851851852,
+      "net_score": 70.37037037037037
+    },
+    {
+      "symbol": "UBCP",
+      "sector": "Financial Services",
+      "industry": "Banks - Regional",
+      "last_price": 13.479999542236328,
+      "change_pct": 2.1212101289172614,
+      "bullish_score": 88.88888888888889,
+      "bearish_score": 18.51851851851852,
+      "net_score": 70.37037037037037
+    },
+    {
+      "symbol": "FARO",
+      "sector": "Technology",
+      "industry": "Scientific & Technical Instruments",
+      "last_price": 32.47999954223633,
+      "change_pct": 2.2670003405722117,
+      "bullish_score": 88.88888888888889,
+      "bearish_score": 18.51851851851852,
+      "net_score": 70.37037037037037
+    },
+    {
+      "symbol": "NWG",
+      "sector": "Financial Services",
+      "industry": "Banks - Regional",
+      "last_price": 12.039999961853027,
+      "change_pct": 2.0338963325323256,
+      "bullish_score": 88.88888888888889,
+      "bearish_score": 18.51851851851852,
+      "net_score": 70.37037037037037
+    },
+    {
+      "symbol": "IPAR",
+      "sector": "Consumer Defensive",
+      "industry": "Household & Personal Products",
+      "last_price": 144.5399932861328,
+      "change_pct": 3.9407419989562653,
+      "bullish_score": 88.88888888888889,
+      "bearish_score": 18.51851851851852,
+      "net_score": 70.37037037037037
+    },
+    {
+      "symbol": "NOVT",
+      "sector": "Technology",
+      "industry": "Scientific & Technical Instruments",
+      "last_price": 149.3000030517578,
+      "change_pct": 0.7082651276612673,
+      "bullish_score": 88.88888888888889,
+      "bearish_score": 25.925925925925924,
+      "net_score": 62.96296296296296
+    },
+    {
+      "symbol": "GTX",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Parts",
+      "last_price": 9.989999771118164,
+      "change_pct": 1.4213135454472559,
+      "bullish_score": 88.88888888888889,
+      "bearish_score": 25.925925925925924,
+      "net_score": 62.96296296296296
+    },
+    {
+      "symbol": "BCO",
+      "sector": "Industrials",
+      "industry": "Security & Protection Services",
+      "last_price": 96.29000091552734,
+      "change_pct": 1.9481249621357222,
+      "bullish_score": 88.88888888888889,
+      "bearish_score": 29.629629629629626,
+      "net_score": 59.25925925925926
+    },
+    {
+      "symbol": "SSTI",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 16.90999984741211,
+      "change_pct": 23.61110723816484,
+      "bullish_score": 88.88888888888889,
+      "bearish_score": 29.629629629629626,
+      "net_score": 59.25925925925926
+    },
+    {
+      "symbol": "RENB",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 1.190000057220459,
+      "change_pct": 53.945673257979074,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 18.51851851851852,
+      "net_score": 66.66666666666667
+    },
+    {
+      "symbol": "ALBT",
+      "sector": "Real Estate",
+      "industry": "Real Estate Services",
+      "last_price": 8.329999923706055,
+      "change_pct": 28.351313058226445,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 18.51851851851852,
+      "net_score": 66.66666666666667
+    },
+    {
+      "symbol": "NIU",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Manufacturers",
+      "last_price": 2.539999961853028,
+      "change_pct": -1.1673140921804048,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 25.925925925925924,
+      "net_score": 59.25925925925927
+    },
+    {
+      "symbol": "GNL",
+      "sector": "Real Estate",
+      "industry": "REIT - Diversified",
+      "last_price": 7.409999847412109,
+      "change_pct": 1.5068445726461377,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 25.925925925925924,
+      "net_score": 59.25925925925927
+    },
+    {
+      "symbol": "MDGL",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 355.8800048828125,
+      "change_pct": 14.989180946791404,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 25.925925925925924,
+      "net_score": 59.25925925925927
+    },
+    {
+      "symbol": "JBI",
+      "sector": "Industrials",
+      "industry": "Building Products & Equipment",
+      "last_price": 9.109999656677246,
+      "change_pct": 13.027285141388134,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 25.925925925925924,
+      "net_score": 59.25925925925927
+    },
+    {
+      "symbol": "INTU",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 625.510009765625,
+      "change_pct": 12.576715488493262,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 25.925925925925924,
+      "net_score": 59.25925925925927
+    },
+    {
+      "symbol": "GM",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Manufacturers",
+      "last_price": 48.459999084472656,
+      "change_pct": 3.746521160994276,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 25.925925925925924,
+      "net_score": 59.25925925925927
+    },
+    {
+      "symbol": "MASI",
+      "sector": "Healthcare",
+      "industry": "Medical Devices",
+      "last_price": 190.47000122070312,
+      "change_pct": 12.345174450518414,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 25.925925925925924,
+      "net_score": 59.25925925925927
+    },
+    {
+      "symbol": "BUD",
+      "sector": "Consumer Defensive",
+      "industry": "Beverages - Brewers",
+      "last_price": 58.720001220703125,
+      "change_pct": 7.211978692579213,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 25.925925925925924,
+      "net_score": 59.25925925925927
+    },
+    {
+      "symbol": "SNES",
+      "sector": "Basic Materials",
+      "industry": "Specialty Chemicals",
+      "last_price": 3.400000095367432,
+      "change_pct": 3.030307408973054,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 25.925925925925924,
+      "net_score": 59.25925925925927
+    },
+    {
+      "symbol": "GRFS",
+      "sector": "Healthcare",
+      "industry": "Drug Manufacturers - General",
+      "last_price": 7.940000057220459,
+      "change_pct": 7.588074987746318,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 25.925925925925924,
+      "net_score": 59.25925925925927
+    },
+    {
+      "symbol": "API",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 6.510000228881836,
+      "change_pct": 10.152290980725764,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 25.925925925925924,
+      "net_score": 59.25925925925927
+    },
+    {
+      "symbol": "CHRD",
+      "sector": "Energy",
+      "industry": "Oil & Gas E&P",
+      "last_price": 113.3000030517578,
+      "change_pct": 4.366254237068934,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 33.33333333333333,
+      "net_score": 51.85185185185186
+    },
+    {
+      "symbol": "DMYY",
+      "sector": "Financial Services",
+      "industry": "Shell Companies",
+      "last_price": 11.510000228881836,
+      "change_pct": 6.5740743111844635,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 33.33333333333333,
+      "net_score": 51.85185185185186
+    },
+    {
+      "symbol": "QRTEB",
+      "sector": "Consumer Cyclical",
+      "industry": "Internet Retail",
+      "last_price": 9.720000267028809,
+      "change_pct": 91.33859080725529,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 33.33333333333333,
+      "net_score": 51.85185185185186
+    },
+    {
+      "symbol": "CAMP",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 5.110000133514404,
+      "change_pct": 7.352938819391319,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 33.33333333333333,
+      "net_score": 51.85185185185186
+    },
+    {
+      "symbol": "ELBM",
+      "sector": "Basic Materials",
+      "industry": "Other Industrial Metals & Mining",
+      "last_price": 1.7389999628067017,
+      "change_pct": 8.34890605238554,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 33.33333333333333,
+      "net_score": 51.85185185185186
+    },
+    {
+      "symbol": "ALC",
+      "sector": "Healthcare",
+      "industry": "Medical Instruments & Supplies",
+      "last_price": 93.30999755859376,
+      "change_pct": 2.4146602277513862,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 33.33333333333333,
+      "net_score": 51.85185185185186
+    },
+    {
+      "symbol": "YXT",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 1.909999966621399,
+      "change_pct": 8.522725964257539,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 33.33333333333333,
+      "net_score": 51.85185185185186
+    },
+    {
+      "symbol": "AER",
+      "sector": "Industrials",
+      "industry": "Rental & Leasing Services",
+      "last_price": 102.33999633789062,
+      "change_pct": 0.8275825989070285,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 33.33333333333333,
+      "net_score": 51.85185185185186
+    },
+    {
+      "symbol": "PETZ",
+      "sector": "Consumer Cyclical",
+      "industry": "Restaurants",
+      "last_price": 1.340000033378601,
+      "change_pct": 1.5151500099837678,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 33.33333333333333,
+      "net_score": 51.85185185185186
+    },
+    {
+      "symbol": "CHRO",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 2.2300000190734863,
+      "change_pct": 25.280901961608993,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 33.33333333333333,
+      "net_score": 51.85185185185186
+    },
+    {
+      "symbol": "ZLAB",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 35.06999969482422,
+      "change_pct": 3.4208193825770117,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 33.33333333333333,
+      "net_score": 51.85185185185186
+    },
+    {
+      "symbol": "KPTI",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 9.829999923706056,
+      "change_pct": 14.769415123148711,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 40.74074074074074,
+      "net_score": 44.44444444444445
+    },
+    {
+      "symbol": "ENVB",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 2.299999952316284,
+      "change_pct": 94.91525886045815,
+      "bullish_score": 85.18518518518519,
+      "bearish_score": 40.74074074074074,
+      "net_score": 44.44444444444445
+    },
+    {
+      "symbol": "GEL",
+      "sector": "Energy",
+      "industry": "Oil & Gas Midstream",
+      "last_price": 12.270000457763672,
+      "change_pct": 1.825728328186793,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "WCT",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 2.809999942779541,
+      "change_pct": 6.439387542431052,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "SNT",
+      "sector": "Industrials",
+      "industry": "Security & Protection Services",
+      "last_price": 3.880000114440918,
+      "change_pct": 3.4666697184244866,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "DERM",
+      "sector": "Healthcare",
+      "industry": "Drug Manufacturers - Specialty & Generic",
+      "last_price": 5.599999904632568,
+      "change_pct": 6.060600039935116,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "INVE",
+      "sector": "Industrials",
+      "industry": "Building Products & Equipment",
+      "last_price": 3.609999895095825,
+      "change_pct": 1.6901392559285133,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "OLED",
+      "sector": "Technology",
+      "industry": "Electronic Components",
+      "last_price": 161.58999633789062,
+      "change_pct": 2.7142059591135803,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "DDL",
+      "sector": "Consumer Defensive",
+      "industry": "Grocery Stores",
+      "last_price": 3.609999895095825,
+      "change_pct": 4.0345782516223005,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "HUDI",
+      "sector": "Basic Materials",
+      "industry": "Steel",
+      "last_price": 1.6549999713897705,
+      "change_pct": 3.4374966705218446,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "FER",
+      "sector": "Industrials",
+      "industry": "Infrastructure Operations",
+      "last_price": 45.34999847412109,
+      "change_pct": 1.658816080800074,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "MERC",
+      "sector": "Basic Materials",
+      "industry": "Paper & Paper Products",
+      "last_price": 8.079999923706055,
+      "change_pct": 2.278478812224005,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "TMQ",
+      "sector": "Basic Materials",
+      "industry": "Other Industrial Metals & Mining",
+      "last_price": 1.4800000190734863,
+      "change_pct": 13.84615948919734,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "OVBC",
+      "sector": "Financial Services",
+      "industry": "Banks - Regional",
+      "last_price": 29.280000686645508,
+      "change_pct": 4.571431023733963,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "DVAX",
+      "sector": "Healthcare",
+      "industry": "Drug Manufacturers - Specialty & Generic",
+      "last_price": 13.6899995803833,
+      "change_pct": 2.0879920667950413,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "OCFT",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 4.539999961853027,
+      "change_pct": 5.336427427540946,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    },
+    {
+      "symbol": "MELI",
+      "sector": "Consumer Cyclical",
+      "industry": "Internet Retail",
+      "last_price": 2197.639892578125,
+      "change_pct": 1.339103274654474,
+      "bullish_score": 81.48148148148148,
+      "bearish_score": 7.4074074074074066,
+      "net_score": 74.07407407407408
+    }
+  ],
+  "top_bearish_stocks": [
+    {
+      "symbol": "ZOOZ",
+      "sector": "Consumer Cyclical",
+      "industry": "Specialty Retail",
+      "last_price": 1.7899999618530271,
+      "change_pct": -3.763443651275411,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 100.0,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "RVLV",
+      "sector": "Consumer Cyclical",
+      "industry": "Internet Retail",
+      "last_price": 26.88999938964844,
+      "change_pct": -5.049436160259302,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 100.0,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "RNAZ",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 3.3499999046325684,
+      "change_pct": -21.91142344007002,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 100.0,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "DNUT",
+      "sector": "Consumer Defensive",
+      "industry": "Grocery Stores",
+      "last_price": 5.965000152587891,
+      "change_pct": -16.339410142413136,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 100.0,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "WORX",
+      "sector": "Healthcare",
+      "industry": "Health Information Services",
+      "last_price": 1.0,
+      "change_pct": -13.043476458082537,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 100.0,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "DAWN",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 9.869999885559082,
+      "change_pct": -16.497460741213132,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 100.0,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "BIAF",
+      "sector": "Healthcare",
+      "industry": "Diagnostics & Research",
+      "last_price": 0.578000009059906,
+      "change_pct": -11.076918421412184,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 100.0,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "SMRT",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 1.2599999904632568,
+      "change_pct": -4.545459060957757,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 100.0,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "XTLB",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 1.309999942779541,
+      "change_pct": -7.7464801147565705,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 100.0,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "HOOK",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 1.5049999952316284,
+      "change_pct": -7.668711678875628,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 100.0,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "ODV",
+      "sector": "Basic Materials",
+      "industry": "Gold",
+      "last_price": 1.2999999523162842,
+      "change_pct": -3.7037089364844955,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 100.0,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "ZETA",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "last_price": 17.770000457763672,
+      "change_pct": -13.737863452913901,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 100.0,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "IBG",
+      "sector": "Consumer Defensive",
+      "industry": "Beverages - Wineries & Distilleries",
+      "last_price": 0.5860000252723694,
+      "change_pct": -8.437494004610791,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 100.0,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "BLMN",
+      "sector": "Consumer Cyclical",
+      "industry": "Restaurants",
+      "last_price": 9.899999618530272,
+      "change_pct": -16.80672322783665,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 100.0,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "ZTEK",
+      "sector": "Healthcare",
+      "industry": "Medical Instruments & Supplies",
+      "last_price": 0.9300000071525574,
+      "change_pct": -6.999999284744263,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 100.0,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "ESGL",
+      "sector": "Industrials",
+      "industry": "Waste Management",
+      "last_price": 1.0,
+      "change_pct": -13.793100967701989,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 92.5925925925926,
+      "net_score": -59.25925925925927
+    },
+    {
+      "symbol": "NUKK",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 13.289999961853027,
+      "change_pct": 28.281857164805334,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 92.5925925925926,
+      "net_score": -59.25925925925927
+    },
+    {
+      "symbol": "PHGE",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 0.800000011920929,
+      "change_pct": -14.070889705925648,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 92.5925925925926,
+      "net_score": -59.25925925925927
+    },
+    {
+      "symbol": "ZD",
+      "sector": "Communication Services",
+      "industry": "Advertising Agencies",
+      "last_price": 42.9900016784668,
+      "change_pct": -9.494733308490954,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 92.5925925925926,
+      "net_score": -66.66666666666667
+    },
+    {
+      "symbol": "RVYL",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "last_price": 0.9300000071525574,
+      "change_pct": 12.048195885857528,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 92.5925925925926,
+      "net_score": -66.66666666666667
+    },
+    {
+      "symbol": "DSS",
+      "sector": "Consumer Cyclical",
+      "industry": "Packaging & Containers",
+      "last_price": 0.8799999952316284,
+      "change_pct": -6.382978993230626,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 92.5925925925926,
+      "net_score": -66.66666666666667
+    },
+    {
+      "symbol": "IMXI",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "last_price": 15.260000228881836,
+      "change_pct": -16.703054131637874,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 92.5925925925926,
+      "net_score": -66.66666666666667
+    },
+    {
+      "symbol": "RAPP",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 11.039999961853027,
+      "change_pct": -6.281831815725503,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 92.5925925925926,
+      "net_score": -66.66666666666667
+    },
+    {
+      "symbol": "URG",
+      "sector": "Energy",
+      "industry": "Uranium",
+      "last_price": 0.949999988079071,
+      "change_pct": 3.260866396255957,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 92.5925925925926,
+      "net_score": -66.66666666666667
+    },
+    {
+      "symbol": "MSGM",
+      "sector": "Communication Services",
+      "industry": "Electronic Gaming & Multimedia",
+      "last_price": 1.2100000381469729,
+      "change_pct": 3.418810472607814,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 92.5925925925926,
+      "net_score": -66.66666666666667
+    },
+    {
+      "symbol": "LMND",
+      "sector": "Financial Services",
+      "industry": "Insurance - Property & Casualty",
+      "last_price": 31.479999542236328,
+      "change_pct": -1.594248929449149,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 92.5925925925926,
+      "net_score": -66.66666666666667
+    },
+    {
+      "symbol": "TBLA",
+      "sector": "Communication Services",
+      "industry": "Internet Content & Information",
+      "last_price": 3.0899999141693115,
+      "change_pct": -16.48648988251441,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 92.5925925925926,
+      "net_score": -66.66666666666667
+    },
+    {
+      "symbol": "REVB",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 3.5999999046325684,
+      "change_pct": -4.912839621313703,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 92.5925925925926,
+      "net_score": -66.66666666666667
+    },
+    {
+      "symbol": "APP",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 331.0,
+      "change_pct": -12.215561941554453,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 92.5925925925926,
+      "net_score": -66.66666666666667
+    },
+    {
+      "symbol": "LDI",
+      "sector": "Financial Services",
+      "industry": "Mortgage Finance",
+      "last_price": 1.600000023841858,
+      "change_pct": -1.2345667202249944,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 92.5925925925926,
+      "net_score": -66.66666666666667
+    },
+    {
+      "symbol": "BTOG",
+      "sector": "Financial Services",
+      "industry": "Financial Data & Stock Exchanges",
+      "last_price": 0.2360000014305114,
+      "change_pct": -23.87096786598264,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "MCRB",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 0.75,
+      "change_pct": -3.4749047188697535,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "PPIH",
+      "sector": "Industrials",
+      "industry": "Building Products & Equipment",
+      "last_price": 13.149999618530272,
+      "change_pct": -3.0950632700024516,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "KTB",
+      "sector": "Consumer Cyclical",
+      "industry": "Apparel Manufacturing",
+      "last_price": 68.48999786376953,
+      "change_pct": -8.165733196253843,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "MFIC",
+      "sector": "Financial Services",
+      "industry": "Asset Management",
+      "last_price": 13.75,
+      "change_pct": -3.508771929824561,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "PSTV",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 0.7599999904632568,
+      "change_pct": -29.62963330892855,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "CART",
+      "sector": "Consumer Cyclical",
+      "industry": "Internet Retail",
+      "last_price": 42.79999923706055,
+      "change_pct": -12.259121959581421,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "ODP",
+      "sector": "Consumer Cyclical",
+      "industry": "Specialty Retail",
+      "last_price": 15.020000457763672,
+      "change_pct": -21.730067536440146,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "UTHR",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 318.8900146484375,
+      "change_pct": -10.799995902534965,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "GO",
+      "sector": "Consumer Defensive",
+      "industry": "Grocery Stores",
+      "last_price": 10.989999771118164,
+      "change_pct": -30.177891163098547,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "LAB",
+      "sector": "Healthcare",
+      "industry": "Medical Devices",
+      "last_price": 1.1699999570846558,
+      "change_pct": -7.142859846015659,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "CGTX",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 0.4950000047683716,
+      "change_pct": -4.255321847199756,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "OSUR",
+      "sector": "Healthcare",
+      "industry": "Medical Instruments & Supplies",
+      "last_price": 3.059999942779541,
+      "change_pct": -23.500001430511475,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "RCKY",
+      "sector": "Consumer Cyclical",
+      "industry": "Footwear & Accessories",
+      "last_price": 21.01000022888184,
+      "change_pct": -10.899065746987024,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "VTOL",
+      "sector": "Energy",
+      "industry": "Oil & Gas Equipment & Services",
+      "last_price": 34.810001373291016,
+      "change_pct": -1.8607268810210242,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "ZVIA",
+      "sector": "Consumer Defensive",
+      "industry": "Beverages - Non-Alcoholic",
+      "last_price": 2.289999961853028,
+      "change_pct": -29.754602191651813,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "ONCO",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 0.3199999928474426,
+      "change_pct": -11.11111663005947,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "BKV",
+      "sector": "Energy",
+      "industry": "Oil & Gas E&P",
+      "last_price": 21.63999938964844,
+      "change_pct": -5.087718799247021,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "IONR",
+      "sector": "Basic Materials",
+      "industry": "Other Industrial Metals & Mining",
+      "last_price": 3.619999885559082,
+      "change_pct": -11.056517619718043,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "RMCO",
+      "sector": "Financial Services",
+      "industry": "Asset Management",
+      "last_price": 1.059999942779541,
+      "change_pct": -1.851861050099135,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "VTEX",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 4.710000038146973,
+      "change_pct": -21.368944605689887,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "GERN",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 1.6100000143051147,
+      "change_pct": -32.0675066646547,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "WBTN",
+      "sector": "Communication Services",
+      "industry": "Internet Content & Information",
+      "last_price": 8.979999542236328,
+      "change_pct": -10.468596397697228,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "SFWL",
+      "sector": "Industrials",
+      "industry": "Integrated Freight & Logistics",
+      "last_price": 0.9610000252723694,
+      "change_pct": -4.8514817478773065,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "FSS",
+      "sector": "Industrials",
+      "industry": "Pollution & Treatment Controls",
+      "last_price": 79.9800033569336,
+      "change_pct": -11.867764895940947,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "TLF",
+      "sector": "Consumer Cyclical",
+      "industry": "Specialty Retail",
+      "last_price": 3.240000009536743,
+      "change_pct": -4.424781437334846,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "XRX",
+      "sector": "Technology",
+      "industry": "Information Technology Services",
+      "last_price": 6.929999828338623,
+      "change_pct": -7.476634978534047,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "LCID",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Manufacturers",
+      "last_price": 2.255000114440918,
+      "change_pct": -13.601524709711665,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "KEYS",
+      "sector": "Technology",
+      "industry": "Scientific & Technical Instruments",
+      "last_price": 160.36000061035156,
+      "change_pct": -6.859497986986652,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 92.5925925925926,
+      "net_score": -74.07407407407408
+    },
+    {
+      "symbol": "DY",
+      "sector": "Industrials",
+      "industry": "Engineering & Construction",
+      "last_price": 161.9600067138672,
+      "change_pct": -5.804347787502239,
+      "bullish_score": 37.03703703703704,
+      "bearish_score": 88.88888888888889,
+      "net_score": -51.85185185185185
+    },
+    {
+      "symbol": "STRL",
+      "sector": "Industrials",
+      "industry": "Engineering & Construction",
+      "last_price": 122.16000366210938,
+      "change_pct": 5.364844824672654,
+      "bullish_score": 37.03703703703704,
+      "bearish_score": 88.88888888888889,
+      "net_score": -51.85185185185185
+    },
+    {
+      "symbol": "TCOM",
+      "sector": "Consumer Cyclical",
+      "industry": "Travel Services",
+      "last_price": 58.61000061035156,
+      "change_pct": 2.2862153415941666,
+      "bullish_score": 37.03703703703704,
+      "bearish_score": 88.88888888888889,
+      "net_score": -51.85185185185185
+    },
+    {
+      "symbol": "OCTO",
+      "sector": "Consumer Cyclical",
+      "industry": "Packaging & Containers",
+      "last_price": 1.3700000047683716,
+      "change_pct": -11.038958525693765,
+      "bullish_score": 29.629629629629626,
+      "bearish_score": 88.88888888888889,
+      "net_score": -59.25925925925926
+    },
+    {
+      "symbol": "IPA",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 0.3569999933242798,
+      "change_pct": -4.032262134812403,
+      "bullish_score": 29.629629629629626,
+      "bearish_score": 88.88888888888889,
+      "net_score": -59.25925925925926
+    },
+    {
+      "symbol": "ANGO",
+      "sector": "Healthcare",
+      "industry": "Medical Instruments & Supplies",
+      "last_price": 9.609999656677246,
+      "change_pct": -2.535497045689028,
+      "bullish_score": 29.629629629629626,
+      "bearish_score": 88.88888888888889,
+      "net_score": -59.25925925925926
+    },
+    {
+      "symbol": "SNAX",
+      "sector": "Consumer Defensive",
+      "industry": "Packaged Foods",
+      "last_price": 0.4259999990463257,
+      "change_pct": -19.62263735047668,
+      "bullish_score": 29.629629629629626,
+      "bearish_score": 88.88888888888889,
+      "net_score": -59.25925925925926
+    },
+    {
+      "symbol": "XMTR",
+      "sector": "Industrials",
+      "industry": "Specialty Industrial Machinery",
+      "last_price": 27.020000457763672,
+      "change_pct": -4.976258254808497,
+      "bullish_score": 29.629629629629626,
+      "bearish_score": 88.88888888888889,
+      "net_score": -59.25925925925926
+    },
+    {
+      "symbol": "CIVI",
+      "sector": "Energy",
+      "industry": "Oil & Gas E&P",
+      "last_price": 39.790000915527344,
+      "change_pct": -1.387850259654666,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 88.88888888888889,
+      "net_score": -70.37037037037037
+    },
+    {
+      "symbol": "TTI",
+      "sector": "Energy",
+      "industry": "Oil & Gas Equipment & Services",
+      "last_price": 3.930000066757202,
+      "change_pct": -4.146337605600536,
+      "bullish_score": 18.51851851851852,
+      "bearish_score": 88.88888888888889,
+      "net_score": -70.37037037037037
+    },
+    {
+      "symbol": "IREN",
+      "sector": "Financial Services",
+      "industry": "Capital Markets",
+      "last_price": 8.489999771118164,
+      "change_pct": -3.3029609416046046,
+      "bullish_score": 7.4074074074074066,
+      "bearish_score": 88.88888888888889,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "CGTL",
+      "sector": "Consumer Cyclical",
+      "industry": "Specialty Retail",
+      "last_price": 3.799999952316284,
+      "change_pct": -9.090906498275453,
+      "bullish_score": 7.4074074074074066,
+      "bearish_score": 88.88888888888889,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "LGIH",
+      "sector": "Consumer Cyclical",
+      "industry": "Residential Construction",
+      "last_price": 75.81999969482422,
+      "change_pct": -2.68258743299431,
+      "bullish_score": 7.4074074074074066,
+      "bearish_score": 88.88888888888889,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "IMG",
+      "sector": "Consumer Defensive",
+      "industry": "Packaged Foods",
+      "last_price": 0.6299999952316284,
+      "change_pct": -3.0769202554013275,
+      "bullish_score": 7.4074074074074066,
+      "bearish_score": 88.88888888888889,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "TLPH",
+      "sector": "Healthcare",
+      "industry": "Drug Manufacturers - Specialty & Generic",
+      "last_price": 0.550000011920929,
+      "change_pct": -5.172409009139556,
+      "bullish_score": 7.4074074074074066,
+      "bearish_score": 88.88888888888889,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "SJ",
+      "sector": "Communication Services",
+      "industry": "Broadcasting",
+      "last_price": 0.8600000143051147,
+      "change_pct": -4.444440323629384,
+      "bullish_score": 7.4074074074074066,
+      "bearish_score": 88.88888888888889,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "TRSG",
+      "sector": "Industrials",
+      "industry": "Metal Fabrication",
+      "last_price": 1.7999999523162842,
+      "change_pct": -8.163269526359617,
+      "bullish_score": 7.4074074074074066,
+      "bearish_score": 88.88888888888889,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "BGM",
+      "sector": "Healthcare",
+      "industry": "Drug Manufacturers - Specialty & Generic",
+      "last_price": 9.61299991607666,
+      "change_pct": -2.996972108057172,
+      "bullish_score": 7.4074074074074066,
+      "bearish_score": 88.88888888888889,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "AVTX",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 6.699999809265137,
+      "change_pct": -7.58620952737743,
+      "bullish_score": 7.4074074074074066,
+      "bearish_score": 88.88888888888889,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "WLGS",
+      "sector": "Industrials",
+      "industry": "Engineering & Construction",
+      "last_price": 5.340000152587891,
+      "change_pct": -11.148087367354375,
+      "bullish_score": 7.4074074074074066,
+      "bearish_score": 88.88888888888889,
+      "net_score": -81.48148148148148
+    },
+    {
+      "symbol": "NWTN",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Manufacturers",
+      "last_price": 0.6069999933242798,
+      "change_pct": -11.773259780511102,
+      "bullish_score": 40.74074074074074,
+      "bearish_score": 85.18518518518519,
+      "net_score": -44.44444444444445
+    },
+    {
+      "symbol": "LSTA",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 2.390000104904175,
+      "change_pct": -0.4166662527455567,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 85.18518518518519,
+      "net_score": -51.85185185185186
+    },
+    {
+      "symbol": "AEON",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 1.4199999570846558,
+      "change_pct": -70.9967323603362,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 85.18518518518519,
+      "net_score": -51.85185185185186
+    },
+    {
+      "symbol": "NKSH",
+      "sector": "Financial Services",
+      "industry": "Banks - Regional",
+      "last_price": 27.25,
+      "change_pct": -0.7647454168758561,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 85.18518518518519,
+      "net_score": -51.85185185185186
+    },
+    {
+      "symbol": "SPT",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "last_price": 28.09000015258789,
+      "change_pct": 3.082569367295007,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 85.18518518518519,
+      "net_score": -51.85185185185186
+    },
+    {
+      "symbol": "FLYW",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "last_price": 11.050000190734863,
+      "change_pct": -37.35827339529693,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 85.18518518518519,
+      "net_score": -51.85185185185186
+    },
+    {
+      "symbol": "LIVN",
+      "sector": "Healthcare",
+      "industry": "Medical Devices",
+      "last_price": 41.45000076293945,
+      "change_pct": -0.5995203727242715,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 85.18518518518519,
+      "net_score": -51.85185185185186
+    },
+    {
+      "symbol": "CENT",
+      "sector": "Consumer Defensive",
+      "industry": "Packaged Foods",
+      "last_price": 35.25,
+      "change_pct": 0.2559731313380942,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 85.18518518518519,
+      "net_score": -51.85185185185186
+    },
+    {
+      "symbol": "MLTX",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 42.369998931884766,
+      "change_pct": 4.0265146282356,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 85.18518518518519,
+      "net_score": -51.85185185185186
+    },
+    {
+      "symbol": "BLMZ",
+      "sector": "Communication Services",
+      "industry": "Entertainment",
+      "last_price": 0.3600000143051147,
+      "change_pct": -8.629436556073832,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 85.18518518518519,
+      "net_score": -51.85185185185186
+    },
+    {
+      "symbol": "AXR",
+      "sector": "Real Estate",
+      "industry": "Real Estate - Development",
+      "last_price": 26.31999969482422,
+      "change_pct": 2.7322358808000935,
+      "bullish_score": 33.33333333333333,
+      "bearish_score": 85.18518518518519,
+      "net_score": -51.85185185185186
+    },
+    {
+      "symbol": "AVDX",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "last_price": 7.255000114440918,
+      "change_pct": -20.710377957302473,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 85.18518518518519,
+      "net_score": -59.25925925925927
+    },
+    {
+      "symbol": "HRMY",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "last_price": 33.470001220703125,
+      "change_pct": -9.467135202689702,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 85.18518518518519,
+      "net_score": -59.25925925925927
+    },
+    {
+      "symbol": "SES",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Parts",
+      "last_price": 0.7960000038146973,
+      "change_pct": -5.011932664959939,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 85.18518518518519,
+      "net_score": -59.25925925925927
+    },
+    {
+      "symbol": "ILAG",
+      "sector": "Industrials",
+      "industry": "Building Products & Equipment",
+      "last_price": 0.5609999895095825,
+      "change_pct": -31.585366536222146,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 85.18518518518519,
+      "net_score": -59.25925925925927
+    },
+    {
+      "symbol": "XPEL",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Parts",
+      "last_price": 34.439998626708984,
+      "change_pct": -14.604520051894255,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 85.18518518518519,
+      "net_score": -59.25925925925927
+    },
+    {
+      "symbol": "ICL",
+      "sector": "Basic Materials",
+      "industry": "Agricultural Inputs",
+      "last_price": 5.980000019073486,
+      "change_pct": -7.286818668064399,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 85.18518518518519,
+      "net_score": -59.25925925925927
+    },
+    {
+      "symbol": "RXST",
+      "sector": "Healthcare",
+      "industry": "Medical Devices",
+      "last_price": 28.96999931335449,
+      "change_pct": -0.821635668060483,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 85.18518518518519,
+      "net_score": -59.25925925925927
+    },
+    {
+      "symbol": "SAFT",
+      "sector": "Financial Services",
+      "industry": "Insurance - Property & Casualty",
+      "last_price": 75.2699966430664,
+      "change_pct": -5.522783515757612,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 85.18518518518519,
+      "net_score": -59.25925925925927
+    },
+    {
+      "symbol": "CSPI",
+      "sector": "Technology",
+      "industry": "Information Technology Services",
+      "last_price": 16.760000228881836,
+      "change_pct": 6.819634653377071,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 85.18518518518519,
+      "net_score": -59.25925925925927
+    },
+    {
+      "symbol": "WVVIP",
+      "sector": "Consumer Defensive",
+      "industry": "Beverages - Wineries & Distilleries",
+      "last_price": 3.390000104904175,
+      "change_pct": -4.237284140261255,
+      "bullish_score": 25.925925925925924,
+      "bearish_score": 85.18518518518519,
+      "net_score": -59.25925925925927
+    }
+  ],
+  "top_industries": [
+    {
+      "industry": "Financial Conglomerates",
+      "stock_count": 4,
+      "avg_price_change": 8.600771027624258
+    },
+    {
+      "industry": "Utilities - Independent Power Producers",
+      "stock_count": 6,
+      "avg_price_change": 3.9816138805985926
+    },
+    {
+      "industry": "Personal Services",
+      "stock_count": 15,
+      "avg_price_change": 3.6960728056665846
+    },
+    {
+      "industry": "Silver",
+      "stock_count": 3,
+      "avg_price_change": 3.6811849875101257
+    },
+    {
+      "industry": "Uranium",
+      "stock_count": 9,
+      "avg_price_change": 3.1639351607389448
+    },
+    {
+      "industry": "Beverages - Brewers",
+      "stock_count": 6,
+      "avg_price_change": 3.081078228293747
+    },
+    {
+      "industry": "Copper",
+      "stock_count": 7,
+      "avg_price_change": 2.963882796249784
+    },
+    {
+      "industry": "Farm & Heavy Construction Machinery",
+      "stock_count": 27,
+      "avg_price_change": 2.721876554707423
+    },
+    {
+      "industry": "Airports & Air Services",
+      "stock_count": 9,
+      "avg_price_change": 2.61857182493907
+    },
+    {
+      "industry": "Internet Retail",
+      "stock_count": 43,
+      "avg_price_change": 2.409140538036159
+    },
+    {
+      "industry": "Communication Equipment",
+      "stock_count": 57,
+      "avg_price_change": 2.323459619790691
+    },
+    {
+      "industry": "Semiconductor Equipment & Materials",
+      "stock_count": 30,
+      "avg_price_change": 2.2759150758932676
+    },
+    {
+      "industry": "Semiconductors",
+      "stock_count": 66,
+      "avg_price_change": 2.2487088381276226
+    },
+    {
+      "industry": "Gambling",
+      "stock_count": 19,
+      "avg_price_change": 2.189080817479026
+    },
+    {
+      "industry": "Gold",
+      "stock_count": 46,
+      "avg_price_change": 1.9727926247636718
+    },
+    {
+      "industry": "Luxury Goods",
+      "stock_count": 11,
+      "avg_price_change": 1.853430150756222
+    },
+    {
+      "industry": "Auto Manufacturers",
+      "stock_count": 39,
+      "avg_price_change": 1.7729359482906806
+    },
+    {
+      "industry": "Scientific & Technical Instruments",
+      "stock_count": 32,
+      "avg_price_change": 1.5645696924394015
+    },
+    {
+      "industry": "Computer Hardware",
+      "stock_count": 33,
+      "avg_price_change": 1.5383547226952443
+    },
+    {
+      "industry": "Other Industrial Metals & Mining",
+      "stock_count": 44,
+      "avg_price_change": 1.5060073109625096
+    }
+  ],
+  "bottom_industries": [
+    {
+      "industry": "Residential Construction",
+      "stock_count": 21,
+      "avg_price_change": -1.0598570004769947
+    },
+    {
+      "industry": "Tobacco",
+      "stock_count": 10,
+      "avg_price_change": -1.1272766424675917
+    },
+    {
+      "industry": "Pollution & Treatment Controls",
+      "stock_count": 18,
+      "avg_price_change": -1.130174924574252
+    },
+    {
+      "industry": "Utilities - Regulated Gas",
+      "stock_count": 16,
+      "avg_price_change": -1.1369179762093722
+    },
+    {
+      "industry": "Utilities - Renewable",
+      "stock_count": 24,
+      "avg_price_change": -1.1548126770890406
+    },
+    {
+      "industry": "Medical Care Facilities",
+      "stock_count": 51,
+      "avg_price_change": -1.1573410131731123
+    },
+    {
+      "industry": "Beverages - Wineries & Distilleries",
+      "stock_count": 10,
+      "avg_price_change": -1.2962471619710414
+    },
+    {
+      "industry": "Paper & Paper Products",
+      "stock_count": 5,
+      "avg_price_change": -1.5869779513418567
+    },
+    {
+      "industry": "Department Stores",
+      "stock_count": 4,
+      "avg_price_change": -1.721308064279133
+    },
+    {
+      "industry": "Home Improvement Retail",
+      "stock_count": 8,
+      "avg_price_change": -1.7380088828078095
+    },
+    {
+      "industry": "Financial Data & Stock Exchanges",
+      "stock_count": 15,
+      "avg_price_change": -1.9711381900512492
+    },
+    {
+      "industry": "Agricultural Inputs",
+      "stock_count": 15,
+      "avg_price_change": -2.076018697360019
+    },
+    {
+      "industry": "Discount Stores",
+      "stock_count": 9,
+      "avg_price_change": -2.1436196192259533
+    },
+    {
+      "industry": "Healthcare Plans",
+      "stock_count": 11,
+      "avg_price_change": -2.2109206883207975
+    },
+    {
+      "industry": "Integrated Freight & Logistics",
+      "stock_count": 25,
+      "avg_price_change": -2.2277350681020556
+    },
+    {
+      "industry": "Oil & Gas Drilling",
+      "stock_count": 9,
+      "avg_price_change": -2.7324999831410657
+    },
+    {
+      "industry": "Confectioners",
+      "stock_count": 4,
+      "avg_price_change": -2.7839040608909933
+    },
+    {
+      "industry": "Oil & Gas Refining & Marketing",
+      "stock_count": 19,
+      "avg_price_change": -2.877339434916529
+    },
+    {
+      "industry": "Grocery Stores",
+      "stock_count": 11,
+      "avg_price_change": -3.3301762482102077
+    },
+    {
+      "industry": "Beverages - Non-Alcoholic",
+      "stock_count": 15,
+      "avg_price_change": -3.655708374061981
+    }
+  ],
+  "volatility_leaders": [
+    {
+      "symbol": "MOND",
+      "sector": "Consumer Cyclical",
+      "industry": "Travel Services",
+      "volatility": 1842.8570286766785,
+      "last_price": 0.0010000000474974,
+      "change_pct": 0.0,
+      "volume_vs_avg": 0.0
+    },
+    {
+      "symbol": "MTEM",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "volatility": 419.99997006465344,
+      "last_price": 0.0005000000237487,
+      "change_pct": 0.0,
+      "volume_vs_avg": 2.6036115279143166
+    },
+    {
+      "symbol": "ALCE",
+      "sector": "Utilities",
+      "industry": "Utilities - Renewable",
+      "volatility": 147.82607619211333,
+      "last_price": 0.0230000000447034,
+      "change_pct": -34.28571443776717,
+      "volume_vs_avg": 0.8197238161296425
+    },
+    {
+      "symbol": "INLF",
+      "sector": "Industrials",
+      "industry": "Specialty Industrial Machinery",
+      "volatility": 145.88920848717294,
+      "last_price": 1.9600000381469729,
+      "change_pct": -1.999998092651356,
+      "volume_vs_avg": 0.09715309429478478
+    },
+    {
+      "symbol": "SPI",
+      "sector": "Technology",
+      "industry": "Solar",
+      "volatility": 128.70879524347293,
+      "last_price": 0.031199999153614,
+      "change_pct": 3.654485132068852,
+      "volume_vs_avg": 0.7388543002847042
+    },
+    {
+      "symbol": "OMGA",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "volatility": 101.89440850263365,
+      "last_price": 0.0689999982714653,
+      "change_pct": -60.54888501142506,
+      "volume_vs_avg": 0.11191301983232921
+    },
+    {
+      "symbol": "AEON",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "volatility": 101.08651655226436,
+      "last_price": 1.4199999570846558,
+      "change_pct": -70.9967323603362,
+      "volume_vs_avg": 7.945828905037321
+    },
+    {
+      "symbol": "CYN",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "volatility": 95.61890029880003,
+      "last_price": 6.590000152587891,
+      "change_pct": 9.105963480273394,
+      "volume_vs_avg": 0.2864314923749678
+    },
+    {
+      "symbol": "FTEL",
+      "sector": "Consumer Cyclical",
+      "industry": "Specialty Retail",
+      "volatility": 91.35531917327786,
+      "last_price": 0.7799999713897705,
+      "change_pct": 6.8493083575181135,
+      "volume_vs_avg": 0.07546002197496875
+    },
+    {
+      "symbol": "WOK",
+      "sector": "Healthcare",
+      "industry": "Medical Devices",
+      "volatility": 80.2040849817612,
+      "last_price": 0.7699999809265137,
+      "change_pct": 4.054050135560283,
+      "volume_vs_avg": 0.056073477028803526
+    },
+    {
+      "symbol": "SVMH",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Manufacturers",
+      "volatility": 74.93077386940139,
+      "last_price": 0.0649999976158142,
+      "change_pct": 8.153073603119964,
+      "volume_vs_avg": 0.2550253607502926
+    },
+    {
+      "symbol": "MULN",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Manufacturers",
+      "volatility": 73.9745391717851,
+      "last_price": 4.039999961853027,
+      "change_pct": 71.18644667096426,
+      "volume_vs_avg": 9.147751528909826
+    },
+    {
+      "symbol": "MYNA",
+      "sector": "Technology",
+      "industry": "Communication Equipment",
+      "volatility": 71.11974690089976,
+      "last_price": 0.1700000017881393,
+      "change_pct": -10.526313725600945,
+      "volume_vs_avg": 0.0175651691700132
+    },
+    {
+      "symbol": "SOPA",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "volatility": 70.18315525517143,
+      "last_price": 1.559999942779541,
+      "change_pct": 12.230212865769907,
+      "volume_vs_avg": 0.6251625487646294
+    },
+    {
+      "symbol": "BSLK",
+      "sector": "Financial Services",
+      "industry": "Shell Companies",
+      "volatility": 65.8191010372423,
+      "last_price": 0.3680000007152557,
+      "change_pct": -9.582310571828213,
+      "volume_vs_avg": 0.02438916516411718
+    },
+    {
+      "symbol": "NKLA",
+      "sector": "Industrials",
+      "industry": "Farm & Heavy Construction Machinery",
+      "volatility": 61.25972211208003,
+      "last_price": 0.2847000062465668,
+      "change_pct": 55.573775324035154,
+      "volume_vs_avg": 0.3537063593217263
+    },
+    {
+      "symbol": "PTPI",
+      "sector": "Healthcare",
+      "industry": "Drug Manufacturers - Specialty & Generic",
+      "volatility": 60.06803120287035,
+      "last_price": 0.1049999967217445,
+      "change_pct": -7.0796473013766015,
+      "volume_vs_avg": 0.4940592372698589
+    },
+    {
+      "symbol": "ATCH",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "volatility": 59.13880598354315,
+      "last_price": 2.819999933242798,
+      "change_pct": -26.17801092868345,
+      "volume_vs_avg": 1.0976594027441484
+    },
+    {
+      "symbol": "GLST",
+      "sector": "Financial Services",
+      "industry": "Shell Companies",
+      "volatility": 56.08580533863966,
+      "last_price": 5.986999988555908,
+      "change_pct": -3.435481084869174,
+      "volume_vs_avg": 0.33112582781456956
+    },
+    {
+      "symbol": "RNAZ",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "volatility": 56.040510764390724,
+      "last_price": 3.3499999046325684,
+      "change_pct": -21.91142344007002,
+      "volume_vs_avg": 3.656517641273614
+    }
+  ],
+  "near_highs": [
+    {
+      "symbol": "WCT",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "pct_from_52w_high": 0.0,
+      "last_price": 2.809999942779541,
+      "change_pct": 6.439387542431052
+    },
+    {
+      "symbol": "OVBC",
+      "sector": "Financial Services",
+      "industry": "Banks - Regional",
+      "pct_from_52w_high": 0.0,
+      "last_price": 29.280000686645508,
+      "change_pct": 4.571431023733963
+    },
+    {
+      "symbol": "CAAS",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Parts",
+      "pct_from_52w_high": 0.0,
+      "last_price": 4.78000020980835,
+      "change_pct": 4.3668185465919995
+    },
+    {
+      "symbol": "SENEB",
+      "sector": "Consumer Defensive",
+      "industry": "Packaged Foods",
+      "pct_from_52w_high": 0.0,
+      "last_price": 83.75,
+      "change_pct": 3.9081905527458494
+    },
+    {
+      "symbol": "GDO",
+      "sector": "Financial Services",
+      "industry": "Asset Management",
+      "pct_from_52w_high": 0.0,
+      "last_price": 11.4399995803833,
+      "change_pct": 0.35087687010104673
+    },
+    {
+      "symbol": "HYAC",
+      "sector": "Financial Services",
+      "industry": "Shell Companies",
+      "pct_from_52w_high": 0.0,
+      "last_price": 10.93000030517578,
+      "change_pct": 0.5519817870137222
+    },
+    {
+      "symbol": "EDD",
+      "sector": "Financial Services",
+      "industry": "Asset Management",
+      "pct_from_52w_high": 0.0,
+      "last_price": 4.849999904632568,
+      "change_pct": 0.20660644069052658
+    },
+    {
+      "symbol": "EMCG",
+      "sector": "Financial Services",
+      "industry": "Shell Companies",
+      "pct_from_52w_high": 0.0,
+      "last_price": 11.960000038146973,
+      "change_pct": 0.08368392503306232
+    },
+    {
+      "symbol": "SLMBP",
+      "sector": "Financial Services",
+      "industry": "Credit Services",
+      "pct_from_52w_high": 0.0,
+      "last_price": 76.22000122070312,
+      "change_pct": 0.6337514793662402
+    },
+    {
+      "symbol": "MUJ",
+      "sector": "Financial Services",
+      "industry": "Asset Management",
+      "pct_from_52w_high": 0.0,
+      "last_price": 11.710000038146973,
+      "change_pct": 0.6878755195085517
+    },
+    {
+      "symbol": "VFL",
+      "sector": "Financial Services",
+      "industry": "Asset Management",
+      "pct_from_52w_high": 0.0,
+      "last_price": 10.81999969482422,
+      "change_pct": 0.27803274399680333
+    },
+    {
+      "symbol": "SSTI",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "pct_from_52w_high": 0.0,
+      "last_price": 16.90999984741211,
+      "change_pct": 23.61110723816484
+    },
+    {
+      "symbol": "SPKL",
+      "sector": "Financial Services",
+      "industry": "Shell Companies",
+      "pct_from_52w_high": 0.0,
+      "last_price": 10.739999771118164,
+      "change_pct": 0.18656253349980112
+    },
+    {
+      "symbol": "DHY",
+      "sector": "Financial Services",
+      "industry": "Asset Management",
+      "pct_from_52w_high": 0.0,
+      "last_price": 2.1700000762939453,
+      "change_pct": 0.0
+    },
+    {
+      "symbol": "NYMT",
+      "sector": "Real Estate",
+      "industry": "REIT - Mortgage",
+      "pct_from_52w_high": 0.0,
+      "last_price": 7.03000020980835,
+      "change_pct": 2.627741717982346
+    },
+    {
+      "symbol": "IVAC",
+      "sector": "Industrials",
+      "industry": "Specialty Industrial Machinery",
+      "pct_from_52w_high": 0.0,
+      "last_price": 4.059999942779541,
+      "change_pct": 0.49504903750889895
+    },
+    {
+      "symbol": "DTSQ",
+      "sector": "Financial Services",
+      "industry": "Shell Companies",
+      "pct_from_52w_high": 0.0,
+      "last_price": 10.18000030517578,
+      "change_pct": 0.0
+    },
+    {
+      "symbol": "EURK",
+      "sector": "Financial Services",
+      "industry": "Shell Companies",
+      "pct_from_52w_high": 0.0,
+      "last_price": 10.25,
+      "change_pct": 0.0
+    },
+    {
+      "symbol": "ISD",
+      "sector": "Financial Services",
+      "industry": "Asset Management",
+      "pct_from_52w_high": 0.0,
+      "last_price": 14.34000015258789,
+      "change_pct": 0.42017101357616493
+    },
+    {
+      "symbol": "SVII",
+      "sector": "Financial Services",
+      "industry": "Shell Companies",
+      "pct_from_52w_high": 0.0,
+      "last_price": 11.369999885559082,
+      "change_pct": 0.0880301864794264
+    }
+  ],
+  "unusual_volume": [
+    {
+      "symbol": "FSHPU",
+      "sector": "Financial Services",
+      "industry": "Shell Companies",
+      "volume_vs_avg": 10.0,
+      "last_price": 10.481599807739258,
+      "change_pct": -1.116986504429296
+    },
+    {
+      "symbol": "DMYY",
+      "sector": "Financial Services",
+      "industry": "Shell Companies",
+      "volume_vs_avg": 9.984134732731267,
+      "last_price": 11.510000228881836,
+      "change_pct": 6.5740743111844635
+    },
+    {
+      "symbol": "BTOG",
+      "sector": "Financial Services",
+      "industry": "Financial Data & Stock Exchanges",
+      "volume_vs_avg": 9.7938919582566,
+      "last_price": 0.2360000014305114,
+      "change_pct": -23.87096786598264
+    },
+    {
+      "symbol": "CPOP",
+      "sector": "Communication Services",
+      "industry": "Entertainment",
+      "volume_vs_avg": 9.448981275261898,
+      "last_price": 0.6919999718666077,
+      "change_pct": 5.007586251496332
+    },
+    {
+      "symbol": "ULY",
+      "sector": "Technology",
+      "industry": "Software - Application",
+      "volume_vs_avg": 9.41377374380088,
+      "last_price": 0.4199999868869781,
+      "change_pct": 0.0
+    },
+    {
+      "symbol": "NEN",
+      "sector": "Real Estate",
+      "industry": "Real Estate Services",
+      "volume_vs_avg": 9.411764705882353,
+      "last_price": 78.2300033569336,
+      "change_pct": -4.5975568817883
+    },
+    {
+      "symbol": "ENVB",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "volume_vs_avg": 9.327679370487749,
+      "last_price": 2.299999952316284,
+      "change_pct": 94.91525886045815
+    },
+    {
+      "symbol": "MULN",
+      "sector": "Consumer Cyclical",
+      "industry": "Auto Manufacturers",
+      "volume_vs_avg": 9.147751528909826,
+      "last_price": 4.039999961853027,
+      "change_pct": 71.18644667096426
+    },
+    {
+      "symbol": "CGTX",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "volume_vs_avg": 8.905305099450532,
+      "last_price": 0.4950000047683716,
+      "change_pct": -4.255321847199756
+    },
+    {
+      "symbol": "IPA",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "volume_vs_avg": 8.824584963986343,
+      "last_price": 0.3569999933242798,
+      "change_pct": -4.032262134812403
+    },
+    {
+      "symbol": "BLMZ",
+      "sector": "Communication Services",
+      "industry": "Entertainment",
+      "volume_vs_avg": 8.750371876239587,
+      "last_price": 0.3600000143051147,
+      "change_pct": -8.629436556073832
+    },
+    {
+      "symbol": "RENB",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "volume_vs_avg": 8.65068718173356,
+      "last_price": 1.190000057220459,
+      "change_pct": 53.945673257979074
+    },
+    {
+      "symbol": "CPBI",
+      "sector": "Financial Services",
+      "industry": "Banks - Regional",
+      "volume_vs_avg": 8.537336412625097,
+      "last_price": 14.770000457763672,
+      "change_pct": 0.13559632382149633
+    },
+    {
+      "symbol": "WLYB",
+      "sector": "Communication Services",
+      "industry": "Publishing",
+      "volume_vs_avg": 8.512039514303355,
+      "last_price": 39.0,
+      "change_pct": -2.500000000000002
+    },
+    {
+      "symbol": "LBGJ",
+      "sector": "Industrials",
+      "industry": "Specialty Industrial Machinery",
+      "volume_vs_avg": 8.184121621621621,
+      "last_price": 1.4199999570846558,
+      "change_pct": 39.215684670386295
+    },
+    {
+      "symbol": "SYTA",
+      "sector": "Technology",
+      "industry": "Communication Equipment",
+      "volume_vs_avg": 8.14148299257839,
+      "last_price": 4.170000076293945,
+      "change_pct": 19.14285932268416
+    },
+    {
+      "symbol": "AEON",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "volume_vs_avg": 7.945828905037321,
+      "last_price": 1.4199999570846558,
+      "change_pct": -70.9967323603362
+    },
+    {
+      "symbol": "ILAG",
+      "sector": "Industrials",
+      "industry": "Building Products & Equipment",
+      "volume_vs_avg": 7.860197368421052,
+      "last_price": 0.5609999895095825,
+      "change_pct": -31.585366536222146
+    },
+    {
+      "symbol": "SLRX",
+      "sector": "Healthcare",
+      "industry": "Biotechnology",
+      "volume_vs_avg": 7.848481743348021,
+      "last_price": 1.4500000476837158,
+      "change_pct": 29.464289420569422
+    },
+    {
+      "symbol": "VMCA",
+      "sector": "Financial Services",
+      "industry": "Shell Companies",
+      "volume_vs_avg": 7.769110764430577,
+      "last_price": 11.75,
+      "change_pct": 0.0
+    }
+  ],
+  "money_flow": [
+    {
+      "sector": "Industrials",
+      "flow_score": 0.804514748689033,
+      "stock_count": 649
+    },
+    {
+      "sector": "Consumer Cyclical",
+      "flow_score": 2.226727268646831,
+      "stock_count": 567
+    },
+    {
+      "sector": "Healthcare",
+      "flow_score": 1.2288524195917265,
+      "stock_count": 1154
+    },
+    {
+      "sector": "Financial Services",
+      "flow_score": 0.16694573189547718,
+      "stock_count": 1204
+    },
+    {
+      "sector": "Technology",
+      "flow_score": 1.9256169630414925,
+      "stock_count": 776
+    },
+    {
+      "sector": "Consumer Defensive",
+      "flow_score": -1.3075882646144228,
+      "stock_count": 236
+    },
+    {
+      "sector": "Real Estate",
+      "flow_score": 0.7939410270345367,
+      "stock_count": 273
+    },
+    {
+      "sector": "Energy",
+      "flow_score": -0.09365765394685177,
+      "stock_count": 250
+    },
+    {
+      "sector": "Basic Materials",
+      "flow_score": 0.44042860355866803,
+      "stock_count": 266
+    },
+    {
+      "sector": "Utilities",
+      "flow_score": -0.18291726158942953,
+      "stock_count": 109
+    },
+    {
+      "sector": "Communication Services",
+      "flow_score": 0.6057669267117044,
+      "stock_count": 259
+    }
+  ]
+}
