@@ -12,7 +12,7 @@ from pathlib import Path
 
 # Set page configuration
 st.set_page_config(
-    page_title="Morning Market Dashboard",
+    page_title="Elwood's Stock Market Dashboard",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -64,15 +64,6 @@ def load_data(file_path):
         st.error(f"Error loading data: {e}")
         return None
 
-def load_csv_data(file_path):
-    """Load data from CSV files"""
-    try:
-        df = pd.read_csv(file_path)
-        return df
-    except Exception as e:
-        st.error(f"Error loading CSV data: {e}")
-        return pd.DataFrame()  # Return empty DataFrame on error
-
 def find_latest_files(directory):
     """Find the latest JSON and CSV files in the directory"""
     try:
@@ -92,92 +83,8 @@ def find_latest_files(directory):
         st.error(f"Error finding latest files: {e}")
         return None, None
 
-def calculate_industry_stats(df):
-    """Manually calculate industry statistics from the raw stock data"""
-    # Group by industry
-    industry_stats = {}
-    
-    for industry, group in df.groupby('industry'):
-        if len(group) >= 3:  # Only include industries with at least 3 stocks
-            # Calculate industry statistics
-            industry_stats[industry] = {
-                'stock_count': len(group),
-                'sector': group['sector'].iloc[0],  # Most common sector
-                'avg_price_change': float(group['change_pct'].mean()),
-                'avg_bullish_score': float(group['bullish_score'].mean()),
-                'avg_bearish_score': float(group['bearish_score'].mean()),
-                'avg_net_score': float(group['bullish_score'].mean() - group['bearish_score'].mean())
-            }
-            
-            # Calculate money flow if available
-            if 'volume_vs_avg' in group.columns:
-                flow_score = float((group['change_pct'] * group['volume_vs_avg']).mean())
-                industry_stats[industry]['flow_score'] = flow_score
-                
-                # Add flow category
-                if flow_score > 1:
-                    flow_category = "Strong Inflow"
-                elif flow_score > 0.2:
-                    flow_category = "Mild Inflow"
-                elif flow_score > -0.2:
-                    flow_category = "Neutral"
-                elif flow_score > -1:
-                    flow_category = "Mild Outflow"
-                else:
-                    flow_category = "Strong Outflow"
-                    
-                industry_stats[industry]['flow_category'] = flow_category
-    
-    return industry_stats
-
-def calculate_top_bottom_industries(industry_stats, n=10):
-    """Calculate top and bottom performing industries"""
-    # Sort industries by price change
-    sorted_industries = sorted(
-        industry_stats.items(), 
-        key=lambda x: x[1]['avg_price_change'], 
-        reverse=True
-    )
-    
-    # Get top and bottom n
-    top_industries = []
-    for industry, stats in sorted_industries[:n]:
-        top_industries.append({
-            'industry': industry,
-            'stock_count': stats['stock_count'],
-            'avg_price_change': stats['avg_price_change']
-        })
-    
-    bottom_industries = []
-    for industry, stats in sorted_industries[-n:]:
-        bottom_industries.append({
-            'industry': industry,
-            'stock_count': stats['stock_count'],
-            'avg_price_change': stats['avg_price_change']
-        })
-    
-    return top_industries, bottom_industries
-
-def calculate_industry_money_flow(industry_stats):
-    """Calculate industry money flow from industry stats"""
-    industry_flow = []
-    
-    for industry, stats in industry_stats.items():
-        if 'flow_score' in stats:
-            industry_flow.append({
-                'industry': industry,
-                'sector': stats['sector'],
-                'flow_score': stats['flow_score'],
-                'flow_category': stats['flow_category'],
-                'stock_count': stats['stock_count']
-            })
-    
-    # Sort by flow score
-    industry_flow = sorted(industry_flow, key=lambda x: x['flow_score'], reverse=True)
-    return industry_flow
-
 # Dashboard title and description
-st.title("🚀 Morning Market Dashboard")
+st.title("🚀 Elwood's Stock Market Dashboard")
 
 # Sidebar for data selection and filters
 st.sidebar.header("Data & Filters")
@@ -198,11 +105,8 @@ if not json_file or not csv_file:
     st.stop()
 
 # Load data
-st.sidebar.info(f"Loading JSON data from: {json_file.name}")
-st.sidebar.info(f"Loading CSV data from: {csv_file.name}")
-
 data = load_data(json_file)
-df = load_csv_data(csv_file)
+df = pd.read_csv(csv_file)
 
 if data is None or df.empty:
     st.error("Failed to load data. Please check the files.")
@@ -215,32 +119,6 @@ time_of_day = data.get('analysis_time_of_day', 'morning')
 st.sidebar.markdown(f"**Data as of:** {analysis_date}")
 st.sidebar.markdown(f"**Time of day:** {time_of_day.capitalize()}")
 st.sidebar.markdown(f"**Total stocks analyzed:** {data.get('total_stocks_analyzed', 0)}")
-
-# Option to recalculate industry statistics
-recalculate = st.sidebar.checkbox(
-    "Recalculate Industry Statistics",
-    value=False,
-    help="Recalculate industry statistics from raw stock data instead of using pre-calculated values"
-)
-
-if recalculate:
-    st.sidebar.warning("Recalculating industry statistics from raw data...")
-    # Calculate industry statistics
-    industry_stats = calculate_industry_stats(df)
-    
-    # Calculate top and bottom industries
-    top_industries, bottom_industries = calculate_top_bottom_industries(industry_stats)
-    
-    # Calculate industry money flow
-    industry_money_flow = calculate_industry_money_flow(industry_stats)
-    
-    # Add to data dictionary
-    data['industry_statistics'] = industry_stats
-    data['top_industries'] = top_industries
-    data['bottom_industries'] = bottom_industries
-    data['industry_money_flow'] = industry_money_flow
-    
-    st.sidebar.success("Industry statistics recalculated!")
 
 # Filters
 st.sidebar.header("Filters")
@@ -456,14 +334,6 @@ with tabs[1]:
             fig.update_layout(height=500, coloraxis_showscale=False)
             fig.update_traces(texttemplate='%{text} stocks', textposition='outside')
             st.plotly_chart(fig, use_container_width=True)
-            
-            # Add a data table with exact values
-            st.dataframe(
-                top_industries[['industry', 'stock_count', 'avg_price_change']].rename(
-                    columns={'industry': 'Industry', 'stock_count': 'Stocks', 'avg_price_change': 'Avg Change (%)'}
-                ).style.format({'Avg Change (%)': '{:.2f}%'}),
-                use_container_width=True
-            )
         else:
             st.write("No industry data available")
         st.markdown("</div>", unsafe_allow_html=True)
@@ -488,93 +358,9 @@ with tabs[1]:
             fig.update_layout(height=500, coloraxis_showscale=False)
             fig.update_traces(texttemplate='%{text} stocks', textposition='outside')
             st.plotly_chart(fig, use_container_width=True)
-            
-            # Add a data table with exact values
-            st.dataframe(
-                bottom_industries[['industry', 'stock_count', 'avg_price_change']].rename(
-                    columns={'industry': 'Industry', 'stock_count': 'Stocks', 'avg_price_change': 'Avg Change (%)'}
-                ).style.format({'Avg Change (%)': '{:.2f}%'}),
-                use_container_width=True
-            )
         else:
             st.write("No industry data available")
         st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Industry Drill-Down
-    st.subheader("Industry Drill-Down")
-    
-    # Get list of all industries
-    all_industries = []
-    if 'industry_statistics' in data:
-        all_industries = sorted(data['industry_statistics'].keys())
-    
-    selected_industry = st.selectbox(
-        "Select Industry to View Stocks",
-        options=all_industries
-    )
-    
-    if selected_industry and selected_industry in all_industries:
-        # Get stocks in this industry
-        industry_stocks = filtered_df[filtered_df['industry'] == selected_industry]
-        
-        if not industry_stocks.empty:
-            st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
-            # Industry stats
-            industry_stats = data['industry_statistics'][selected_industry]
-            
-            col1, col2, col3, col4 = st.columns(4)
-            
-            with col1:
-                st.metric(
-                    "Average Price Change", 
-                    f"{industry_stats['avg_price_change']:.2f}%",
-                    delta=None
-                )
-            
-            with col2:
-                st.metric(
-                    "Number of Stocks", 
-                    f"{industry_stats['stock_count']}",
-                    delta=None
-                )
-            
-            with col3:
-                st.metric(
-                    "Average Bullish Score", 
-                    f"{industry_stats['avg_bullish_score']:.1f}",
-                    delta=None
-                )
-            
-            with col4:
-                st.metric(
-                    "Average Bearish Score", 
-                    f"{industry_stats['avg_bearish_score']:.1f}",
-                    delta=None
-                )
-            
-            # Show stocks in this industry
-            industry_stocks_sorted = industry_stocks.sort_values('change_pct', ascending=False)
-            
-            fig = px.bar(
-                industry_stocks_sorted,
-                x='symbol',
-                y='change_pct',
-                color='change_pct',
-                labels={'change_pct': 'Price Change (%)', 'symbol': 'Symbol'},
-                title=f"Stocks in {selected_industry}",
-                color_continuous_scale=px.colors.diverging.RdBu_r,
-                color_continuous_midpoint=0
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Data table
-            st.dataframe(
-                industry_stocks_sorted[['symbol', 'last_price', 'change_pct', 'bullish_score', 'bearish_score', 'net_score']],
-                use_container_width=True
-            )
-            st.markdown("</div>", unsafe_allow_html=True)
-        else:
-            st.write(f"No stocks found in the {selected_industry} industry (they may be filtered out)")
     
     # Most Volatile Industries
     st.subheader("Industry Volatility Analysis")
@@ -604,145 +390,6 @@ with tabs[1]:
         st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.write("Volatility data not available in this dataset")
-
-    # Industry Money Flow Analysis
-    st.subheader("Industry Money Flow Analysis")
-
-    if 'industry_money_flow' in data:
-        # Create industry money flow dataframe
-        industry_flow_df = pd.DataFrame(data['industry_money_flow'])
-        
-        # Filter to focus on industries with substantial flows
-        flow_threshold = st.slider(
-            "Minimum Flow Score Magnitude (positive or negative)",
-            min_value=0.0,
-            max_value=2.0,
-            value=0.5,
-            step=0.1
-        )
-        
-        min_stock_count = st.slider(
-            "Minimum Stocks in Industry for Money Flow",
-            min_value=3,
-            max_value=20,
-            value=5,
-            step=1
-        )
-        
-        # Filter the dataframe
-        filtered_flow_df = industry_flow_df[
-            (industry_flow_df['stock_count'] >= min_stock_count) & 
-            (abs(industry_flow_df['flow_score']) >= flow_threshold)
-        ]
-        
-        # Split into positive and negative flows
-        positive_flows = filtered_flow_df[filtered_flow_df['flow_score'] > 0].sort_values('flow_score', ascending=False)
-        negative_flows = filtered_flow_df[filtered_flow_df['flow_score'] < 0].sort_values('flow_score')
-        
-        col1, col2 = st.columns(2)
-        
-        # Strong Inflows
-        with col1:
-            st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
-            if not positive_flows.empty:
-                # Limit to top 15 for readability
-                positive_flows_top = positive_flows.head(15)
-                
-                fig = px.bar(
-                    positive_flows_top,
-                    x='industry',
-                    y='flow_score',
-                    color='flow_category',
-                    labels={'flow_score': 'Money Flow Score', 'industry': 'Industry'},
-                    title=f"Top Industry Inflows (Price Change × Volume)",
-                    text='stock_count',
-                    color_discrete_map={
-                        "Strong Inflow": "#00B5AA",
-                        "Mild Inflow": "#87CEEB",
-                    }
-                )
-                fig.update_layout(height=500)
-                fig.update_traces(texttemplate='%{text} stocks', textposition='outside')
-                st.plotly_chart(fig, use_container_width=True)
-                
-                # Add a data table with exact values
-                st.dataframe(
-                    positive_flows_top[['industry', 'stock_count', 'flow_score']].rename(
-                        columns={'industry': 'Industry', 'stock_count': 'Stocks', 'flow_score': 'Flow Score'}
-                    ).style.format({'Flow Score': '{:.2f}'}),
-                    use_container_width=True
-                )
-            else:
-                st.write("No industries with significant positive money flow")
-            st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Strong Outflows
-        with col2:
-            st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
-            if not negative_flows.empty:
-                # Limit to bottom 15 for readability
-                negative_flows_top = negative_flows.head(15)
-                
-                fig = px.bar(
-                    negative_flows_top,
-                    x='industry',
-                    y='flow_score',
-                    color='flow_category',
-                    labels={'flow_score': 'Money Flow Score', 'industry': 'Industry'},
-                    title=f"Top Industry Outflows (Price Change × Volume)",
-                    text='stock_count',
-                    color_discrete_map={
-                        "Mild Outflow": "#FFA07A",
-                        "Strong Outflow": "#FF6B6B"
-                    }
-                )
-                fig.update_layout(height=500)
-                fig.update_traces(texttemplate='%{text} stocks', textposition='outside')
-                st.plotly_chart(fig, use_container_width=True)
-                
-                # Add a data table with exact values
-                st.dataframe(
-                    negative_flows_top[['industry', 'stock_count', 'flow_score']].rename(
-                        columns={'industry': 'Industry', 'stock_count': 'Stocks', 'flow_score': 'Flow Score'}
-                    ).style.format({'Flow Score': '{:.2f}'}),
-                    use_container_width=True
-                )
-            else:
-                st.write("No industries with significant negative money flow")
-            st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Bubble chart showing industry money flow by sector
-        st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
-        if not filtered_flow_df.empty:
-            fig = px.scatter(
-                filtered_flow_df,
-                x='flow_score',
-                y='sector',
-                size='stock_count',
-                color='flow_category',
-                hover_name='industry',
-                labels={
-                    'flow_score': 'Money Flow Score',
-                    'sector': 'Sector',
-                    'stock_count': 'Number of Stocks'
-                },
-                title="Industry Money Flow by Sector",
-                color_discrete_map={
-                    "Strong Inflow": "#00B5AA",
-                    "Mild Inflow": "#87CEEB",
-                    "Neutral": "#E0E0E0",
-                    "Mild Outflow": "#FFA07A",
-                    "Strong Outflow": "#FF6B6B"
-                }
-            )
-            fig.update_layout(height=600)
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.write("No industries meet the current filters")
-        st.markdown("</div>", unsafe_allow_html=True)
-    else:
-        st.write("Industry money flow data not available in this dataset.")
-        st.info("To enable this feature, make sure to run your analyzer with the industry money flow calculation.")
     
     # Industry Heatmap
     st.subheader("Industry-Sector Heatmap")
@@ -762,7 +409,7 @@ with tabs[1]:
     
     # Add filter for minimum industry size
     min_stocks = st.slider(
-        "Minimum Stocks in Industry for Heatmap",
+        "Minimum Stocks in Industry",
         min_value=3,
         max_value=int(industry_stats['stock_count'].max()),
         value=5,
@@ -834,12 +481,12 @@ with tabs[2]:
         )
     
     # Prepare data based on selection
-    if view_option == "Top Bullish Stocks" and 'top_bullish_stocks' in data:
+    if view_option == "Top Bullish Stocks":
         screen_df = pd.DataFrame(data['top_bullish_stocks'])
         screen_title = "Top Bullish Stocks"
         color_column = 'bullish_score'
         color_scale = ['#87CEEB', '#00B5AA']
-    elif view_option == "Top Bearish Stocks" and 'top_bearish_stocks' in data:
+    elif view_option == "Top Bearish Stocks":
         screen_df = pd.DataFrame(data['top_bearish_stocks'])
         screen_title = "Top Bearish Stocks"
         color_column = 'bearish_score'
@@ -1126,8 +773,7 @@ with tabs[4]:
             "All Stocks", 
             "Top Movers", 
             "Industries Performance", 
-            "Sectors Performance",
-            "Industry Money Flow"
+            "Sectors Performance"
         ],
         index=0
     )
@@ -1135,24 +781,7 @@ with tabs[4]:
     if table_option == "All Stocks":
         # Display filtered dataframe
         st.subheader(f"All Stocks Data ({len(filtered_df)} stocks)")
-        
-        sort_by = st.selectbox(
-            "Sort By",
-            options=["change_pct", "bullish_score", "bearish_score", "net_score", "market_cap_B"],
-            index=0,
-            format_func=lambda x: {
-                "change_pct": "Price Change",
-                "bullish_score": "Bullish Score",
-                "bearish_score": "Bearish Score",
-                "net_score": "Net Score",
-                "market_cap_B": "Market Cap"
-            }.get(x, x)
-        )
-        
-        st.dataframe(
-            filtered_df.sort_values(sort_by, ascending=False),
-            use_container_width=True
-        )
+        st.dataframe(filtered_df.sort_values('change_pct', ascending=False), use_container_width=True)
         
     elif table_option == "Top Movers":
         st.subheader("Top Movers Today")
@@ -1195,25 +824,6 @@ with tabs[4]:
         ]).sort_values('avg_price_change', ascending=False)
         
         st.dataframe(sectors_df, use_container_width=True)
-        
-    elif table_option == "Industry Money Flow" and 'industry_money_flow' in data:
-        st.subheader("Industry Money Flow")
-        
-        # Create money flow dataframe
-        money_flow_df = pd.DataFrame(data['industry_money_flow'])
-        
-        # Add sort options
-        sort_by = st.radio(
-            "Sort By",
-            options=["flow_score", "stock_count"],
-            index=0,
-            horizontal=True
-        )
-        
-        st.dataframe(
-            money_flow_df.sort_values(sort_by, ascending=False),
-            use_container_width=True
-        )
     
     # Download options
     st.subheader("Download Data")
@@ -1243,15 +853,11 @@ st.markdown("""
 ---
 ### How to Use This Dashboard
 
-This dashboard automatically finds and loads the latest analysis data from your morning market analysis script. Here's how to make the most of it:
 
-1. **Data Path**: Ensure the correct path to your data files is set in the sidebar (default: "morning_analysis")
-2. **Recalculate**: If you notice calculation discrepancies, use the "Recalculate Industry Statistics" checkbox to recalculate directly from the stock data
-3. **Filters**: Use the sidebar filters to focus on specific sectors, market caps, or bullish scores
-4. **Tabs**: Navigate between different views using the tabs at the top
-5. **Interactivity**: Most charts support hover interactions and zooming
-
-To update the data displayed, simply run your morning market analysis script to generate new data files.
+1. **Filters**: Use the sidebar filters to focus on specific sectors, market caps, or bullish scores
+2. **Tabs**: Navigate between different views using the tabs at the top
+3. **Interactivity**: Most charts support hover interactions and zooming
+4. **Data**: Comparing data from most recent update, top left slider menu, to previouse close. 
 
 **Tip**: Click on the top-right menu of any chart to download it as an image.
-""")    
+""")
