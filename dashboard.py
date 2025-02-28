@@ -84,7 +84,7 @@ def find_latest_files(directory):
         return None, None
 
 # Dashboard title and description
-st.title("🚀 Morning Market Dashboard")
+st.title("🚀 Elwood's Stock Market Dashboard")
 
 # Sidebar for data selection and filters
 st.sidebar.header("Data & Filters")
