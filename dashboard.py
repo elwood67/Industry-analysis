@@ -12,7 +12,7 @@ from pathlib import Path
 
 # Set page configuration
 st.set_page_config(
-    page_title="Morning Market Dashboard",
+    page_title="Elwood's Stock Market Dashboard",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
