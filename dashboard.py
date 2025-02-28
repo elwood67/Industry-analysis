@@ -853,14 +853,11 @@ st.markdown("""
 ---
 ### How to Use This Dashboard
 
-This dashboard automatically finds and loads the latest analysis data from your morning market analysis script. Here's how to make the most of it:
 
-1. **Data Path**: Ensure the correct path to your data files is set in the sidebar (default: "morning_analysis")
-2. **Filters**: Use the sidebar filters to focus on specific sectors, market caps, or bullish scores
-3. **Tabs**: Navigate between different views using the tabs at the top
-4. **Interactivity**: Most charts support hover interactions and zooming
-
-To update the data displayed, simply run your morning market analysis script to generate new data files.
+1. **Filters**: Use the sidebar filters to focus on specific sectors, market caps, or bullish scores
+2. **Tabs**: Navigate between different views using the tabs at the top
+3. **Interactivity**: Most charts support hover interactions and zooming
+4. **Data**: Comparing data from most recent update, top left slider menu, to previouse close. 
 
 **Tip**: Click on the top-right menu of any chart to download it as an image.
 """)
