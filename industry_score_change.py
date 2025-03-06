@@ -31,7 +31,11 @@ def get_time_period_options():
     """Return available time period options."""
     return {
         "1 Day": 1,
+        "2 Days": 2,
+        "3 Days": 3,
+        "4 Days": 4,
         "1 Week": 7,
+        "2 Weeks": 14,
         "1 Month": 21,
         "2 Months": 42,
         "3 Months": 63,
