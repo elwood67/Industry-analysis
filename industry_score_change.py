@@ -36,6 +36,7 @@ def get_time_period_options():
         "4 Days": 4,
         "1 Week": 5,
         "2 Weeks": 10,
+        "3 Weeks": 15,
         "1 Month": 21,
         "2 Months": 42,
         "3 Months": 63,
