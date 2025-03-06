@@ -34,8 +34,8 @@ def get_time_period_options():
         "2 Days": 2,
         "3 Days": 3,
         "4 Days": 4,
-        "1 Week": 7,
-        "2 Weeks": 14,
+        "1 Week": 5,
+        "2 Weeks": 10,
         "1 Month": 21,
         "2 Months": 42,
         "3 Months": 63,
@@ -76,13 +76,23 @@ def process_data(df, selected_caps, score_type, time_period_days):
         # Get the most recent trading day
         latest_date = trading_days[-1]
         
-        # Calculate previous dates based on trading days
-        if time_period_days <= 5:
-            # For short periods, use consecutive trading days
+        # Calculate the appropriate middle and earliest dates based on time_period_days
+        # This ensures that each time period option shows different data
+        
+        # For 1 day, use consecutive days
+        if time_period_days == 1:
             middle_date = trading_days[-2]
             earliest_date = trading_days[-3]
+        # For other short periods (2-5 days), calculate appropriate dates
+        elif 1 < time_period_days <= 5:
+            # Try to find a date approximately time_period_days trading days ago
+            middle_idx = max(0, len(trading_days) - time_period_days - 1)
+            # For the earliest date, go back the same number of days again
+            earliest_idx = max(0, middle_idx - time_period_days)
+            middle_date = trading_days[middle_idx]
+            earliest_date = trading_days[earliest_idx]
+        # For longer periods, same calculation as before
         else:
-            # For longer periods, find closest matching days
             middle_idx = max(0, len(trading_days) - time_period_days - 1)
             earliest_idx = max(0, middle_idx - time_period_days)
             middle_date = trading_days[middle_idx]
