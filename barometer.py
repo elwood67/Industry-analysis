@@ -1,0 +1,787 @@
+import os
+import pandas as pd
+import numpy as np
+import streamlit as st
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime, timedelta
+from io import BytesIO
+import os.path
+
+# Set page configuration to wide layout
+st.set_page_config(layout="wide")  # Use wide layout for better use of screen space
+st.title("Valuation Trend Barometer")
+
+# ------------------------------
+# 1. Data Loading Functions
+# ------------------------------
+@st.cache_data
+def load_sectors_file(file_path):
+    """Load the sectors file from the data directory."""
+    try:
+        return pd.read_excel(file_path)
+    except Exception as e:
+        st.error(f"Error loading stock_sectors.xlsx: {str(e)}")
+        st.stop()
+
+@st.cache_data
+def load_market_caps_file(file_path):
+    """Load the market caps file from the data directory."""
+    try:
+        df = pd.read_excel(file_path)
+        
+        # Check if 'fetch_date' column exists
+        if 'fetch_date' not in df.columns:
+            st.error("market_caps.xlsx does not have a 'fetch_date' column.")
+            st.stop()
+        
+        # Handle multiple date formats by converting to datetime with flexible parsing
+        df['fetch_date'] = pd.to_datetime(df['fetch_date'], errors='coerce', infer_datetime_format=True)
+        
+        # Check if all fetch_date values are invalid
+        if df['fetch_date'].isna().all():
+            st.error("All 'fetch_date' values in market_caps.xlsx are invalid.")
+            st.stop()
+        
+        # List unique dates found in the data
+        unique_dates = df['fetch_date'].dt.date.unique()
+        unique_dates_sorted = sorted(unique_dates)
+        
+        # Display date range info
+        st.sidebar.write("Date range found in data:", 
+                        min(unique_dates_sorted).strftime('%Y-%m-%d') if len(unique_dates_sorted) > 0 else "No valid dates", 
+                        "to", 
+                        max(unique_dates_sorted).strftime('%Y-%m-%d') if len(unique_dates_sorted) > 0 else "No valid dates")
+        
+        # Count unique dates
+        st.sidebar.write(f"Number of unique dates found: {len(unique_dates_sorted)}")
+        
+        # Display the list of dates found
+        st.sidebar.write("Dates found:", ", ".join([d.strftime('%Y-%m-%d') for d in unique_dates_sorted]))
+        
+        return df
+    except Exception as e:
+        st.error(f"Error loading market_caps.xlsx: {str(e)}")
+        st.stop()
+
+# ------------------------------
+# 2. Load Data
+# ------------------------------
+# Define file paths
+current_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.join(current_dir, "data")
+sectors_file_path = os.path.join(data_dir, "stock_sectors.xlsx")
+market_caps_file_path = os.path.join(data_dir, "market_caps.xlsx")
+
+# Check if files exist
+if not os.path.exists(sectors_file_path):
+    st.error(f"File not found: {sectors_file_path}")
+    st.stop()
+
+if not os.path.exists(market_caps_file_path):
+    st.error(f"File not found: {market_caps_file_path}")
+    st.stop()
+
+# Load data from files
+st.sidebar.info("Loading data from files...")
+sectors_df = load_sectors_file(sectors_file_path)
+market_caps_df = load_market_caps_file(market_caps_file_path)
+st.sidebar.success("Data loaded successfully!")
+
+# ------------------------------
+# 3. User Inputs
+# ------------------------------
+st.sidebar.header("Analysis Settings")
+
+# Grouping selection: sector or industry
+group_by = st.sidebar.selectbox("Group By", options=["sector", "industry"])
+
+# No need for selection - we'll show all
+unique_groups = sectors_df[group_by].unique()
+st.sidebar.write(f"Displaying all {len(unique_groups)} {group_by}s")
+selected_group = unique_groups  # Use all groups by default
+
+# Minimum streak length for applying the reverse penalty
+min_streak = st.sidebar.slider("Minimum streak for penalty", min_value=2, max_value=10, value=4)
+
+# Display date range
+unique_dates = sorted(market_caps_df['fetch_date'].dt.date.unique())
+if len(unique_dates) > 0:
+    min_date = min(unique_dates)
+    max_date = max(unique_dates)
+    
+    # How many days to display
+    max_days = len(unique_dates)
+    days_to_display = st.sidebar.slider(
+        "Days to display", 
+        min_value=1, 
+        max_value=max_days, 
+        value=min(max_days, 20)
+    )
+    
+    # Calculate display start date based on number of days
+    if days_to_display < max_days:
+        display_start_date = unique_dates[-days_to_display]
+    else:
+        display_start_date = min_date
+    
+    # New: Percent change lookback period
+    percent_change_days = st.sidebar.slider(
+        "Percent change lookback period (days)",
+        min_value=1,
+        max_value=max_days,
+        value=min(max_days, 5)
+    )
+else:
+    st.error("No valid dates found in the data.")
+    st.stop()
+
+# ------------------------------
+# 4. Process Data
+# ------------------------------
+@st.cache_data
+def calculate_daily_changes(market_caps_df, sectors_df, group_by):
+    """Calculate daily changes in market cap by sector/industry"""
+    # Debugging: Show unique dates before processing
+    unique_dates_before = sorted(market_caps_df['fetch_date'].dt.date.unique())
+    st.sidebar.write(f"Processing {len(unique_dates_before)} dates: {', '.join([d.strftime('%Y-%m-%d') for d in unique_dates_before])}")
+    
+    # Get all symbols from the sectors dataframe
+    all_symbols = sectors_df['symbol'].unique()
+    
+    # Filter market caps to only include symbols in the sectors dataframe
+    market_caps_filtered = market_caps_df[market_caps_df['symbol'].isin(all_symbols)]
+    
+    # Create a cross-join of all symbols with all dates to ensure complete data
+    all_dates = market_caps_filtered['fetch_date'].dt.date.unique()
+    
+    # Merge with sectors data
+    merged_df = pd.merge(market_caps_filtered, sectors_df[['symbol', 'sector', 'industry']], on='symbol', how='inner')
+    
+    # Display counts per date after merging
+    date_counts = merged_df.groupby(merged_df['fetch_date'].dt.date).size()
+    for date, count in date_counts.items():
+        st.sidebar.write(f"After merging - {date}: {count} entries")
+    
+    # Convert market cap to numeric, force type to float to handle scientific notation
+    merged_df['market_cap'] = pd.to_numeric(merged_df['market_cap'], errors='coerce')
+    
+    # Sort by date and symbol
+    merged_df = merged_df.sort_values(['symbol', 'fetch_date'])
+    
+    # Calculate day-to-day market cap change for each symbol
+    merged_df['prev_market_cap'] = merged_df.groupby('symbol')['market_cap'].shift(1)
+    merged_df['daily_change'] = merged_df['market_cap'] - merged_df['prev_market_cap']
+    
+    # For the first date, we need to set a baseline (no previous data to compare to)
+    first_date = merged_df['fetch_date'].min().date()
+    
+    # Group by date and sector/industry - using sum() for aggregation
+    daily_group = merged_df.groupby(['fetch_date', group_by])['daily_change'].sum().reset_index()
+    
+    # Calculate total market cap per group per date for percentage calculations
+    total_market_cap = merged_df.groupby(['fetch_date', group_by])['market_cap'].sum().reset_index()
+    daily_group = pd.merge(daily_group, total_market_cap, on=['fetch_date', group_by], how='left')
+    
+    # Determine direction (1 for up, -1 for down, 0 for no change)
+    daily_group['direction'] = daily_group['daily_change'].apply(
+        lambda x: 1 if x > 0 else (-1 if x < 0 else 0)
+    )
+    
+    # Set a default direction (0) for the first date since we don't have prior data
+    # This is important to handle the first day correctly in trend calculations
+    daily_group.loc[daily_group['fetch_date'].dt.date == first_date, 'direction'] = 0
+    daily_group.loc[daily_group['fetch_date'].dt.date == first_date, 'daily_change'] = 0
+    
+    # Debugging: Show unique dates after processing
+    unique_dates_after = sorted(daily_group['fetch_date'].dt.date.unique())
+    st.sidebar.write(f"After processing: {len(unique_dates_after)} dates: {', '.join([d.strftime('%Y-%m-%d') for d in unique_dates_after])}")
+    
+    return daily_group
+
+@st.cache_data
+def calculate_trend_score(daily_changes, min_streak=4):
+    """Calculate trend scores with streak penalties - FIXED CALCULATION"""
+    # Sort daily changes by date to ensure chronological processing
+    daily_changes = daily_changes.sort_values('fetch_date')
+    
+    # Get unique dates and groups
+    all_dates = sorted(daily_changes['fetch_date'].unique())
+    groups = daily_changes[group_by].unique()
+    
+    # Initialize result structure
+    results = []
+    
+    # Process each group
+    for group in groups:
+        # Get data for this group and sort by date
+        group_data = daily_changes[daily_changes[group_by] == group].sort_values('fetch_date')
+        
+        # Create a dataframe with all dates for this group
+        date_df = pd.DataFrame({'fetch_date': all_dates})
+        group_df = pd.merge(date_df, group_data, on='fetch_date', how='left')
+        group_df = group_df.fillna({group_by: group, 'direction': 0, 'daily_change': 0})
+        group_df = group_df.sort_values('fetch_date')
+        
+        # Initialize variables for this group
+        score = 0
+        streak = 0  # Positive for up streak, negative for down streak
+        prev_direction = 0
+        
+        # Process each day for this group
+        for _, row in group_df.iterrows():
+            date = row['fetch_date']
+            direction = row['direction']
+            
+            # First data point
+            if prev_direction == 0:
+                if direction != 0:
+                    streak = direction  # Start streak (+1 or -1)
+                    score += direction
+                # If direction is 0, keep everything at 0
+            
+            # Direction changed
+            elif direction != 0 and direction != prev_direction:
+                # Check if previous streak was significant
+                if abs(streak) >= min_streak:
+                    # Apply special penalty based on half the streak
+                    change = abs(streak) // 2  # Half of streak length, rounded down
+                    
+                    # Apply change in new direction
+                    score += direction * change
+                else:
+                    # Regular single-day change
+                    score += direction
+                
+                # Reset streak counter in new direction
+                streak = direction
+            
+            # Continuing in same direction or stayed at 0
+            elif direction == prev_direction:
+                if direction != 0:  # Only if not zero
+                    # Add to streak in same direction
+                    streak += direction  # Will be positive for up streak, negative for down streak
+                    score += direction
+            
+            # Started moving after being at 0
+            elif prev_direction == 0 and direction != 0:
+                streak = direction
+                score += direction
+            
+            # Update previous direction if current direction is non-zero
+            if direction != 0:
+                prev_direction = direction
+            
+            # Save the current state
+            results.append({
+                'date': date,
+                group_by: group,
+                'score': score,
+                'streak': streak,
+                'direction': direction,
+                'market_cap': row.get('market_cap', 0)  # Add market cap for percentage calculations
+            })
+    
+    return pd.DataFrame(results)
+
+@st.cache_data
+def calculate_percent_changes(daily_group_data, lookback_days):
+    """Calculate percent changes for each group over specified lookback period"""
+    # Make sure we have the market_cap column
+    if 'market_cap' not in daily_group_data.columns:
+        st.error("Market cap data not available for percent change calculation")
+        return pd.DataFrame()
+    
+    # Sort by date
+    daily_group_data = daily_group_data.sort_values('fetch_date')
+    
+    # Get unique dates and groups
+    all_dates = sorted(daily_group_data['fetch_date'].unique())
+    groups = daily_group_data[group_by].unique()
+    
+    # If we don't have enough dates for the lookback, adjust
+    if len(all_dates) <= lookback_days:
+        lookback_days = len(all_dates) - 1
+        if lookback_days < 1:
+            st.warning("Not enough dates for percent change calculation")
+            return pd.DataFrame()
+    
+    # Get the latest date and the reference date (lookback days ago)
+    latest_date = all_dates[-1]
+    reference_date = all_dates[-lookback_days-1] if lookback_days < len(all_dates) else all_dates[0]
+    
+    # Filter data for the two dates
+    latest_data = daily_group_data[daily_group_data['fetch_date'] == latest_date]
+    reference_data = daily_group_data[daily_group_data['fetch_date'] == reference_date]
+    
+    # Prepare the result dataframe
+    percent_changes = []
+    
+    # Calculate percent change for each group
+    for group in groups:
+        latest_group = latest_data[latest_data[group_by] == group]
+        reference_group = reference_data[reference_data[group_by] == group]
+        
+        if not latest_group.empty and not reference_group.empty:
+            latest_value = latest_group['market_cap'].iloc[0]
+            reference_value = reference_group['market_cap'].iloc[0]
+            
+            if reference_value > 0:  # Avoid division by zero
+                percent_change = ((latest_value - reference_value) / reference_value) * 100
+            else:
+                percent_change = 0  # Default if reference is zero
+                
+            percent_changes.append({
+                group_by: group,
+                'percent_change': percent_change,
+                'latest_value': latest_value,
+                'reference_value': reference_value,
+                'latest_date': latest_date,
+                'reference_date': reference_date
+            })
+    
+    return pd.DataFrame(percent_changes)
+
+# Calculate
+st.sidebar.write("Starting data processing...")
+daily_changes = calculate_daily_changes(market_caps_df, sectors_df, group_by)
+trend_scores = calculate_trend_score(daily_changes, min_streak)
+st.sidebar.write("Data processing complete.")
+
+# Calculate percent changes
+percent_changes = calculate_percent_changes(daily_changes, percent_change_days)
+
+# Filter for time range (all groups are included by default)
+filtered_scores = trend_scores[
+    trend_scores['date'] >= pd.Timestamp(display_start_date)
+].sort_values(['date', group_by])
+
+# ------------------------------
+# 5. Visualize Results
+# ------------------------------
+st.header(f"Valuation Trend Scores by {group_by.capitalize()}")
+
+# Create a line chart with improved hover showing all industries at the same data point
+import plotly.graph_objects as go
+from collections import defaultdict
+
+# Helper function to create hover text showing all industries with the same score on a date
+def create_grouped_hover_data(data):
+    # Group by date and score
+    grouped_data = defaultdict(list)
+    for _, row in data.iterrows():
+        date_str = row['date'].strftime('%Y-%m-%d')
+        score = row['score']
+        group = row[group_by]
+        key = (date_str, score)
+        grouped_data[key].append(group)
+    
+    # Create a lookup dictionary for hover text
+    hover_lookup = {}
+    for (date_str, score), groups in grouped_data.items():
+        for group in groups:
+            hover_lookup[(date_str, score, group)] = {
+                'date': date_str,
+                'score': score,
+                'group': group,
+                'all_groups': groups,
+                'count': len(groups)
+            }
+    
+    return hover_lookup
+
+# Create the hover lookup data
+hover_data = create_grouped_hover_data(filtered_scores)
+
+# Create a figure with go.Scatter for more control
+fig = go.Figure()
+
+# Create a sorted list of unique groups for consistent colors
+unique_sorted_groups = sorted(filtered_scores[group_by].unique())
+
+# Create a colormap 
+colormap = px.colors.qualitative.Plotly  # Using Plotly's default color scheme
+color_dict = {group: colormap[i % len(colormap)] for i, group in enumerate(unique_sorted_groups)}
+
+# Add each group as a separate trace
+for group in unique_sorted_groups:
+    group_data = filtered_scores[filtered_scores[group_by] == group]
+    
+    # Custom hover text showing all industries with same score on same date
+    hover_texts = []
+    for _, row in group_data.iterrows():
+        date_str = row['date'].strftime('%Y-%m-%d')
+        score = row['score']
+        key = (date_str, score, group)
+        
+        if key in hover_data:
+            info = hover_data[key]
+            # Create hover text with all groups that have the same score on this date
+            if info['count'] > 1:
+                other_groups = [g for g in info['all_groups'] if g != group]
+                hover_text = f"<b>{group}</b><br>Date: {date_str}<br>Score: {score}<br><br>Also at this score:<br>"
+                hover_text += "<br>".join(other_groups)
+                hover_text += f"<br><br>Total: {info['count']} industries"
+            else:
+                hover_text = f"<b>{group}</b><br>Date: {date_str}<br>Score: {score}<br><br>No other industries at this score"
+            
+            hover_texts.append(hover_text)
+    
+    # Add the trace for this group
+    fig.add_trace(go.Scatter(
+        x=group_data['date'],
+        y=group_data['score'],
+        mode='lines',
+        name=group,
+        line=dict(color=color_dict[group], width=4),
+        hoverinfo='text',
+        hovertext=hover_texts,
+        hoverlabel=dict(
+            bgcolor='rgba(0, 0, 0, 0.8)',  # Dark background with opacity
+            font=dict(color='white', size=14),  # White text
+            bordercolor='white',  # White border
+            align='left'  # Left-aligned text
+        ),
+    ))
+
+# Update layout
+fig.update_layout(
+    title=f"Valuation Trend Barometer Scores Over Time",
+    xaxis_title="Date",
+    yaxis_title="Cumulative Score",
+    xaxis=dict(showgrid=True, gridwidth=1, gridcolor='LightGray'),
+    yaxis=dict(showgrid=True, gridwidth=1, gridcolor='LightGray'),
+    hovermode='closest',
+    showlegend=False,
+    height=800
+)
+
+# Add hover points to increase hover reliability
+for group in unique_sorted_groups:
+    group_data = filtered_scores[filtered_scores[group_by] == group]
+    
+    # Add invisible markers at each data point to improve hover detection
+    fig.add_trace(go.Scatter(
+        x=group_data['date'],
+        y=group_data['score'],
+        mode='markers',
+        marker=dict(
+            size=10,
+            opacity=0,  # Invisible markers
+            color=color_dict[group]
+        ),
+        hoverinfo='skip',  # Skip hover for these points
+        showlegend=False,
+        name=f"{group} (markers)"
+    ))
+
+st.plotly_chart(fig, use_container_width=True)
+
+# ------------------------------
+# Current Scores Visualization
+# ------------------------------
+st.header(f"Current Scores")
+
+# Get the latest date
+latest_date = filtered_scores['date'].max()
+st.write(f"Latest date for data: {latest_date.strftime('%Y-%m-%d')}")
+
+# Get current scores
+current_data = filtered_scores[filtered_scores['date'] == latest_date].copy()
+st.write(f"Number of groups with data: {len(current_data)}")
+
+# Filter out zero scores since we don't want to display them
+current_data_nonzero = current_data[current_data['score'] != 0].copy()
+st.write(f"Number of groups with non-zero scores: {len(current_data_nonzero)}")
+
+# Sort by absolute score value
+current_data_nonzero = current_data_nonzero.sort_values('score', key=abs, ascending=False)
+
+# Create colorscale that works well with positive/negative scores
+colorscale = [
+    [0, 'red'],      # Negative scores
+    [0.4, 'lightcoral'],
+    [0.5, 'white'],  # Zero (neutral - though we don't display these)
+    [0.6, 'lightblue'],
+    [1, 'blue']      # Positive scores
+]
+
+# Only create the chart if we have non-zero scores
+if len(current_data_nonzero) > 0:
+    # Create the bar chart using the actual score data
+    fig2 = px.bar(
+        current_data_nonzero, 
+        x=group_by, 
+        y='score',
+        color='score',
+        color_continuous_scale=colorscale,
+        title=f"Current Scores by {group_by.capitalize()}",
+        labels={'score': 'Score'},
+        height=600
+    )
+
+    # Add grid for better readability, rotate labels if many industries
+    fig2.update_layout(
+        xaxis_title=group_by.capitalize(), 
+        yaxis_title="Score (+ Up, - Down)",
+        xaxis=dict(
+            tickangle=90 if len(unique_groups) > 20 else 0,
+            showgrid=True, 
+            gridwidth=1, 
+            gridcolor='LightGray'
+        ),
+        yaxis=dict(
+            showgrid=True, 
+            gridwidth=1, 
+            gridcolor='LightGray',
+            zeroline=True,  # Add zero line
+            zerolinecolor='black',
+            zerolinewidth=2
+        ),
+        margin=dict(b=150 if len(unique_groups) > 20 else 80),  # More bottom margin for rotated labels
+    )
+
+    # Label each bar with its score value
+    for i, row in current_data_nonzero.iterrows():
+        fig2.add_annotation(
+            x=row[group_by],
+            y=row['score'],
+            text=str(int(row['score'])),
+            showarrow=False,
+            font=dict(color="black", size=10),
+            bgcolor="white",
+            bordercolor="black",
+            borderwidth=1
+        )
+
+    st.plotly_chart(fig2, use_container_width=True)
+else:
+    st.write("No non-zero scores to display.")
+
+# ------------------------------
+# NEW: Percent Change Visualization
+# ------------------------------
+st.header(f"Percent Change over the Last {percent_change_days} {'Day' if percent_change_days == 1 else 'Days'}")
+
+if not percent_changes.empty:
+    # Get the latest and reference dates
+    latest_date = percent_changes['latest_date'].iloc[0].strftime('%Y-%m-%d')
+    reference_date = percent_changes['reference_date'].iloc[0].strftime('%Y-%m-%d')
+    
+    st.write(f"Change from {reference_date} to {latest_date}")
+    
+    # Sort by percent change value (largest positive to largest negative)
+    percent_changes_sorted = percent_changes.sort_values('percent_change', ascending=False)
+    
+    # Define color scale for percent changes
+    percent_colorscale = [
+        [0, 'red'],      # Negative changes
+        [0.4, 'lightcoral'],
+        [0.5, 'white'],  # Zero (neutral)
+        [0.6, 'lightblue'],
+        [1, 'green']     # Positive changes
+    ]
+    
+    # Create the bar chart
+    fig_pct = px.bar(
+        percent_changes_sorted, 
+        x=group_by, 
+        y='percent_change',
+        color='percent_change',
+        color_continuous_scale=percent_colorscale,
+        title=f"Percent Change by {group_by.capitalize()} ({reference_date} to {latest_date})",
+        labels={'percent_change': '% Change'},
+        height=600
+    )
+    
+    # Add grid for better readability, rotate labels if many industries
+    fig_pct.update_layout(
+        xaxis_title=group_by.capitalize(), 
+        yaxis_title="Percent Change",
+        xaxis=dict(
+            tickangle=90 if len(unique_groups) > 20 else 0,
+            showgrid=True, 
+            gridwidth=1, 
+            gridcolor='LightGray'
+        ),
+        yaxis=dict(
+            showgrid=True, 
+            gridwidth=1, 
+            gridcolor='LightGray',
+            zeroline=True,  # Add zero line
+            zerolinecolor='black',
+            zerolinewidth=2
+        ),
+        margin=dict(b=150 if len(unique_groups) > 20 else 80),  # More bottom margin for rotated labels
+    )
+    
+    # We're removing the labels above the bars by commenting out this code
+    # for i, row in percent_changes_sorted.iterrows():
+    #     fig_pct.add_annotation(
+    #         x=row[group_by],
+    #         y=row['percent_change'],
+    #         text=f"{row['percent_change']:.1f}%",
+    #         showarrow=False,
+    #         font=dict(color="black", size=10),
+    #         bgcolor="white",
+    #         bordercolor="black",
+    #         borderwidth=1
+    #     )
+    
+    st.plotly_chart(fig_pct, use_container_width=True)
+    
+    # Optional: Show percent change data table
+    if st.checkbox("Show Percent Change Data Table"):
+        st.dataframe(
+            percent_changes_sorted[[group_by, 'percent_change', 'latest_value', 'reference_value']]
+            .sort_values('percent_change', ascending=False)
+        )
+else:
+    st.write("Not enough data for percent change calculation.")
+
+# ------------------------------
+# Current Streaks Visualization
+# ------------------------------
+st.header(f"Current Streaks")
+
+# Filter out zero streaks since we don't want to display them
+current_streak_nonzero = current_data[current_data['streak'] != 0].copy()
+st.write(f"Number of groups with non-zero streaks: {len(current_streak_nonzero)}")
+
+# Sort by absolute streak value
+current_streak_nonzero = current_streak_nonzero.sort_values('streak', key=abs, ascending=False)
+
+# Only create the chart if we have non-zero streaks
+if len(current_streak_nonzero) > 0:
+    # Create the bar chart using the actual streak data
+    fig3 = px.bar(
+        current_streak_nonzero, 
+        x=group_by, 
+        y='streak',
+        color='streak',
+        color_continuous_scale=colorscale,
+        title=f"Current Streak Length by {group_by.capitalize()}",
+        labels={'streak': 'Streak Length'},
+        height=600
+    )
+
+    # Add grid for better readability, rotate labels if many industries
+    fig3.update_layout(
+        xaxis_title=group_by.capitalize(), 
+        yaxis_title="Streak Length (+ Up, - Down)",
+        xaxis=dict(
+            tickangle=90 if len(unique_groups) > 20 else 0,
+            showgrid=True, 
+            gridwidth=1, 
+            gridcolor='LightGray'
+        ),
+        yaxis=dict(
+            showgrid=True, 
+            gridwidth=1, 
+            gridcolor='LightGray',
+            zeroline=True,  # Add zero line
+            zerolinecolor='black',
+            zerolinewidth=2
+        ),
+        margin=dict(b=150 if len(unique_groups) > 20 else 80),  # More bottom margin for rotated labels
+    )
+
+    # Label each bar with its streak value
+    for i, row in current_streak_nonzero.iterrows():
+        fig3.add_annotation(
+            x=row[group_by],
+            y=row['streak'],
+            text=str(int(row['streak'])),
+            showarrow=False,
+            font=dict(color="black", size=10),
+            bgcolor="white",
+            bordercolor="black",
+            borderwidth=1
+        )
+
+    st.plotly_chart(fig3, use_container_width=True)
+else:
+    st.write("No non-zero streaks to display.")
+
+# ------------------------------
+# Daily Direction Heatmap
+# ------------------------------
+st.header("Daily Direction Heatmap")
+
+# Pivot data for heatmap
+pivot_data = daily_changes.pivot(index='fetch_date', columns=group_by, values='direction').fillna(0)
+pivot_data = pivot_data.loc[pivot_data.index >= pd.Timestamp(display_start_date)]
+
+# Create heatmap
+fig4 = go.Figure(data=go.Heatmap(
+    z=pivot_data.values,
+    x=pivot_data.columns,
+    y=[d.strftime('%Y-%m-%d') for d in pivot_data.index],
+    colorscale=[[0, 'red'], [0.5, 'white'], [1, 'green']],
+    zmin=-1, zmax=1
+))
+
+fig4.update_layout(
+    title=f"Daily Direction by {group_by.capitalize()} (Green=Up, Red=Down, White=No Change)",
+    xaxis_title=group_by.capitalize(),
+    yaxis_title="Date",
+    height=max(600, len(pivot_data.index) * 25),  # Dynamic height based on number of dates
+    xaxis=dict(
+        tickangle=90 if len(unique_groups) > 20 else 0,
+        side='top'  # Move labels to top for better visibility
+    ),
+    margin=dict(b=20, t=100 if len(unique_groups) > 20 else 80)  # Adjust margins
+)
+
+st.plotly_chart(fig4, use_container_width=True)
+
+# ------------------------------
+# Detailed Data and Export
+# ------------------------------
+# Optional: Show detailed data
+if st.checkbox("Show Detailed Data"):
+    st.subheader("Detailed Trend Score Data")
+    st.dataframe(filtered_scores.sort_values(['date', group_by]))
+
+# Add export functionality
+if st.button("Export Current Data"):
+    # Get the latest data for all groups
+    export_date = datetime.now().strftime("%Y%m%dT%H%M")
+    export_data = filtered_scores.sort_values(['date', group_by])
+    
+    # Create Excel buffer
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        export_data.to_excel(writer, index=False, sheet_name='Trend_Data')
+        # Add percent change data to a separate sheet
+        if not percent_changes.empty:
+            percent_changes.to_excel(writer, index=False, sheet_name='Percent_Changes')
+    output.seek(0)
+    
+    # Create download button for Excel
+    st.download_button(
+        label="Download Excel",
+        data=output,
+        file_name=f"{export_date}_export.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+# ------------------------------
+# Debugging Section
+# ------------------------------
+# Add data debugging section
+if st.sidebar.checkbox("Enable Data Debugging"):
+    st.sidebar.subheader("Data Debugging")
+    
+    # Show market cap counts by date
+    st.sidebar.write("Market Cap Counts by Date:")
+    date_counts = market_caps_df.groupby(market_caps_df['fetch_date'].dt.date).size()
+    for date, count in date_counts.items():
+        st.sidebar.write(f"{date}: {count} entries")
+    
+    # Show symbol sample for each date
+    if st.sidebar.checkbox("Show Symbol Samples"):
+        for date in sorted(market_caps_df['fetch_date'].dt.date.unique()):
+            date_df = market_caps_df[market_caps_df['fetch_date'].dt.date == date]
+            sample_symbols = date_df['symbol'].sample(min(5, len(date_df))).tolist()
+            st.sidebar.write(f"{date} symbols sample: {', '.join(sample_symbols)}")
