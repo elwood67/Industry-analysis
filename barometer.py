@@ -10,7 +10,7 @@ import os.path
 
 # Set page configuration to wide layout
 st.set_page_config(layout="wide")  # Use wide layout for better use of screen space
-st.title("Valuation Analysis")
+st.title("Valuation Trend Barometer")
 
 # ------------------------------
 # 1. Data Loading Functions
@@ -67,26 +67,64 @@ def load_market_caps_file(file_path):
 # ------------------------------
 # 2. Load Data
 # ------------------------------
-# Define file paths
-current_dir = os.path.dirname(os.path.abspath(__file__))
-data_dir = os.path.join(current_dir, "Data")
-sectors_file_path = os.path.join(Data_dir, "stock_sectors.xlsx")
-market_caps_file_path = os.path.join(Data_dir, "market_caps.xlsx")
-
-# Check if files exist
-if not os.path.exists(sectors_file_path):
-    st.error(f"File not found: {sectors_file_path}")
-    st.stop()
-
-if not os.path.exists(market_caps_file_path):
-    st.error(f"File not found: {market_caps_file_path}")
-    st.stop()
-
-# Load data from files
-st.sidebar.info("Loading data from files...")
-sectors_df = load_sectors_file(sectors_file_path)
-market_caps_df = load_market_caps_file(market_caps_file_path)
-st.sidebar.success("Data loaded successfully!")
+# Define file paths - Focus on GitHub structure
+try:
+    # For Streamlit Cloud deployment from GitHub
+    base_path = "/mount/src/industry-analysis"
+    data_dir = os.path.join(base_path, "Data")  # Capital D as seen in GitHub
+    
+    # Print paths for debugging
+    st.sidebar.write(f"Looking for files in: {data_dir}")
+    
+    # Define the file paths
+    sectors_file_path = os.path.join(data_dir, "stock_sectors.xlsx")
+    market_caps_file_path = os.path.join(data_dir, "market_caps.xlsx")
+    
+    # Check if the directory exists
+    if not os.path.exists(data_dir):
+        st.error(f"Directory not found: {data_dir}")
+        st.write("Available directories:")
+        for item in os.listdir("/mount/src"):
+            st.write(f"- /mount/src/{item}")
+        st.stop()
+    
+    # Check if files exist
+    if not os.path.exists(sectors_file_path):
+        st.error(f"File not found: {sectors_file_path}")
+        st.write("Files in data directory:")
+        for item in os.listdir(data_dir):
+            st.write(f"- {data_dir}/{item}")
+        st.stop()
+    
+    if not os.path.exists(market_caps_file_path):
+        st.error(f"File not found: {market_caps_file_path}")
+        st.write("Files in data directory:")
+        for item in os.listdir(data_dir):
+            st.write(f"- {data_dir}/{item}")
+        st.stop()
+    
+    # Load data from files
+    st.sidebar.info("Loading data from files...")
+    sectors_df = load_sectors_file(sectors_file_path)
+    market_caps_df = load_market_caps_file(market_caps_file_path)
+    st.sidebar.success("Data loaded successfully!")
+    
+except Exception as e:
+    st.error(f"Error loading data files: {str(e)}")
+    st.write("Please check the file paths or upload the files manually.")
+    
+    # Add file uploaders as a fallback
+    sectors_file = st.sidebar.file_uploader("Upload stock_sectors.xlsx", type=["csv", "xlsx", "xls"])
+    if sectors_file is not None:
+        sectors_df = load_sectors_file(sectors_file)
+    else:
+        st.stop()
+        
+    market_caps_file = st.sidebar.file_uploader("Upload market_caps.xlsx", type=["xlsx", "xls"])
+    if market_caps_file is not None:
+        market_caps_df = load_market_caps_file(market_caps_file)
+    else:
+        st.stop()
 
 # ------------------------------
 # 3. User Inputs
@@ -480,7 +518,7 @@ st.plotly_chart(fig, use_container_width=True)
 # ------------------------------
 # Current Scores Visualization
 # ------------------------------
-st.header(f"Trend-O-Meter")
+st.header(f"Current Scores")
 
 # Get the latest date
 latest_date = filtered_scores['date'].max()
