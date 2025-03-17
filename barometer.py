@@ -10,7 +10,7 @@ import os.path
 
 # Set page configuration to wide layout
 st.set_page_config(layout="wide")  # Use wide layout for better use of screen space
-st.title("Valuation Trend Barometer")
+st.title("Valuation Analysis")
 
 # ------------------------------
 # 1. Data Loading Functions
@@ -69,9 +69,9 @@ def load_market_caps_file(file_path):
 # ------------------------------
 # Define file paths
 current_dir = os.path.dirname(os.path.abspath(__file__))
-data_dir = os.path.join(current_dir, "data")
-sectors_file_path = os.path.join(data_dir, "stock_sectors.xlsx")
-market_caps_file_path = os.path.join(data_dir, "market_caps.xlsx")
+data_dir = os.path.join(current_dir, "Data")
+sectors_file_path = os.path.join(Data_dir, "stock_sectors.xlsx")
+market_caps_file_path = os.path.join(Data_dir, "market_caps.xlsx")
 
 # Check if files exist
 if not os.path.exists(sectors_file_path):
@@ -480,7 +480,7 @@ st.plotly_chart(fig, use_container_width=True)
 # ------------------------------
 # Current Scores Visualization
 # ------------------------------
-st.header(f"Current Scores")
+st.header(f"Trend-O-Meter")
 
 # Get the latest date
 latest_date = filtered_scores['date'].max()
