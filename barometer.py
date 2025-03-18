@@ -6,11 +6,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 from io import BytesIO
-import os.path
+import glob  # For finding files
 
 # Set page configuration to wide layout
 st.set_page_config(layout="wide")  # Use wide layout for better use of screen space
-st.title("Valuation Trend Barometer")
+st.title("Valuation Analysis")
 
 # ------------------------------
 # 1. Data Loading Functions
@@ -67,64 +67,91 @@ def load_market_caps_file(file_path):
 # ------------------------------
 # 2. Load Data
 # ------------------------------
-# Define file paths - Focus on GitHub structure
-try:
-    # For Streamlit Cloud deployment from GitHub
-    base_path = "/mount/src/industry-analysis"
-    data_dir = os.path.join(base_path, "Data")  # Capital D as seen in GitHub
+# Define file paths for GitHub repository structure
+# From the screenshot, I can see the data files are in the /Data folder
+# and there's also a nested data folder under stock_scores
+# Let's try multiple possible paths
+
+# Try different possible file paths based on the GitHub structure
+possible_data_paths = [
+    "Data",                      # Root Data folder
+    "data",                      # Lowercase variant 
+    "stock_scores",              # From the folder structure in your screenshot
+    os.path.join("Data", "stock_scores"),  # Nested path
+    os.path.join("data", "stock_scores"),  # Lowercase nested path
+    "."                          # Current directory
+]
+
+# Initialize with default paths
+sectors_file_path = "stock_sectors.xlsx"
+market_caps_file_path = "market_caps.xlsx"
+
+# Try to find the data files
+found_sectors = False
+found_market_caps = False
+
+# Function to check for file existence in different folders
+def find_file(filename):
+    # First try direct path
+    if os.path.exists(filename):
+        return filename
     
-    # Print paths for debugging
-    st.sidebar.write(f"Looking for files in: {data_dir}")
+    # Try in each possible data directory
+    for data_path in possible_data_paths:
+        test_path = os.path.join(data_path, filename)
+        if os.path.exists(test_path):
+            return test_path
     
-    # Define the file paths
-    sectors_file_path = os.path.join(data_dir, "stock_sectors.xlsx")
-    market_caps_file_path = os.path.join(data_dir, "market_caps.xlsx")
+    # Try one level up (parent directory)
+    parent_path = os.path.join("..", filename)
+    if os.path.exists(parent_path):
+        return parent_path
     
-    # Check if the directory exists
-    if not os.path.exists(data_dir):
-        st.error(f"Directory not found: {data_dir}")
-        st.write("Available directories:")
-        for item in os.listdir("/mount/src"):
-            st.write(f"- /mount/src/{item}")
-        st.stop()
+    # Try in Data folder one level up
+    parent_data_path = os.path.join("..", "Data", filename)
+    if os.path.exists(parent_data_path):
+        return parent_data_path
     
-    # Check if files exist
-    if not os.path.exists(sectors_file_path):
-        st.error(f"File not found: {sectors_file_path}")
-        st.write("Files in data directory:")
-        for item in os.listdir(data_dir):
-            st.write(f"- {data_dir}/{item}")
-        st.stop()
+    return None
+
+# Try to find the files
+sectors_file_path = find_file("stock_sectors.xlsx")
+market_caps_file_path = find_file("market_caps.xlsx")
+
+# Check if files exist
+if not sectors_file_path:
+    st.error("Could not find stock_sectors.xlsx in any of the expected locations")
+    st.error(f"Current working directory: {os.getcwd()}")
+    st.error(f"Files in current directory: {os.listdir('.')}")
+    # Try to find any xlsx files as a last resort
+    xlsx_files = []
+    for root, dirs, files in os.walk('.'):
+        for file in files:
+            if file.endswith('.xlsx'):
+                xlsx_files.append(os.path.join(root, file))
     
-    if not os.path.exists(market_caps_file_path):
-        st.error(f"File not found: {market_caps_file_path}")
-        st.write("Files in data directory:")
-        for item in os.listdir(data_dir):
-            st.write(f"- {data_dir}/{item}")
-        st.stop()
+    if xlsx_files:
+        st.info(f"Found these Excel files in the repository: {xlsx_files}")
     
-    # Load data from files
-    st.sidebar.info("Loading data from files...")
-    sectors_df = load_sectors_file(sectors_file_path)
-    market_caps_df = load_market_caps_file(market_caps_file_path)
-    st.sidebar.success("Data loaded successfully!")
-    
-except Exception as e:
-    st.error(f"Error loading data files: {str(e)}")
-    st.write("Please check the file paths or upload the files manually.")
-    
-    # Add file uploaders as a fallback
-    sectors_file = st.sidebar.file_uploader("Upload stock_sectors.xlsx", type=["csv", "xlsx", "xls"])
-    if sectors_file is not None:
-        sectors_df = load_sectors_file(sectors_file)
-    else:
-        st.stop()
-        
-    market_caps_file = st.sidebar.file_uploader("Upload market_caps.xlsx", type=["xlsx", "xls"])
-    if market_caps_file is not None:
-        market_caps_df = load_market_caps_file(market_caps_file)
-    else:
-        st.stop()
+    st.info("For Streamlit Cloud deployment, please make sure the Excel files are committed to your repository.")
+    st.stop()
+
+if not market_caps_file_path:
+    st.error("Could not find market_caps.xlsx in any of the expected locations")
+    st.error(f"Current working directory: {os.getcwd()}")
+    st.error(f"Files in current directory: {os.listdir('.')}")
+    st.info("For Streamlit Cloud deployment, please make sure the Excel files are committed to your repository.")
+    st.stop()
+
+# Success messages to help with troubleshooting
+st.sidebar.info(f"Found sectors file at: {sectors_file_path}")
+st.sidebar.info(f"Found market caps file at: {market_caps_file_path}")
+
+# Load data from files
+st.sidebar.info("Loading data from files...")
+sectors_df = load_sectors_file(sectors_file_path)
+market_caps_df = load_market_caps_file(market_caps_file_path)
+st.sidebar.success("Data loaded successfully!")
 
 # ------------------------------
 # 3. User Inputs
@@ -518,7 +545,7 @@ st.plotly_chart(fig, use_container_width=True)
 # ------------------------------
 # Current Scores Visualization
 # ------------------------------
-st.header(f"Current Scores")
+st.header(f"Trend-O-Meter")
 
 # Get the latest date
 latest_date = filtered_scores['date'].max()
