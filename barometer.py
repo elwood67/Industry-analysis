@@ -166,8 +166,8 @@ unique_groups = sectors_df[group_by].unique()
 st.sidebar.write(f"Displaying all {len(unique_groups)} {group_by}s")
 selected_group = unique_groups  # Use all groups by default
 
-# Minimum streak length for applying the reverse penalty
-min_streak = st.sidebar.slider("Minimum streak for penalty", min_value=2, max_value=10, value=4)
+# REMOVED: Minimum streak length for applying the reverse penalty
+# min_streak = st.sidebar.slider("Minimum streak for penalty", min_value=2, max_value=10, value=4)
 
 # Display date range
 unique_dates = sorted(market_caps_df['fetch_date'].dt.date.unique())
@@ -265,8 +265,8 @@ def calculate_daily_changes(market_caps_df, sectors_df, group_by):
     return daily_group
 
 @st.cache_data
-def calculate_trend_score(daily_changes, min_streak=4):
-    """Calculate trend scores with streak penalties - FIXED CALCULATION"""
+def calculate_trend_score(daily_changes):
+    """Calculate trend scores with simple cumulative scoring - NO PENALTY SYSTEM"""
     # Sort daily changes by date to ensure chronological processing
     daily_changes = daily_changes.sort_values('fetch_date')
     
@@ -298,44 +298,21 @@ def calculate_trend_score(daily_changes, min_streak=4):
             date = row['fetch_date']
             direction = row['direction']
             
-            # First data point
-            if prev_direction == 0:
-                if direction != 0:
-                    streak = direction  # Start streak (+1 or -1)
-                    score += direction
-                # If direction is 0, keep everything at 0
-            
-            # Direction changed
-            elif direction != 0 and direction != prev_direction:
-                # Check if previous streak was significant
-                if abs(streak) >= min_streak:
-                    # Apply special penalty based on half the streak
-                    change = abs(streak) // 2  # Half of streak length, rounded down
-                    
-                    # Apply change in new direction
-                    score += direction * change
-                else:
-                    # Regular single-day change
-                    score += direction
-                
-                # Reset streak counter in new direction
-                streak = direction
-            
-            # Continuing in same direction or stayed at 0
+            # Update streak count (for display purposes only - no penalties applied)
+            if direction == 0:
+                # No change in direction means no change in streak
+                pass
             elif direction == prev_direction:
-                if direction != 0:  # Only if not zero
-                    # Add to streak in same direction
-                    streak += direction  # Will be positive for up streak, negative for down streak
-                    score += direction
-            
-            # Started moving after being at 0
-            elif prev_direction == 0 and direction != 0:
+                # Continuing in same direction
+                streak += direction  # Will be positive for up streak, negative for down streak
+            else:
+                # Direction changed or starting from zero
                 streak = direction
-                score += direction
             
-            # Update previous direction if current direction is non-zero
+            # Simple cumulative score - just add the direction value
             if direction != 0:
-                prev_direction = direction
+                score += direction
+                prev_direction = direction  # Only update prev_direction if we have a non-zero direction
             
             # Save the current state
             results.append({
@@ -410,7 +387,7 @@ def calculate_percent_changes(daily_group_data, lookback_days):
 # Calculate
 st.sidebar.write("Starting data processing...")
 daily_changes = calculate_daily_changes(market_caps_df, sectors_df, group_by)
-trend_scores = calculate_trend_score(daily_changes, min_streak)
+trend_scores = calculate_trend_score(daily_changes)  # Removed min_streak parameter
 st.sidebar.write("Data processing complete.")
 
 # Calculate percent changes
@@ -769,23 +746,36 @@ else:
     st.write("No non-zero streaks to display.")
 
 # ------------------------------
-# Daily Direction Heatmap
+# Daily Direction Heatmap with Explicit Date Control
 # ------------------------------
 st.header("Daily Direction Heatmap")
 
-# Pivot data for heatmap
-pivot_data = daily_changes.pivot(index='fetch_date', columns=group_by, values='direction').fillna(0)
-pivot_data = pivot_data.loc[pivot_data.index >= pd.Timestamp(display_start_date)]
+# Get data for the heatmap, filtered for display start date
+display_data = daily_changes[daily_changes['fetch_date'] >= pd.Timestamp(display_start_date)].copy()
 
-# Create heatmap
+# Create string date for easier handling
+display_data['date_str'] = display_data['fetch_date'].dt.strftime('%Y-%m-%d')
+
+# Get unique trading days - these are the only days we want to show
+trading_days = sorted(display_data['date_str'].unique(), reverse=True)  # Newest first
+
+# Pivot the data using the string date
+pivot_data = display_data.pivot(index='date_str', columns=group_by, values='direction').fillna(0)
+
+# Make sure we only include the dates we have data for
+pivot_data = pivot_data.loc[trading_days]
+
+# Create the heatmap with explicit control over the y-axis categories
 fig4 = go.Figure(data=go.Heatmap(
     z=pivot_data.values,
     x=pivot_data.columns,
-    y=[d.strftime('%Y-%m-%d') for d in pivot_data.index],
+    y=pivot_data.index,  # These are our trading days only
     colorscale=[[0, 'red'], [0.5, 'white'], [1, 'green']],
     zmin=-1, zmax=1
 ))
 
+# The critical part: explicitly tell Plotly to use category mode for y-axis
+# and provide the exact list of categories (our trading days)
 fig4.update_layout(
     title=f"Daily Direction by {group_by.capitalize()} (Green=Up, Red=Down, White=No Change)",
     xaxis_title=group_by.capitalize(),
@@ -795,10 +785,351 @@ fig4.update_layout(
         tickangle=90 if len(unique_groups) > 20 else 0,
         side='top'  # Move labels to top for better visibility
     ),
+    # Explicitly set up the y-axis as categories with our trading days
+    yaxis=dict(
+        type='category',  # Force category mode
+        categoryorder='array',  # Use explicit ordering
+        categoryarray=trading_days,  # Our explicit list of trading days
+        autorange=True  # Let Plotly handle the range automatically
+    ),
     margin=dict(b=20, t=100 if len(unique_groups) > 20 else 80)  # Adjust margins
 )
 
 st.plotly_chart(fig4, use_container_width=True)
+
+# ------------------------------
+# Overall Market Cap Visualization
+# ------------------------------
+st.header("Overall Market Performance")
+
+# Function to calculate overall market metrics
+@st.cache_data
+def calculate_market_metrics(market_caps_df, sectors_df):
+    """Calculate daily overall market cap metrics"""
+    # Get all symbols from the sectors dataframe (these are the ones we want to track)
+    all_symbols = sectors_df['symbol'].unique()
+    
+    # Filter market caps to only include symbols in the sectors dataframe
+    market_caps_filtered = market_caps_df[market_caps_df['symbol'].isin(all_symbols)]
+    
+    # Convert market cap to numeric
+    market_caps_filtered['market_cap'] = pd.to_numeric(market_caps_filtered['market_cap'], errors='coerce')
+    
+    # Group by date and calculate total market cap and counts
+    daily_totals = market_caps_filtered.groupby('fetch_date').agg(
+        total_market_cap=('market_cap', 'sum'),
+        company_count=('symbol', 'count')
+    ).reset_index()
+    
+    # Sort by date
+    daily_totals = daily_totals.sort_values('fetch_date')
+    
+    # Calculate daily percentage changes
+    daily_totals['pct_change'] = daily_totals['total_market_cap'].pct_change() * 100
+    
+    # Calculate cumulative percentage change (indexed to first day = 100)
+    first_value = daily_totals['total_market_cap'].iloc[0]
+    daily_totals['cumulative_index'] = daily_totals['total_market_cap'] / first_value * 100
+    
+    # Calculate moving averages
+    daily_totals['ma_5d'] = daily_totals['total_market_cap'].rolling(window=5, min_periods=1).mean()
+    daily_totals['ma_10d'] = daily_totals['total_market_cap'].rolling(window=10, min_periods=1).mean()
+    
+    # Calculate daily direction (up/down)
+    daily_totals['direction'] = daily_totals['pct_change'].apply(
+        lambda x: 1 if x > 0 else (-1 if x < 0 else 0)
+    )
+    
+    # Mark days with significant moves (e.g., >1% change)
+    daily_totals['significant_move'] = abs(daily_totals['pct_change']) > 1
+    
+    return daily_totals
+
+# Filter for the display period
+market_metrics = calculate_market_metrics(market_caps_df, sectors_df)
+filtered_metrics = market_metrics[market_metrics['fetch_date'] >= pd.Timestamp(display_start_date)]
+
+# Create a two-column layout
+col1, col2 = st.columns(2)
+
+# Column 1: Summary metrics
+with col1:
+    st.subheader("Market Summary")
+    
+    # Only proceed if we have data
+    if not filtered_metrics.empty:
+        # Get latest values
+        latest = filtered_metrics.iloc[-1]
+        first = filtered_metrics.iloc[0]
+        
+        # Calculate metrics
+        total_change = ((latest['total_market_cap'] / first['total_market_cap']) - 1) * 100
+        avg_daily_change = filtered_metrics['pct_change'].mean()
+        up_days = (filtered_metrics['direction'] > 0).sum()
+        down_days = (filtered_metrics['direction'] < 0).sum()
+        flat_days = (filtered_metrics['direction'] == 0).sum()
+        total_days = len(filtered_metrics)
+        
+        # Format values for display
+        total_market_cap = f"${latest['total_market_cap'] / 1_000_000_000_000:.2f}T"
+        
+        # Create metrics
+        st.metric("Current Market Cap", total_market_cap, f"{latest['pct_change']:.2f}% today")
+        st.metric("Period Change", f"{total_change:.2f}%", f"Over {total_days} trading days")
+        st.metric("Avg. Daily Change", f"{avg_daily_change:.2f}%")
+        
+        # Create a gauge-style chart for up/down day ratio
+        if up_days + down_days > 0:  # Avoid division by zero
+            up_ratio = up_days / (up_days + down_days)
+            
+            # Use a horizontal bar chart as a simple gauge
+            fig_gauge = go.Figure()
+            
+            # Add the gauge bar
+            fig_gauge.add_trace(go.Bar(
+                x=[up_ratio * 100, (1-up_ratio) * 100],
+                y=["Up/Down Ratio"],
+                orientation='h',
+                marker=dict(
+                    color=['rgba(0, 200, 0, 0.8)', 'rgba(255, 0, 0, 0.8)']
+                ),
+                text=[f"{up_days} days up", f"{down_days} days down"],
+                textposition='inside',
+                insidetextanchor='middle',
+                name=''
+            ))
+            
+            fig_gauge.update_layout(
+                title="Trading Days: Up vs Down",
+                barmode='stack',
+                height=150,
+                margin=dict(l=20, r=20, t=40, b=20),
+                showlegend=False,
+                xaxis=dict(
+                    showticklabels=False,
+                    showgrid=False,
+                    zeroline=False
+                ),
+                yaxis=dict(
+                    showticklabels=False,
+                    showgrid=False,
+                    zeroline=False
+                )
+            )
+            
+            st.plotly_chart(fig_gauge, use_container_width=True)
+    else:
+        st.write("No data available for the selected period.")
+
+# Column 2: Distribution of daily changes
+with col2:
+    st.subheader("Daily Change Distribution")
+    
+    if not filtered_metrics.empty and len(filtered_metrics) > 1:  # Need at least 2 days for changes
+        # Create histogram of daily changes
+        fig_hist = px.histogram(
+            filtered_metrics, 
+            x='pct_change',
+            nbins=20,
+            color_discrete_sequence=['rgba(55, 126, 184, 0.7)'],
+            labels={'pct_change': 'Daily % Change'}
+        )
+        
+        fig_hist.update_layout(
+            height=300,
+            margin=dict(l=20, r=20, t=20, b=20),
+            xaxis=dict(title='Daily % Change'),
+            yaxis=dict(title='Frequency')
+        )
+        
+        # Add a vertical line at 0%
+        fig_hist.add_shape(
+            type='line',
+            x0=0, y0=0,
+            x1=0, y1=1,
+            yref='paper',
+            line=dict(color='red', width=2, dash='dash')
+        )
+        
+        st.plotly_chart(fig_hist, use_container_width=True)
+    else:
+        st.write("Not enough data for histogram.")
+
+# Main chart: Combined line chart of total market cap and daily changes
+st.subheader("Market Cap Trends")
+
+# Create tabs for different visualizations
+tab1, tab2, tab3 = st.tabs(["Total Market Cap", "Daily % Change", "Combined View"])
+
+with tab1:
+    if not filtered_metrics.empty:
+        # Create line chart of total market cap
+        fig_total = px.line(
+            filtered_metrics, 
+            x='fetch_date', 
+            y=['total_market_cap', 'ma_5d', 'ma_10d'],
+            labels={
+                'fetch_date': 'Date',
+                'total_market_cap': 'Total Market Cap',
+                'ma_5d': '5-Day MA',
+                'ma_10d': '10-Day MA',
+                'value': 'Market Cap ($)'
+            },
+            title="Total Market Capitalization Over Time"
+        )
+        
+        # Format y-axis to show in trillions
+        fig_total.update_layout(
+            yaxis=dict(
+                tickformat='.2f',
+                title='Market Cap (Trillions $)'
+            ),
+            hovermode='x unified'
+        )
+        
+        # Scale y-values to trillions for better readability
+        fig_total.update_traces(y=filtered_metrics['total_market_cap'] / 1_000_000_000_000, selector=dict(name='total_market_cap'))
+        fig_total.update_traces(y=filtered_metrics['ma_5d'] / 1_000_000_000_000, selector=dict(name='ma_5d'))
+        fig_total.update_traces(y=filtered_metrics['ma_10d'] / 1_000_000_000_000, selector=dict(name='ma_10d'))
+        
+        # Update line colors and names
+        fig_total.for_each_trace(
+            lambda trace: trace.update(
+                name='Total Market Cap' if trace.name == 'total_market_cap' else 
+                     '5-Day Moving Avg' if trace.name == 'ma_5d' else
+                     '10-Day Moving Avg',
+                line=dict(
+                    width=3 if trace.name == 'total_market_cap' else 2,
+                    dash=None if trace.name == 'total_market_cap' else 'dash'
+                )
+            )
+        )
+        
+        st.plotly_chart(fig_total, use_container_width=True)
+    else:
+        st.write("No data available for the selected period.")
+
+with tab2:
+    if not filtered_metrics.empty and len(filtered_metrics) > 1:
+        # Create bar chart of daily percentage changes
+        fig_pct = px.bar(
+            filtered_metrics, 
+            x='fetch_date', 
+            y='pct_change',
+            color='direction',
+            color_discrete_map={1: 'green', -1: 'red', 0: 'gray'},
+            labels={
+                'fetch_date': 'Date',
+                'pct_change': 'Daily % Change'
+            },
+            title="Daily Market Cap Percentage Change"
+        )
+        
+        # Add a horizontal line at 0%
+        fig_pct.add_shape(
+            type='line',
+            x0=filtered_metrics['fetch_date'].min(),
+            y0=0,
+            x1=filtered_metrics['fetch_date'].max(),
+            y1=0,
+            line=dict(color='black', width=1)
+        )
+        
+        # Hide the legend (not needed)
+        fig_pct.update_layout(
+            showlegend=False,
+            hovermode='x unified'
+        )
+        
+        st.plotly_chart(fig_pct, use_container_width=True)
+    else:
+        st.write("Not enough data for percentage change chart.")
+
+with tab3:
+    if not filtered_metrics.empty and len(filtered_metrics) > 1:
+        # Create a figure with two y-axes
+        fig_combined = go.Figure()
+        
+        # Add market cap line (primary y-axis)
+        fig_combined.add_trace(
+            go.Scatter(
+                x=filtered_metrics['fetch_date'],
+                y=filtered_metrics['total_market_cap'] / 1_000_000_000_000,
+                name='Total Market Cap',
+                line=dict(color='rgb(31, 119, 180)', width=3),
+                yaxis='y'
+            )
+        )
+        
+        # Add 5-day moving average
+        fig_combined.add_trace(
+            go.Scatter(
+                x=filtered_metrics['fetch_date'],
+                y=filtered_metrics['ma_5d'] / 1_000_000_000_000,
+                name='5-Day MA',
+                line=dict(color='rgba(31, 119, 180, 0.5)', width=2, dash='dash'),
+                yaxis='y'
+            )
+        )
+        
+        # Add daily percentage change bars (secondary y-axis)
+        fig_combined.add_trace(
+            go.Bar(
+                x=filtered_metrics['fetch_date'],
+                y=filtered_metrics['pct_change'],
+                name='Daily % Change',
+                marker=dict(
+                    color=filtered_metrics['pct_change'].apply(
+                        lambda x: 'green' if x > 0 else 'red' if x < 0 else 'gray'
+                    )
+                ),
+                opacity=0.7,
+                yaxis='y2'
+            )
+        )
+        
+        # Set up dual y-axes
+        fig_combined.update_layout(
+            title='Market Cap and Daily Percentage Change',
+            yaxis=dict(
+                title='Market Cap (Trillions $)',
+                titlefont=dict(color='rgb(31, 119, 180)'),
+                tickfont=dict(color='rgb(31, 119, 180)'),
+                side='left'
+            ),
+            yaxis2=dict(
+                title='Daily % Change',
+                titlefont=dict(color='rgb(255, 127, 14)'),
+                tickfont=dict(color='rgb(255, 127, 14)'),
+                overlaying='y',
+                side='right',
+                range=[-max(abs(filtered_metrics['pct_change'].max()), abs(filtered_metrics['pct_change'].min())) * 1.2,
+                        max(abs(filtered_metrics['pct_change'].max()), abs(filtered_metrics['pct_change'].min())) * 1.2]
+            ),
+            legend=dict(
+                orientation='h',
+                yanchor='bottom',
+                y=1.02,
+                xanchor='right',
+                x=1
+            ),
+            hovermode='x unified'
+        )
+        
+        # Add a horizontal line at 0% for the secondary y-axis
+        fig_combined.add_shape(
+            type='line',
+            x0=filtered_metrics['fetch_date'].min(),
+            y0=0,
+            x1=filtered_metrics['fetch_date'].max(),
+            y1=0,
+            line=dict(color='gray', width=1, dash='dot'),
+            yref='y2'
+        )
+        
+        st.plotly_chart(fig_combined, use_container_width=True)
+    else:
+        st.write("Not enough data for combined chart.")
 
 # ------------------------------
 # Detailed Data and Export
