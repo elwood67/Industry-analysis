@@ -1088,6 +1088,15 @@ with tab3:
             )
         )
         
+        # Calculate range for secondary y-axis safely
+        max_pct_change = filtered_metrics['pct_change'].max() if not pd.isna(filtered_metrics['pct_change'].max()) else 1
+        min_pct_change = filtered_metrics['pct_change'].min() if not pd.isna(filtered_metrics['pct_change'].min()) else -1
+        y2_max = max(abs(max_pct_change), abs(min_pct_change)) * 1.2
+        
+        # Fall back to default values if calculations yield invalid results
+        if pd.isna(y2_max) or y2_max == 0:
+            y2_max = 2  # Default to ±2% if no valid data
+        
         # Set up dual y-axes
         fig_combined.update_layout(
             title='Market Cap and Daily Percentage Change',
@@ -1103,8 +1112,7 @@ with tab3:
                 tickfont=dict(color='rgb(255, 127, 14)'),
                 overlaying='y',
                 side='right',
-                range=[-max(abs(filtered_metrics['pct_change'].max()), abs(filtered_metrics['pct_change'].min())) * 1.2,
-                        max(abs(filtered_metrics['pct_change'].max()), abs(filtered_metrics['pct_change'].min())) * 1.2]
+                range=[-y2_max, y2_max]
             ),
             legend=dict(
                 orientation='h',
