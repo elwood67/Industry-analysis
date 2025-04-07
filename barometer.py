@@ -1047,32 +1047,34 @@ with tab2:
 
 with tab3:
     if not filtered_metrics.empty and len(filtered_metrics) > 1:
-        # Create a figure with two y-axes
-        fig_combined = go.Figure()
-        
-        # Add market cap line (primary y-axis)
-        fig_combined.add_trace(
-            go.Scatter(
-                x=filtered_metrics['fetch_date'],
-                y=filtered_metrics['total_market_cap'] / 1_000_000_000_000,
-                name='Total Market Cap',
-                line=dict(color='rgb(31, 119, 180)', width=3),
-                yaxis='y'
-            )
+        # Create a figure with two y-axes - use a different approach
+        fig_combined = px.line(
+            filtered_metrics, 
+            x='fetch_date',
+            y='total_market_cap',
+            labels={
+                'fetch_date': 'Date',
+                'total_market_cap': 'Total Market Cap'
+            }
         )
         
-        # Add 5-day moving average
+        # Scale to trillions for better readability
+        fig_combined.update_traces(
+            y=filtered_metrics['total_market_cap'] / 1_000_000_000_000,
+            name='Total Market Cap'
+        )
+        
+        # Add 5-day MA
         fig_combined.add_trace(
             go.Scatter(
                 x=filtered_metrics['fetch_date'],
                 y=filtered_metrics['ma_5d'] / 1_000_000_000_000,
                 name='5-Day MA',
-                line=dict(color='rgba(31, 119, 180, 0.5)', width=2, dash='dash'),
-                yaxis='y'
+                line=dict(color='rgba(31, 119, 180, 0.5)', width=2, dash='dash')
             )
         )
         
-        # Add daily percentage change bars (secondary y-axis)
+        # Add the percent change on secondary axis more carefully
         fig_combined.add_trace(
             go.Bar(
                 x=filtered_metrics['fetch_date'],
@@ -1088,23 +1090,20 @@ with tab3:
             )
         )
         
-        # Calculate range for secondary y-axis safely
-        max_pct_change = filtered_metrics['pct_change'].max() if not pd.isna(filtered_metrics['pct_change'].max()) else 1
-        min_pct_change = filtered_metrics['pct_change'].min() if not pd.isna(filtered_metrics['pct_change'].min()) else -1
-        y2_max = max(abs(max_pct_change), abs(min_pct_change)) * 1.2
+        # Calculate safe range for secondary y-axis
+        y2_values = filtered_metrics['pct_change'].dropna()
+        if len(y2_values) > 0:
+            y2_max = max(2, y2_values.abs().max() * 1.2)
+        else:
+            y2_max = 2  # Default range if no valid data
         
-        # Fall back to default values if calculations yield invalid results
-        if pd.isna(y2_max) or y2_max == 0:
-            y2_max = 2  # Default to ±2% if no valid data
-        
-        # Set up dual y-axes
+        # Update layout with safer approach
         fig_combined.update_layout(
             title='Market Cap and Daily Percentage Change',
             yaxis=dict(
                 title='Market Cap (Trillions $)',
                 titlefont=dict(color='rgb(31, 119, 180)'),
-                tickfont=dict(color='rgb(31, 119, 180)'),
-                side='left'
+                tickfont=dict(color='rgb(31, 119, 180)')
             ),
             yaxis2=dict(
                 title='Daily % Change',
