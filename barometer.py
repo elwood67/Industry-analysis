@@ -1047,63 +1047,58 @@ with tab2:
 
 with tab3:
     if not filtered_metrics.empty and len(filtered_metrics) > 1:
-        # Create a figure with two y-axes - use a different approach
-        fig_combined = px.line(
-            filtered_metrics, 
-            x='fetch_date',
-            y='total_market_cap',
-            labels={
-                'fetch_date': 'Date',
-                'total_market_cap': 'Total Market Cap'
-            }
-        )
+        # Instead of updating an existing figure, create a fresh figure from scratch
+        fig_combined = go.Figure()
         
-        # Scale to trillions for better readability
-        fig_combined.update_traces(
-            y=filtered_metrics['total_market_cap'] / 1_000_000_000_000,
-            name='Total Market Cap'
-        )
+        # Calculate safe range for secondary y-axis
+        y2_values = filtered_metrics['pct_change'].dropna()
+        y2_max = 2  # Default minimum range
+        if not y2_values.empty:
+            y2_max = max(y2_max, y2_values.abs().max() * 1.2)
         
-        # Add 5-day MA
+        # Create traces individually
+        # Market cap line (primary y-axis)
         fig_combined.add_trace(
             go.Scatter(
-                x=filtered_metrics['fetch_date'],
-                y=filtered_metrics['ma_5d'] / 1_000_000_000_000,
+                x=filtered_metrics['fetch_date'].tolist(),
+                y=(filtered_metrics['total_market_cap'] / 1_000_000_000_000).tolist(),
+                name='Total Market Cap',
+                line=dict(color='rgb(31, 119, 180)', width=3)
+            )
+        )
+        
+        # 5-day moving average (primary y-axis)
+        fig_combined.add_trace(
+            go.Scatter(
+                x=filtered_metrics['fetch_date'].tolist(),
+                y=(filtered_metrics['ma_5d'] / 1_000_000_000_000).tolist(),
                 name='5-Day MA',
                 line=dict(color='rgba(31, 119, 180, 0.5)', width=2, dash='dash')
             )
         )
         
-        # Add the percent change on secondary axis more carefully
+        # Daily percentage change bars (secondary y-axis)
+        colors = ['green' if x > 0 else 'red' if x < 0 else 'gray' for x in filtered_metrics['pct_change']]
         fig_combined.add_trace(
             go.Bar(
-                x=filtered_metrics['fetch_date'],
-                y=filtered_metrics['pct_change'],
+                x=filtered_metrics['fetch_date'].tolist(),
+                y=filtered_metrics['pct_change'].tolist(),
                 name='Daily % Change',
-                marker=dict(
-                    color=filtered_metrics['pct_change'].apply(
-                        lambda x: 'green' if x > 0 else 'red' if x < 0 else 'gray'
-                    )
-                ),
+                marker_color=colors,
                 opacity=0.7,
                 yaxis='y2'
             )
         )
         
-        # Calculate safe range for secondary y-axis
-        y2_values = filtered_metrics['pct_change'].dropna()
-        if len(y2_values) > 0:
-            y2_max = max(2, y2_values.abs().max() * 1.2)
-        else:
-            y2_max = 2  # Default range if no valid data
-        
-        # Update layout with safer approach
+        # Set layout once, avoiding multiple updates
         fig_combined.update_layout(
             title='Market Cap and Daily Percentage Change',
+            xaxis=dict(title='Date'),
             yaxis=dict(
                 title='Market Cap (Trillions $)',
                 titlefont=dict(color='rgb(31, 119, 180)'),
-                tickfont=dict(color='rgb(31, 119, 180)')
+                tickfont=dict(color='rgb(31, 119, 180)'),
+                side='left'
             ),
             yaxis2=dict(
                 title='Daily % Change',
@@ -1123,17 +1118,22 @@ with tab3:
             hovermode='x unified'
         )
         
-        # Add a horizontal line at 0% for the secondary y-axis
-        fig_combined.add_shape(
-            type='line',
-            x0=filtered_metrics['fetch_date'].min(),
-            y0=0,
-            x1=filtered_metrics['fetch_date'].max(),
-            y1=0,
-            line=dict(color='gray', width=1, dash='dot'),
-            yref='y2'
-        )
+        # Add zero line for percentage changes
+        if len(filtered_metrics) > 0:
+            min_date = filtered_metrics['fetch_date'].min()
+            max_date = filtered_metrics['fetch_date'].max()
+            
+            fig_combined.add_shape(
+                type='line',
+                x0=min_date,
+                y0=0,
+                x1=max_date,
+                y1=0,
+                line=dict(color='gray', width=1, dash='dot'),
+                yref='y2'
+            )
         
+        # Display the chart
         st.plotly_chart(fig_combined, use_container_width=True)
     else:
         st.write("Not enough data for combined chart.")
