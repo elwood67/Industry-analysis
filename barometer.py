@@ -955,11 +955,11 @@ with col2:
     else:
         st.write("Not enough data for histogram.")
 
-# Main chart: Combined line chart of total market cap and daily changes
+# Main chart: Market Cap Trends section - MODIFIED to remove Combined View
 st.subheader("Market Cap Trends")
 
-# Create tabs for different visualizations
-tab1, tab2, tab3 = st.tabs(["Total Market Cap", "Daily % Change", "Combined View"])
+# Create tabs for different visualizations - Removed Combined View
+tab1, tab2 = st.tabs(["Total Market Cap", "Daily % Change"])
 
 with tab1:
     if not filtered_metrics.empty:
@@ -1045,98 +1045,7 @@ with tab2:
     else:
         st.write("Not enough data for percentage change chart.")
 
-with tab3:
-    if not filtered_metrics.empty and len(filtered_metrics) > 1:
-        # Instead of updating an existing figure, create a fresh figure from scratch
-        fig_combined = go.Figure()
-        
-        # Calculate safe range for secondary y-axis
-        y2_values = filtered_metrics['pct_change'].dropna()
-        y2_max = 2  # Default minimum range
-        if not y2_values.empty:
-            y2_max = max(y2_max, y2_values.abs().max() * 1.2)
-        
-        # Create traces individually
-        # Market cap line (primary y-axis)
-        fig_combined.add_trace(
-            go.Scatter(
-                x=filtered_metrics['fetch_date'].tolist(),
-                y=(filtered_metrics['total_market_cap'] / 1_000_000_000_000).tolist(),
-                name='Total Market Cap',
-                line=dict(color='rgb(31, 119, 180)', width=3)
-            )
-        )
-        
-        # 5-day moving average (primary y-axis)
-        fig_combined.add_trace(
-            go.Scatter(
-                x=filtered_metrics['fetch_date'].tolist(),
-                y=(filtered_metrics['ma_5d'] / 1_000_000_000_000).tolist(),
-                name='5-Day MA',
-                line=dict(color='rgba(31, 119, 180, 0.5)', width=2, dash='dash')
-            )
-        )
-        
-        # Daily percentage change bars (secondary y-axis)
-        colors = ['green' if x > 0 else 'red' if x < 0 else 'gray' for x in filtered_metrics['pct_change']]
-        fig_combined.add_trace(
-            go.Bar(
-                x=filtered_metrics['fetch_date'].tolist(),
-                y=filtered_metrics['pct_change'].tolist(),
-                name='Daily % Change',
-                marker_color=colors,
-                opacity=0.7,
-                yaxis='y2'
-            )
-        )
-        
-        # Set layout once, avoiding multiple updates
-        fig_combined.update_layout(
-            title='Market Cap and Daily Percentage Change',
-            xaxis=dict(title='Date'),
-            yaxis=dict(
-                title='Market Cap (Trillions $)',
-                titlefont=dict(color='rgb(31, 119, 180)'),
-                tickfont=dict(color='rgb(31, 119, 180)'),
-                side='left'
-            ),
-            yaxis2=dict(
-                title='Daily % Change',
-                titlefont=dict(color='rgb(255, 127, 14)'),
-                tickfont=dict(color='rgb(255, 127, 14)'),
-                overlaying='y',
-                side='right',
-                range=[-y2_max, y2_max]
-            ),
-            legend=dict(
-                orientation='h',
-                yanchor='bottom',
-                y=1.02,
-                xanchor='right',
-                x=1
-            ),
-            hovermode='x unified'
-        )
-        
-        # Add zero line for percentage changes
-        if len(filtered_metrics) > 0:
-            min_date = filtered_metrics['fetch_date'].min()
-            max_date = filtered_metrics['fetch_date'].max()
-            
-            fig_combined.add_shape(
-                type='line',
-                x0=min_date,
-                y0=0,
-                x1=max_date,
-                y1=0,
-                line=dict(color='gray', width=1, dash='dot'),
-                yref='y2'
-            )
-        
-        # Display the chart
-        st.plotly_chart(fig_combined, use_container_width=True)
-    else:
-        st.write("Not enough data for combined chart.")
+# Removed the entire Combined View tab (with tab3)
 
 # ------------------------------
 # Detailed Data and Export
