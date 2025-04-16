@@ -166,9 +166,6 @@ unique_groups = sectors_df[group_by].unique()
 st.sidebar.write(f"Displaying all {len(unique_groups)} {group_by}s")
 selected_group = unique_groups  # Use all groups by default
 
-# REMOVED: Minimum streak length for applying the reverse penalty
-# min_streak = st.sidebar.slider("Minimum streak for penalty", min_value=2, max_value=10, value=4)
-
 # Display date range
 unique_dates = sorted(market_caps_df['fetch_date'].dt.date.unique())
 if len(unique_dates) > 0:
@@ -190,6 +187,18 @@ if len(unique_dates) > 0:
     else:
         display_start_date = min_date
     
+    # New: Add Date Picker for Score Calculation Start Date
+    st.sidebar.subheader("Score Calculation Settings")
+    score_start_date = st.sidebar.date_input(
+        "Score Calculation Start Date",
+        value=display_start_date,  # Default to display start date
+        min_value=min_date,
+        max_value=max_date
+    )
+    
+    # New: Add description about score reset
+    st.sidebar.info("Selecting a start date will reset the score calculation to zero as of that date. This helps analyze recent performance trends without historical bias.")
+    
     # New: Percent change lookback period
     percent_change_days = st.sidebar.slider(
         "Percent change lookback period (days)",
@@ -209,7 +218,7 @@ def calculate_daily_changes(market_caps_df, sectors_df, group_by):
     """Calculate daily changes in market cap by sector/industry"""
     # Debugging: Show unique dates before processing
     unique_dates_before = sorted(market_caps_df['fetch_date'].dt.date.unique())
-    st.sidebar.write(f"Processing {len(unique_dates_before)} dates: {', '.join([d.strftime('%Y-%m-%d') for d in unique_dates_before])}")
+    st.sidebar.write(f"Processing {len(unique_dates_before)} dates: {', '.join([d.strftime('%Y-%m-%d') for d in unique_dates_before[:5]]) + ('...' if len(unique_dates_before) > 5 else '')}")
     
     # Get all symbols from the sectors dataframe
     all_symbols = sectors_df['symbol'].unique()
@@ -225,8 +234,10 @@ def calculate_daily_changes(market_caps_df, sectors_df, group_by):
     
     # Display counts per date after merging
     date_counts = merged_df.groupby(merged_df['fetch_date'].dt.date).size()
-    for date, count in date_counts.items():
+    for date, count in list(date_counts.items())[:5]:  # Show only first 5 for brevity
         st.sidebar.write(f"After merging - {date}: {count} entries")
+    if len(date_counts) > 5:
+        st.sidebar.write("...")
     
     # Convert market cap to numeric, force type to float to handle scientific notation
     merged_df['market_cap'] = pd.to_numeric(merged_df['market_cap'], errors='coerce')
@@ -260,12 +271,12 @@ def calculate_daily_changes(market_caps_df, sectors_df, group_by):
     
     # Debugging: Show unique dates after processing
     unique_dates_after = sorted(daily_group['fetch_date'].dt.date.unique())
-    st.sidebar.write(f"After processing: {len(unique_dates_after)} dates: {', '.join([d.strftime('%Y-%m-%d') for d in unique_dates_after])}")
+    st.sidebar.write(f"After processing: {len(unique_dates_after)} dates: {', '.join([d.strftime('%Y-%m-%d') for d in unique_dates_after[:5]]) + ('...' if len(unique_dates_after) > 5 else '')}")
     
     return daily_group
 
 @st.cache_data
-def calculate_trend_score(daily_changes):
+def calculate_trend_score(daily_changes, score_start_date):
     """Calculate trend scores with simple cumulative scoring - NO PENALTY SYSTEM"""
     # Sort daily changes by date to ensure chronological processing
     daily_changes = daily_changes.sort_values('fetch_date')
@@ -288,7 +299,7 @@ def calculate_trend_score(daily_changes):
         group_df = group_df.fillna({group_by: group, 'direction': 0, 'daily_change': 0})
         group_df = group_df.sort_values('fetch_date')
         
-        # Initialize variables for this group
+        # Initialize variables for this group - reset at score_start_date
         score = 0
         streak = 0  # Positive for up streak, negative for down streak
         prev_direction = 0
@@ -298,6 +309,16 @@ def calculate_trend_score(daily_changes):
             date = row['fetch_date']
             direction = row['direction']
             
+            # Reset score and streak if we're at or past the score_start_date
+            if date.date() == score_start_date:
+                score = 0
+                streak = 0
+                prev_direction = 0
+            
+            # Skip dates before score_start_date
+            if date.date() < score_start_date:
+                continue
+                
             # Update streak count (for display purposes only - no penalties applied)
             if direction == 0:
                 # No change in direction means no change in streak
@@ -387,7 +408,7 @@ def calculate_percent_changes(daily_group_data, lookback_days):
 # Calculate
 st.sidebar.write("Starting data processing...")
 daily_changes = calculate_daily_changes(market_caps_df, sectors_df, group_by)
-trend_scores = calculate_trend_score(daily_changes)  # Removed min_streak parameter
+trend_scores = calculate_trend_score(daily_changes, score_start_date)  # Pass score_start_date to the function
 st.sidebar.write("Data processing complete.")
 
 # Calculate percent changes
@@ -402,6 +423,7 @@ filtered_scores = trend_scores[
 # 5. Visualize Results
 # ------------------------------
 st.header(f"Valuation Trend Scores by {group_by.capitalize()}")
+st.write(f"Score calculation starts from: **{score_start_date.strftime('%Y-%m-%d')}**")
 
 # Create a line chart with improved hover showing all industries at the same data point
 import plotly.graph_objects as go
@@ -488,7 +510,7 @@ for group in unique_sorted_groups:
 
 # Update layout
 fig.update_layout(
-    title=f"Valuation Trend Barometer Scores Over Time",
+    title=f"Valuation Trend Barometer Scores Over Time (Reset to 0 at {score_start_date.strftime('%Y-%m-%d')})",
     xaxis_title="Date",
     yaxis_title="Cumulative Score",
     xaxis=dict(showgrid=True, gridwidth=1, gridcolor='LightGray'),
@@ -557,7 +579,7 @@ if len(current_data_nonzero) > 0:
         y='score',
         color='score',
         color_continuous_scale=colorscale,
-        title=f"Current Scores by {group_by.capitalize()}",
+        title=f"Current Scores by {group_by.capitalize()} (Since {score_start_date.strftime('%Y-%m-%d')})",
         labels={'score': 'Score'},
         height=600
     )
@@ -1045,8 +1067,6 @@ with tab2:
     else:
         st.write("Not enough data for percentage change chart.")
 
-# Removed the entire Combined View tab (with tab3)
-
 # ------------------------------
 # Detailed Data and Export
 # ------------------------------
@@ -1078,22 +1098,4 @@ if st.button("Export Current Data"):
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-# ------------------------------
-# Debugging Section
-# ------------------------------
-# Add data debugging section
-if st.sidebar.checkbox("Enable Data Debugging"):
-    st.sidebar.subheader("Data Debugging")
-    
-    # Show market cap counts by date
-    st.sidebar.write("Market Cap Counts by Date:")
-    date_counts = market_caps_df.groupby(market_caps_df['fetch_date'].dt.date).size()
-    for date, count in date_counts.items():
-        st.sidebar.write(f"{date}: {count} entries")
-    
-    # Show symbol sample for each date
-    if st.sidebar.checkbox("Show Symbol Samples"):
-        for date in sorted(market_caps_df['fetch_date'].dt.date.unique()):
-            date_df = market_caps_df[market_caps_df['fetch_date'].dt.date == date]
-            sample_symbols = date_df['symbol'].sample(min(5, len(date_df))).tolist()
-            st.sidebar.write(f"{date} symbols sample: {', '.join(sample_symbols)}")
+# End of app
