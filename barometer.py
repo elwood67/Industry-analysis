@@ -423,7 +423,7 @@ filtered_scores = trend_scores[
 # 5. Visualize Results
 # ------------------------------
 st.header(f"Valuation Trend Scores by {group_by.capitalize()}")
-st.write(f"Score calculation starts from: **{score_start_date.strftime('%Y-%m-%d')}**")
+st.write(f"For each day the combined market cap goes up a +1 is given.  Each day the combined market cap goes down a score of -1 is given. Score calculation starts from: **{score_start_date.strftime('%Y-%m-%d')}**")
 
 # Create a line chart with improved hover showing all industries at the same data point
 import plotly.graph_objects as go
