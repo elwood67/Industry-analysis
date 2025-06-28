@@ -36,7 +36,8 @@ def load_market_caps_file(file_path):
             st.stop()
         
         # Handle multiple date formats by converting to datetime with flexible parsing
-        df['fetch_date'] = pd.to_datetime(df['fetch_date'], errors='coerce', infer_datetime_format=True)
+        # Remove the deprecated infer_datetime_format parameter
+        df['fetch_date'] = pd.to_datetime(df['fetch_date'], errors='coerce')
         
         # Check if all fetch_date values are invalid
         if df['fetch_date'].isna().all():
@@ -45,19 +46,23 @@ def load_market_caps_file(file_path):
         
         # List unique dates found in the data
         unique_dates = df['fetch_date'].dt.date.unique()
-        unique_dates_sorted = sorted(unique_dates)
+        unique_dates_sorted = sorted([d for d in unique_dates if d is not None])
         
         # Display date range info
-        st.sidebar.write("Date range found in data:", 
-                        min(unique_dates_sorted).strftime('%Y-%m-%d') if len(unique_dates_sorted) > 0 else "No valid dates", 
-                        "to", 
-                        max(unique_dates_sorted).strftime('%Y-%m-%d') if len(unique_dates_sorted) > 0 else "No valid dates")
+        if len(unique_dates_sorted) > 0:
+            st.sidebar.write("Date range found in data:", 
+                            min(unique_dates_sorted).strftime('%Y-%m-%d'), 
+                            "to", 
+                            max(unique_dates_sorted).strftime('%Y-%m-%d'))
+        else:
+            st.sidebar.write("Date range found in data: No valid dates")
         
         # Count unique dates
         st.sidebar.write(f"Number of unique dates found: {len(unique_dates_sorted)}")
         
         # Display the list of dates found
-        st.sidebar.write("Dates found:", ", ".join([d.strftime('%Y-%m-%d') for d in unique_dates_sorted]))
+        if unique_dates_sorted:
+            st.sidebar.write("Dates found:", ", ".join([d.strftime('%Y-%m-%d') for d in unique_dates_sorted]))
         
         return df
     except Exception as e:
@@ -167,7 +172,7 @@ st.sidebar.write(f"Displaying all {len(unique_groups)} {group_by}s")
 selected_group = unique_groups  # Use all groups by default
 
 # Display date range
-unique_dates = sorted(market_caps_df['fetch_date'].dt.date.unique())
+unique_dates = sorted([d for d in market_caps_df['fetch_date'].dt.date.unique() if d is not None])
 if len(unique_dates) > 0:
     min_date = min(unique_dates)
     max_date = max(unique_dates)
@@ -217,7 +222,7 @@ else:
 def calculate_daily_changes(market_caps_df, sectors_df, group_by):
     """Calculate daily changes in market cap by sector/industry"""
     # Debugging: Show unique dates before processing
-    unique_dates_before = sorted(market_caps_df['fetch_date'].dt.date.unique())
+    unique_dates_before = sorted([d for d in market_caps_df['fetch_date'].dt.date.unique() if d is not None])
     st.sidebar.write(f"Processing {len(unique_dates_before)} dates: {', '.join([d.strftime('%Y-%m-%d') for d in unique_dates_before[:5]]) + ('...' if len(unique_dates_before) > 5 else '')}")
     
     # Get all symbols from the sectors dataframe
@@ -270,7 +275,7 @@ def calculate_daily_changes(market_caps_df, sectors_df, group_by):
     daily_group.loc[daily_group['fetch_date'].dt.date == first_date, 'daily_change'] = 0
     
     # Debugging: Show unique dates after processing
-    unique_dates_after = sorted(daily_group['fetch_date'].dt.date.unique())
+    unique_dates_after = sorted([d for d in daily_group['fetch_date'].dt.date.unique() if d is not None])
     st.sidebar.write(f"After processing: {len(unique_dates_after)} dates: {', '.join([d.strftime('%Y-%m-%d') for d in unique_dates_after[:5]]) + ('...' if len(unique_dates_after) > 5 else '')}")
     
     return daily_group
@@ -309,14 +314,17 @@ def calculate_trend_score(daily_changes, score_start_date):
             date = row['fetch_date']
             direction = row['direction']
             
+            # Convert pandas timestamp to date for comparison
+            current_date = date.date() if hasattr(date, 'date') else date
+            
             # Reset score and streak if we're at or past the score_start_date
-            if date.date() == score_start_date:
+            if current_date == score_start_date:
                 score = 0
                 streak = 0
                 prev_direction = 0
             
             # Skip dates before score_start_date
-            if date.date() < score_start_date:
+            if current_date < score_start_date:
                 continue
                 
             # Update streak count (for display purposes only - no penalties applied)
