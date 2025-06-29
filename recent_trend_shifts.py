@@ -152,6 +152,20 @@ def calculate_trend_shifts(df, selected_caps, score_type, lookback_days):
             (trend_data['recent_avg'] < 50)  # Only consider if scores are still relatively low
         )
         
+        # Flag potential topping/shorting candidates
+        trend_data['topping_signal'] = (
+            (trend_data['market_phase'].isin(['Phase 3 - Topping', 'Phase 4 - Declining'])) &
+            (trend_data['momentum_shift'] < -1) &
+            (trend_data['recent_avg'] > 50)  # Only consider if scores were elevated
+        )
+        
+        # Flag early decline candidates (recently turned negative)
+        trend_data['early_decline_signal'] = (
+            (trend_data['market_phase'] == 'Phase 4 - Declining') &
+            (trend_data['middle_change'] > 0) &  # Was positive
+            (trend_data['recent_change'] < -2)   # Now clearly negative
+        )
+        
         # Legacy columns for compatibility
         trend_data['score_change'] = trend_data['recent_change']
         trend_data['percent_change'] = (trend_data['recent_change'] / trend_data['middle_avg'] * 100).round(2)
@@ -414,6 +428,152 @@ def create_momentum_scatter(trend_data, score_type):
         logger.error(f"Error creating momentum scatter: {str(e)}")
         return go.Figure().update_layout(title="Error creating scatter plot")
 
+def calculate_market_overview(trend_data):
+    """Calculate comprehensive market overview statistics."""
+    try:
+        # Phase distribution
+        phase_counts = trend_data['market_phase'].value_counts()
+        total_industries = len(trend_data)
+        
+        # Signal counts
+        bottoming_count = len(trend_data[trend_data['bottoming_signal']])
+        topping_count = len(trend_data[trend_data['topping_signal']])
+        early_decline_count = len(trend_data[trend_data['early_decline_signal']])
+        
+        # Market momentum analysis
+        avg_momentum = trend_data['momentum_shift'].mean()
+        positive_momentum = len(trend_data[trend_data['momentum_shift'] > 1])
+        negative_momentum = len(trend_data[trend_data['momentum_shift'] < -1])
+        
+        # Score distribution analysis
+        high_score_industries = len(trend_data[trend_data['recent_avg'] > 70])
+        low_score_industries = len(trend_data[trend_data['recent_avg'] < 30])
+        
+        # Market phase percentages
+        phase_percentages = {
+            'Phase 1 - Bottoming': phase_counts.get('Phase 1 - Bottoming', 0) / total_industries * 100,
+            'Phase 2 - Recovery': phase_counts.get('Phase 2 - Recovery', 0) / total_industries * 100,
+            'Phase 3 - Advancing': phase_counts.get('Phase 3 - Advancing', 0) / total_industries * 100,
+            'Phase 3 - Topping': phase_counts.get('Phase 3 - Topping', 0) / total_industries * 100,
+            'Phase 4 - Declining': phase_counts.get('Phase 4 - Declining', 0) / total_industries * 100,
+            'Stable/Transitioning': phase_counts.get('Stable/Transitioning', 0) / total_industries * 100
+        }
+        
+        # Determine overall market sentiment
+        bullish_phases = phase_percentages['Phase 1 - Bottoming'] + phase_percentages['Phase 2 - Recovery'] + phase_percentages['Phase 3 - Advancing']
+        bearish_phases = phase_percentages['Phase 3 - Topping'] + phase_percentages['Phase 4 - Declining']
+        
+        if bullish_phases > bearish_phases + 10:
+            market_sentiment = "🟢 Bullish"
+        elif bearish_phases > bullish_phases + 10:
+            market_sentiment = "🔴 Bearish"
+        else:
+            market_sentiment = "🟡 Mixed/Neutral"
+        
+        return {
+            'total_industries': total_industries,
+            'phase_counts': phase_counts,
+            'phase_percentages': phase_percentages,
+            'bottoming_count': bottoming_count,
+            'topping_count': topping_count,
+            'early_decline_count': early_decline_count,
+            'avg_momentum': avg_momentum,
+            'positive_momentum': positive_momentum,
+            'negative_momentum': negative_momentum,
+            'high_score_industries': high_score_industries,
+            'low_score_industries': low_score_industries,
+            'market_sentiment': market_sentiment,
+            'bullish_phases_pct': bullish_phases,
+            'bearish_phases_pct': bearish_phases
+        }
+        
+    except Exception as e:
+        logger.error(f"Error calculating market overview: {str(e)}")
+        return None
+
+def display_market_overview(market_overview):
+    """Display comprehensive market overview dashboard."""
+    try:
+        st.markdown("### 🌍 Market Overview Dashboard")
+        
+        # Top row - Overall market sentiment
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric(
+                "Market Sentiment", 
+                market_overview['market_sentiment'],
+                help="Overall market phase distribution"
+            )
+        
+        with col2:
+            st.metric(
+                "Avg Momentum", 
+                f"{market_overview['avg_momentum']:+.2f}",
+                help="Average momentum shift across all industries"
+            )
+        
+        with col3:
+            bullish_pct = market_overview['bullish_phases_pct']
+            st.metric(
+                "Bullish Phases", 
+                f"{bullish_pct:.1f}%",
+                help="% in Phase 1, 2, or 3 Advancing"
+            )
+        
+        with col4:
+            bearish_pct = market_overview['bearish_phases_pct']
+            st.metric(
+                "Bearish Phases", 
+                f"{bearish_pct:.1f}%",
+                help="% in Phase 3 Topping or Phase 4"
+            )
+        
+        # Second row - Phase distribution
+        st.markdown("#### 📊 Phase Distribution")
+        phase_col1, phase_col2, phase_col3 = st.columns(3)
+        
+        with phase_col1:
+            st.markdown("**🟢 Bullish Phases:**")
+            st.metric("Phase 1 - Bottoming", f"{market_overview['phase_percentages']['Phase 1 - Bottoming']:.1f}%")
+            st.metric("Phase 2 - Recovery", f"{market_overview['phase_percentages']['Phase 2 - Recovery']:.1f}%")
+            st.metric("Phase 3 - Advancing", f"{market_overview['phase_percentages']['Phase 3 - Advancing']:.1f}%")
+        
+        with phase_col2:
+            st.markdown("**🔴 Bearish Phases:**")
+            st.metric("Phase 3 - Topping", f"{market_overview['phase_percentages']['Phase 3 - Topping']:.1f}%")
+            st.metric("Phase 4 - Declining", f"{market_overview['phase_percentages']['Phase 4 - Declining']:.1f}%")
+            st.metric("Stable/Transitioning", f"{market_overview['phase_percentages']['Stable/Transitioning']:.1f}%")
+        
+        with phase_col3:
+            st.markdown("**🎯 Trading Signals:**")
+            st.metric("🔄 Bottoming Signals", market_overview['bottoming_count'])
+            st.metric("⚠️ Topping Signals", market_overview['topping_count'])
+            st.metric("📉 Early Declines", market_overview['early_decline_count'])
+        
+        # Third row - Momentum analysis
+        st.markdown("#### ⚡ Momentum Analysis")
+        momentum_col1, momentum_col2, momentum_col3 = st.columns(3)
+        
+        with momentum_col1:
+            positive_pct = (market_overview['positive_momentum'] / market_overview['total_industries']) * 100
+            st.metric("Positive Momentum", f"{positive_pct:.1f}%", f"{market_overview['positive_momentum']} industries")
+        
+        with momentum_col2:
+            negative_pct = (market_overview['negative_momentum'] / market_overview['total_industries']) * 100
+            st.metric("Negative Momentum", f"{negative_pct:.1f}%", f"{market_overview['negative_momentum']} industries")
+        
+        with momentum_col3:
+            neutral_count = market_overview['total_industries'] - market_overview['positive_momentum'] - market_overview['negative_momentum']
+            neutral_pct = (neutral_count / market_overview['total_industries']) * 100
+            st.metric("Neutral Momentum", f"{neutral_pct:.1f}%", f"{neutral_count} industries")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error displaying market overview: {str(e)}")
+        return False
+
 def display_trend_summary(trend_data):
     """Display summary statistics about trends."""
     try:
@@ -515,6 +675,12 @@ def main():
             st.warning("No trend data available for the selected criteria.")
             return
         
+        # Calculate and display market overview
+        market_overview = calculate_market_overview(trend_data)
+        if market_overview:
+            display_market_overview(market_overview)
+            st.markdown("---")  # Separator
+        
         # Display summary metrics
         st.markdown("### 📊 Trend Summary")
         display_trend_summary(trend_data)
@@ -530,25 +696,30 @@ def main():
         
         # Top movers and phase analysis
         with col2:
-            st.markdown("### 🔄 Phase Analysis")
+            st.markdown("### 🔄 Opportunity Analysis")
             
             # Bottoming candidates
             bottoming_candidates = trend_data[trend_data['bottoming_signal']]
             if not bottoming_candidates.empty:
-                st.markdown("**🎯 Potential Bottoms:**")
+                st.markdown("**🎯 Long Opportunities:**")
                 bottom_display = bottoming_candidates[['industry', 'market_phase', 'momentum_shift']].head(5)
                 bottom_display.columns = ['Industry', 'Phase', 'Momentum']
                 st.dataframe(bottom_display, hide_index=True)
             else:
                 st.info("No clear bottoming patterns detected")
             
-            # Phase 2 recoveries
-            phase_2 = trend_data[trend_data['market_phase'] == 'Phase 2 - Recovery']
-            if not phase_2.empty:
-                st.markdown("**📈 Early Recovery:**")
-                recovery_display = phase_2[['industry', 'recent_change', 'momentum_shift']].head(3)
-                recovery_display.columns = ['Industry', 'Recent Change', 'Momentum']
-                st.dataframe(recovery_display, hide_index=True)
+            # Topping/shorting candidates
+            topping_candidates = trend_data[trend_data['topping_signal']]
+            early_decline_candidates = trend_data[trend_data['early_decline_signal']]
+            short_candidates = pd.concat([topping_candidates, early_decline_candidates]).drop_duplicates()
+            
+            if not short_candidates.empty:
+                st.markdown("**⚠️ Short Opportunities:**")
+                short_display = short_candidates[['industry', 'market_phase', 'momentum_shift']].head(5)
+                short_display.columns = ['Industry', 'Phase', 'Momentum']
+                st.dataframe(short_display, hide_index=True)
+            else:
+                st.info("No clear topping/decline patterns detected")
         
         # Momentum scatter plot
         st.markdown("### 🎯 Score vs Momentum Analysis")
@@ -591,19 +762,28 @@ def main():
         # Filter options for the table
         phase_filter = st.selectbox(
             "Filter by Market Phase",
-            options=["All", "Phase 1 - Bottoming", "Phase 2 - Recovery", "Phase 3 - Advancing", "Phase 4 - Declining", "Potential Bottoms Only"]
+            options=["All", "Long Opportunities", "Short Opportunities", "Phase 1 - Bottoming", "Phase 2 - Recovery", 
+                    "Phase 3 - Advancing", "Phase 3 - Topping", "Phase 4 - Declining", "Early Declines"]
         )
         
-        if phase_filter == "Potential Bottoms Only":
+        if phase_filter == "Long Opportunities":
             filtered_data = trend_data[trend_data['bottoming_signal']]
+        elif phase_filter == "Short Opportunities":
+            topping_candidates = trend_data[trend_data['topping_signal']]
+            early_decline_candidates = trend_data[trend_data['early_decline_signal']]
+            filtered_data = pd.concat([topping_candidates, early_decline_candidates]).drop_duplicates()
+        elif phase_filter == "Early Declines":
+            filtered_data = trend_data[trend_data['early_decline_signal']]
         elif phase_filter != "All":
             filtered_data = trend_data[trend_data['market_phase'] == phase_filter]
         else:
             filtered_data = trend_data
         
         # Display formatted table with phase information
-        display_data = filtered_data[['industry', 'market_phase', 'recent_avg', 'recent_change', 'momentum_shift', 'stock_count', 'bottoming_signal']].copy()
-        display_data.columns = ['Industry', 'Market Phase', 'Current Score', 'Recent Change', 'Momentum Shift', 'Stocks', 'Bottom Signal']
+        display_data = filtered_data[['industry', 'market_phase', 'recent_avg', 'recent_change', 'momentum_shift', 
+                                    'stock_count', 'bottoming_signal', 'topping_signal']].copy()
+        display_data.columns = ['Industry', 'Market Phase', 'Current Score', 'Recent Change', 'Momentum Shift', 
+                              'Stocks', 'Long Signal', 'Short Signal']
         display_data = display_data.round(2)
         
         st.dataframe(display_data, use_container_width=True, hide_index=True)
