@@ -470,19 +470,26 @@ def main():
             ["Bullish", "Bearish"]
         )
         
-        # Lookback period
+        # Time period selection with more options for your extended dataset
         lookback_options = {
             "1 Week (5 days)": 5,
             "2 Weeks (10 days)": 10,
             "3 Weeks (15 days)": 15,
             "1 Month (21 days)": 21,
-            "6 Weeks (30 days)": 30
+            "6 Weeks (30 days)": 30,
+            "2 Months (42 days)": 42,
+            "10 Weeks (50 days)": 50,
+            "3 Months (63 days)": 63,
+            "4 Months (84 days)": 84,
+            "5 Months (105 days)": 105,
+            "6 Months (126 days)": 126
         }
         
         lookback_selection = st.sidebar.selectbox(
             "Trend Analysis Period",
             options=list(lookback_options.keys()),
-            index=2  # Default to 3 weeks
+            index=6,  # Default to 10 weeks (50 days) for better phase detection
+            help="Longer periods provide more reliable phase detection for major trend shifts"
         )
         lookback_days = lookback_options[lookback_selection]
         
