@@ -54,7 +54,7 @@ def load_historical_data(base_path="Data/stock_scores"):
         raise
 
 def calculate_trend_shifts(df, selected_caps, score_type, lookback_days):
-    """Calculate recent trend shifts for industries."""
+    """Calculate recent trend shifts and market phase analysis for industries."""
     try:
         # Filter by market cap if selected
         if selected_caps:
@@ -62,14 +62,16 @@ def calculate_trend_shifts(df, selected_caps, score_type, lookback_days):
         
         # Get unique dates and find the lookback period
         all_dates = sorted(df['date'].unique())
-        if len(all_dates) < lookback_days + 5:
-            raise ValueError(f"Not enough data. Need at least {lookback_days + 5} trading days.")
+        if len(all_dates) < lookback_days * 3:
+            raise ValueError(f"Not enough data. Need at least {lookback_days * 3} trading days for phase analysis.")
         
-        # Define periods
+        # Define three periods for phase analysis
         latest_date = all_dates[-1]
         recent_start = all_dates[-lookback_days]
-        previous_start = all_dates[-2*lookback_days] if len(all_dates) >= 2*lookback_days else all_dates[0]
-        previous_end = all_dates[-lookback_days-1]
+        middle_start = all_dates[-2*lookback_days]
+        middle_end = all_dates[-lookback_days-1]
+        early_start = all_dates[-3*lookback_days] if len(all_dates) >= 3*lookback_days else all_dates[0]
+        early_end = all_dates[-2*lookback_days-1]
         
         score_col = f"{score_type.lower()}_score"
         
@@ -78,8 +80,12 @@ def calculate_trend_shifts(df, selected_caps, score_type, lookback_days):
             (df['date'] >= recent_start) & (df['date'] <= latest_date)
         ].groupby('industry')[score_col].mean()
         
-        previous_scores = df[
-            (df['date'] >= previous_start) & (df['date'] <= previous_end)
+        middle_scores = df[
+            (df['date'] >= middle_start) & (df['date'] <= middle_end)
+        ].groupby('industry')[score_col].mean()
+        
+        early_scores = df[
+            (df['date'] >= early_start) & (df['date'] <= early_end)
         ].groupby('industry')[score_col].mean()
         
         # Calculate stock counts
@@ -89,27 +95,75 @@ def calculate_trend_shifts(df, selected_caps, score_type, lookback_days):
         trend_data = pd.DataFrame({
             'industry': recent_scores.index,
             'recent_avg': recent_scores.values,
-            'previous_avg': previous_scores.reindex(recent_scores.index).values,
+            'middle_avg': middle_scores.reindex(recent_scores.index).values,
+            'early_avg': early_scores.reindex(recent_scores.index).values,
             'stock_count': stock_counts.reindex(recent_scores.index).fillna(0).astype(int)
         }).dropna()
         
         # Calculate changes and momentum
-        trend_data['score_change'] = trend_data['recent_avg'] - trend_data['previous_avg']
-        trend_data['percent_change'] = (trend_data['score_change'] / trend_data['previous_avg'] * 100).round(2)
+        trend_data['recent_change'] = trend_data['recent_avg'] - trend_data['middle_avg']
+        trend_data['middle_change'] = trend_data['middle_avg'] - trend_data['early_avg']
+        trend_data['total_change'] = trend_data['recent_avg'] - trend_data['early_avg']
+        
+        # Phase Analysis - Detect bottoming patterns
+        trend_data['momentum_shift'] = trend_data['recent_change'] - trend_data['middle_change']
+        
+        # Identify market phases
+        def identify_phase(row):
+            recent_chg = row['recent_change']
+            middle_chg = row['middle_change']
+            momentum_shift = row['momentum_shift']
+            recent_score = row['recent_avg']
+            
+            # Phase 4: Declining (both periods negative)
+            if recent_chg < -1 and middle_chg < -1:
+                return "Phase 4 - Declining"
+            
+            # Phase 1: Bottoming (was declining, now stabilizing)
+            elif middle_chg < -1 and abs(recent_chg) < 2 and momentum_shift > 1:
+                return "Phase 1 - Bottoming"
+            
+            # Phase 2: Early Recovery (positive momentum after decline)
+            elif middle_chg < 0 and recent_chg > 1 and momentum_shift > 2:
+                return "Phase 2 - Recovery"
+            
+            # Phase 3: Advancing (sustained positive momentum)
+            elif recent_chg > 1 and middle_chg > 0:
+                return "Phase 3 - Advancing"
+            
+            # Topping patterns (reverse logic for bearish analysis)
+            elif recent_chg < -1 and middle_chg > 1:
+                return "Phase 4 - Topping"
+            
+            else:
+                return "Stable/Transitioning"
+        
+        trend_data['market_phase'] = trend_data.apply(identify_phase, axis=1)
+        
+        # Flag potential bottoming/reversal candidates
+        trend_data['bottoming_signal'] = (
+            (trend_data['market_phase'].isin(['Phase 1 - Bottoming', 'Phase 2 - Recovery'])) &
+            (trend_data['momentum_shift'] > 1) &
+            (trend_data['recent_avg'] < 50)  # Only consider if scores are still relatively low
+        )
+        
+        # Legacy columns for compatibility
+        trend_data['score_change'] = trend_data['recent_change']
+        trend_data['percent_change'] = (trend_data['recent_change'] / trend_data['middle_avg'] * 100).round(2)
         
         # Categorize trends
         trend_data['trend_strength'] = pd.cut(
-            trend_data['score_change'].abs(),
+            trend_data['recent_change'].abs(),
             bins=[0, 2, 5, 10, float('inf')],
             labels=['Weak', 'Moderate', 'Strong', 'Very Strong']
         )
         
         trend_data['trend_direction'] = np.where(
-            trend_data['score_change'] > 1, 'Improving',
-            np.where(trend_data['score_change'] < -1, 'Declining', 'Stable')
+            trend_data['recent_change'] > 1, 'Improving',
+            np.where(trend_data['recent_change'] < -1, 'Declining', 'Stable')
         )
         
-        return trend_data.sort_values('score_change', ascending=False)
+        return trend_data.sort_values('momentum_shift', ascending=False)
         
     except Exception as e:
         logger.error(f"Error calculating trend shifts: {str(e)}")
@@ -326,42 +380,52 @@ def main():
             fig1 = create_trend_shift_chart(trend_data, score_type)
             st.plotly_chart(fig1, use_container_width=True)
         
+        # Top movers and phase analysis
         with col2:
-            # Top movers table
-            st.markdown("### 🏆 Top Movers")
+            st.markdown("### 🔄 Phase Analysis")
             
-            # Top improving
-            st.markdown("**Most Improving:**")
-            top_improving = trend_data.head(5)[['industry', 'score_change', 'stock_count']]
-            st.dataframe(top_improving, hide_index=True)
+            # Bottoming candidates
+            bottoming_candidates = trend_data[trend_data['bottoming_signal']]
+            if not bottoming_candidates.empty:
+                st.markdown("**🎯 Potential Bottoms:**")
+                bottom_display = bottoming_candidates[['industry', 'market_phase', 'momentum_shift']].head(5)
+                bottom_display.columns = ['Industry', 'Phase', 'Momentum']
+                st.dataframe(bottom_display, hide_index=True)
+            else:
+                st.info("No clear bottoming patterns detected")
             
-            # Top declining
-            st.markdown("**Most Declining:**")
-            top_declining = trend_data.tail(5)[['industry', 'score_change', 'stock_count']]
-            st.dataframe(top_declining, hide_index=True)
+            # Phase 2 recoveries
+            phase_2 = trend_data[trend_data['market_phase'] == 'Phase 2 - Recovery']
+            if not phase_2.empty:
+                st.markdown("**📈 Early Recovery:**")
+                recovery_display = phase_2[['industry', 'recent_change', 'momentum_shift']].head(3)
+                recovery_display.columns = ['Industry', 'Recent Change', 'Momentum']
+                st.dataframe(recovery_display, hide_index=True)
         
         # Momentum scatter plot
         st.markdown("### 🎯 Score vs Momentum Analysis")
         fig2 = create_momentum_scatter(trend_data, score_type)
         st.plotly_chart(fig2, use_container_width=True)
         
-        # Detailed data table
-        st.markdown("### 📋 Detailed Analysis")
+        # Detailed data table with phase information
+        st.markdown("### 📋 Detailed Phase Analysis")
         
         # Filter options for the table
-        trend_filter = st.selectbox(
-            "Filter by Trend Direction",
-            options=["All", "Improving", "Declining", "Stable"]
+        phase_filter = st.selectbox(
+            "Filter by Market Phase",
+            options=["All", "Phase 1 - Bottoming", "Phase 2 - Recovery", "Phase 3 - Advancing", "Phase 4 - Declining", "Potential Bottoms Only"]
         )
         
-        if trend_filter != "All":
-            filtered_data = trend_data[trend_data['trend_direction'] == trend_filter]
+        if phase_filter == "Potential Bottoms Only":
+            filtered_data = trend_data[trend_data['bottoming_signal']]
+        elif phase_filter != "All":
+            filtered_data = trend_data[trend_data['market_phase'] == phase_filter]
         else:
             filtered_data = trend_data
         
-        # Display formatted table
-        display_data = filtered_data[['industry', 'recent_avg', 'previous_avg', 'score_change', 'percent_change', 'stock_count', 'trend_direction']].copy()
-        display_data.columns = ['Industry', 'Recent Avg', 'Previous Avg', 'Change', '% Change', 'Stocks', 'Trend']
+        # Display formatted table with phase information
+        display_data = filtered_data[['industry', 'market_phase', 'recent_avg', 'recent_change', 'momentum_shift', 'stock_count', 'bottoming_signal']].copy()
+        display_data.columns = ['Industry', 'Market Phase', 'Current Score', 'Recent Change', 'Momentum Shift', 'Stocks', 'Bottom Signal']
         display_data = display_data.round(2)
         
         st.dataframe(display_data, use_container_width=True, hide_index=True)
