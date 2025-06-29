@@ -110,7 +110,7 @@ def create_score_chart(industry_metrics, score_type):
             height=max(600, len(industry_metrics) * 30),
             showlegend=True,
             margin=dict(l=20, r=20, t=40, b=20),
-            hovermode='y',
+            hovermode='closest',
             hoverlabel=dict(
                 bgcolor="#1e1e1e",
                 font=dict(color="white")
