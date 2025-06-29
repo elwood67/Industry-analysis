@@ -1,15 +1,14 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import json
-import os
+import plotly.express as px
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 import numpy as np
 
 # Set up logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def categorize_market_cap(cap):
@@ -34,7 +33,7 @@ def categorize_market_cap(cap):
         return "Unknown"
 
 @st.cache_data
-def load_and_process_historical_data(base_path="Data/stock_scores"):
+def load_historical_data(base_path="Data/stock_scores"):
     """Load data from the optimized parquet file."""
     try:
         file_path = Path(base_path) / 'historical_data.parquet.gzip'
@@ -43,277 +42,221 @@ def load_and_process_historical_data(base_path="Data/stock_scores"):
             
         df = pd.read_parquet(file_path)
         
-        # Ensure date is datetime
+        # Ensure date is datetime and add market cap categories
         df['date'] = pd.to_datetime(df['date'])
-        
-        # Add market cap categories
         df['market_cap_category'] = df['market_cap_B'].apply(categorize_market_cap)
         
-        logger.debug(f"Successfully loaded data with shape: {df.shape}")
+        logger.info(f"Successfully loaded data with shape: {df.shape}")
         return df
         
     except Exception as e:
         logger.error(f"Error loading historical data: {str(e)}")
         raise
 
-def detect_score_structure(series, window_size=5):
-    """Detect score structure patterns."""
+def calculate_trend_shifts(df, selected_caps, score_type, lookback_days):
+    """Calculate recent trend shifts for industries."""
     try:
-        # Calculate rolling stats
-        rolling_min = series.rolling(window=window_size).min()
-        rolling_max = series.rolling(window=window_size).max()
-        rolling_mean = series.rolling(window=window_size).mean()
-        
-        # Calculate momentum
-        momentum = series.diff().rolling(window=window_size).mean()
-        
-        return rolling_min, rolling_max, rolling_mean, momentum
-    except Exception as e:
-        logger.error(f"Error in structure detection: {str(e)}")
-        raise
-
-def analyze_score_structure(df, selected_caps, window_size=5, threshold=0.1):
-    """Analyze score structure changes for filtered data."""
-    try:
+        # Filter by market cap if selected
         if selected_caps:
             df = df[df['market_cap_category'].isin(selected_caps)]
         
-        # Group by date and industry
-        grouped = df.groupby(['date', 'industry']).agg({
-            'bullish_score': 'mean',
-            'bearish_score': 'mean',
-            'symbol': 'count'
-        }).reset_index()
+        # Get unique dates and find the lookback period
+        all_dates = sorted(df['date'].unique())
+        if len(all_dates) < lookback_days + 5:
+            raise ValueError(f"Not enough data. Need at least {lookback_days + 5} trading days.")
         
-        # Pivot data
-        bullish_pivot = grouped.pivot(index='date', columns='industry', values='bullish_score')
-        bearish_pivot = grouped.pivot(index='date', columns='industry', values='bearish_score')
+        # Define periods
+        latest_date = all_dates[-1]
+        recent_start = all_dates[-lookback_days]
+        previous_start = all_dates[-2*lookback_days] if len(all_dates) >= 2*lookback_days else all_dates[0]
+        previous_end = all_dates[-lookback_days-1]
         
-        # Analyze structure for each industry
-        structure_results = []
+        score_col = f"{score_type.lower()}_score"
         
-        for industry in bullish_pivot.columns:
-            try:
-                bull_scores = bullish_pivot[industry].dropna()
-                bear_scores = bearish_pivot[industry].dropna()
-                
-                # Detect structures
-                bull_min, bull_max, bull_mean, bull_momentum = detect_score_structure(bull_scores, window_size)
-                bear_min, bear_max, bear_mean, bear_momentum = detect_score_structure(bear_scores, window_size)
-                
-                # Get latest values
-                latest_bull = bull_scores.iloc[-1]
-                latest_bear = bear_scores.iloc[-1]
-                latest_bull_momentum = bull_momentum.iloc[-1]
-                latest_bear_momentum = bear_momentum.iloc[-1]
-                
-                # Detect structure formation
-                forming_bull = (
-                    bull_min.diff().rolling(window=window_size).mean().iloc[-1] > 0 and
-                    latest_bull_momentum > 0
-                )
-                
-                forming_bear = (
-                    bear_max.diff().rolling(window=window_size).mean().iloc[-1] < 0 and
-                    latest_bear_momentum < 0
-                )
-                
-                structure_results.append({
-                    'industry': industry,
-                    'latest_bull_score': latest_bull,
-                    'latest_bear_score': latest_bear,
-                    'bull_momentum': latest_bull_momentum,
-                    'bear_momentum': latest_bear_momentum,
-                    'forming_bullish_structure': bool(forming_bull),
-                    'forming_bearish_structure': bool(forming_bear),
-                    'stock_count': grouped[grouped['industry'] == industry]['symbol'].iloc[-1]
-                })
-                
-            except Exception as e:
-                logger.error(f"Error analyzing structure for {industry}: {str(e)}")
-                continue
+        # Calculate average scores for each period by industry
+        recent_scores = df[
+            (df['date'] >= recent_start) & (df['date'] <= latest_date)
+        ].groupby('industry')[score_col].mean()
         
-        return pd.DataFrame(structure_results), bullish_pivot, bearish_pivot
-    
+        previous_scores = df[
+            (df['date'] >= previous_start) & (df['date'] <= previous_end)
+        ].groupby('industry')[score_col].mean()
+        
+        # Calculate stock counts
+        stock_counts = df[df['date'] == latest_date].groupby('industry')['symbol'].count()
+        
+        # Combine data
+        trend_data = pd.DataFrame({
+            'industry': recent_scores.index,
+            'recent_avg': recent_scores.values,
+            'previous_avg': previous_scores.reindex(recent_scores.index).values,
+            'stock_count': stock_counts.reindex(recent_scores.index).fillna(0).astype(int)
+        }).dropna()
+        
+        # Calculate changes and momentum
+        trend_data['score_change'] = trend_data['recent_avg'] - trend_data['previous_avg']
+        trend_data['percent_change'] = (trend_data['score_change'] / trend_data['previous_avg'] * 100).round(2)
+        
+        # Categorize trends
+        trend_data['trend_strength'] = pd.cut(
+            trend_data['score_change'].abs(),
+            bins=[0, 2, 5, 10, float('inf')],
+            labels=['Weak', 'Moderate', 'Strong', 'Very Strong']
+        )
+        
+        trend_data['trend_direction'] = np.where(
+            trend_data['score_change'] > 1, 'Improving',
+            np.where(trend_data['score_change'] < -1, 'Declining', 'Stable')
+        )
+        
+        return trend_data.sort_values('score_change', ascending=False)
+        
     except Exception as e:
-        logger.error(f"Error in structure analysis: {str(e)}")
+        logger.error(f"Error calculating trend shifts: {str(e)}")
         raise
 
-def create_structure_visualization(results_df, score_type='bullish', top_n=10):
-    """Create visualization for score structure analysis."""
+def create_trend_shift_chart(trend_data, score_type):
+    """Create a comprehensive trend shift visualization."""
     try:
-        if results_df.empty:
-            logger.warning("Empty results provided for visualization")
-            return go.Figure()
+        if trend_data.empty:
+            return go.Figure().update_layout(title="No data available")
         
-        # Filter based on score type and ensure forming structure exists
-        forming_col = f'forming_{score_type}_structure'
-        momentum_col = f'{score_type[0:4]}_momentum'  # bull_momentum or bear_momentum
-        
-        # Create a fresh copy of the dataframe
-        forming = results_df[results_df[forming_col]].copy()
-        
-        if forming.empty:
-            logger.warning("No forming structures found")
-            fig = go.Figure()
-            fig.update_layout(
-                title=f"No {score_type.title()} Structures Currently Forming",
-                template='plotly_dark'
-            )
-            return fig
-        
-        # Calculate absolute momentum safely
-        forming.loc[:, 'abs_momentum'] = forming[momentum_col].abs()
-        
-        # Sort and get top N (using actual parameter now)
-        top_forming = forming.nlargest(top_n, 'abs_momentum')
+        # Create color mapping based on change
+        colors = []
+        for change in trend_data['score_change']:
+            if change > 5:
+                colors.append('#00CC00')  # Bright green for strong positive
+            elif change > 2:
+                colors.append('#66FF66')  # Light green for moderate positive
+            elif change > -2:
+                colors.append('#CCCCCC')  # Gray for stable
+            elif change > -5:
+                colors.append('#FF6666')  # Light red for moderate negative
+            else:
+                colors.append('#CC0000')  # Bright red for strong negative
         
         fig = go.Figure()
         
-        # Add bars for momentum
+        # Add bars
         fig.add_trace(go.Bar(
-            x=top_forming[momentum_col].round(2),
-            y=top_forming['industry'],
+            x=trend_data['score_change'],
+            y=trend_data['industry'],
             orientation='h',
-            text=top_forming['stock_count'].astype(str) + ' stocks',
+            marker_color=colors,
+            text=[f"{change:+.1f}" for change in trend_data['score_change']],
             textposition='auto',
-            marker_color=['red' if x < 0 else 'green' for x in top_forming[momentum_col]]
+            hovertemplate=(
+                "<b>%{y}</b><br>" +
+                f"{score_type} Score Change: %{{x:+.1f}}<br>" +
+                "Recent Average: %{customdata[0]:.1f}<br>" +
+                "Previous Average: %{customdata[1]:.1f}<br>" +
+                "Stock Count: %{customdata[2]}<br>" +
+                "Trend: %{customdata[3]}<br>" +
+                "<extra></extra>"
+            ),
+            customdata=np.column_stack((
+                trend_data['recent_avg'].round(1),
+                trend_data['previous_avg'].round(1),
+                trend_data['stock_count'],
+                trend_data['trend_direction']
+            ))
         ))
         
+        # Add reference line at zero
+        fig.add_vline(x=0, line_dash="dash", line_color="white", opacity=0.5)
+        
         fig.update_layout(
-            title=f'Industries Forming {score_type.title()} Structure',
-            xaxis_title=f'{score_type.title()} Score Momentum',
+            title=f'Recent {score_type} Score Trend Shifts by Industry',
+            xaxis_title=f'{score_type} Score Change',
             yaxis_title='Industry',
-            height=max(400, len(top_forming) * 30),  # Adjust height based on number of bars
-            showlegend=False,
-            template='plotly_dark'
-        )
-        
-        return fig
-        
-    except Exception as e:
-        logger.error(f"Error creating structure visualization: {str(e)}")
-        fig = go.Figure()
-        fig.update_layout(
-            title="Error Creating Visualization",
-            annotations=[
-                dict(
-                    text=str(e),
-                    xref="paper",
-                    yref="paper",
-                    showarrow=False,
-                    font=dict(color="red")
-                )
-            ],
-            template='plotly_dark'
-        )
-        return fig
-
-def create_detail_chart(pivot_data, industry, window_size=5):
-    """Create detailed view of industry score structure."""
-    try:
-        # Ensure index is datetime and sorted
-        pivot_data = pivot_data.copy()
-        pivot_data.index = pd.to_datetime(pivot_data.index)
-        pivot_data = pivot_data.sort_index()
-        
-        fig = go.Figure()
-        
-        # Add raw score line
-        fig.add_trace(go.Scatter(
-            x=pivot_data.index.strftime('%Y-%m-%d'),  # Format dates as strings
-            y=pivot_data[industry],
-            mode='lines',
-            name='Score',
-            line=dict(color='white')
-        ))
-        
-        # Calculate and add rolling min/max
-        rolling_min = pivot_data[industry].rolling(window=window_size).min()
-        rolling_max = pivot_data[industry].rolling(window=window_size).max()
-        
-        fig.add_trace(go.Scatter(
-            x=pivot_data.index.strftime('%Y-%m-%d'),  # Format dates as strings
-            y=rolling_min,
-            mode='lines',
-            name='Rolling Min',
-            line=dict(color='red', dash='dot')
-        ))
-        
-        fig.add_trace(go.Scatter(
-            x=pivot_data.index.strftime('%Y-%m-%d'),  # Format dates as strings
-            y=rolling_max,
-            mode='lines',
-            name='Rolling Max',
-            line=dict(color='green', dash='dot')
-        ))
-        
-        # Get unique dates for tick marks
-        unique_dates = pivot_data.index.strftime('%Y-%m-%d').unique()
-        
-        fig.update_layout(
-            title=f'{industry} Score Structure',
-            xaxis_title='Date',
-            yaxis_title='Score',
-            height=400,
+            height=max(600, len(trend_data) * 25),
             template='plotly_dark',
-            hovermode='x unified',
-            xaxis=dict(
-                ticktext=unique_dates,
-                tickvals=unique_dates,
-                tickangle=-45,
-                tickmode='array',
-                autorange='reversed'  # Newest data on right
-            )
+            showlegend=False,
+            margin=dict(l=150, r=50, t=80, b=50)
         )
         
         return fig
+        
     except Exception as e:
-        logger.error(f"Error creating detail chart: {str(e)}")
-        raise
+        logger.error(f"Error creating trend chart: {str(e)}")
+        return go.Figure().update_layout(title="Error creating chart")
 
-def display_crossover_table(structure_results, max_rows=20):
-    """Display potential crossover opportunities."""
+def create_momentum_scatter(trend_data, score_type):
+    """Create a scatter plot showing current score vs momentum."""
     try:
-        # Create a copy of the dataframe
-        results = structure_results.copy()
+        fig = px.scatter(
+            trend_data,
+            x='recent_avg',
+            y='score_change',
+            size='stock_count',
+            color='trend_direction',
+            hover_name='industry',
+            color_discrete_map={
+                'Improving': '#00CC00',
+                'Declining': '#CC0000',
+                'Stable': '#CCCCCC'
+            },
+            title=f'Current {score_type} Score vs Momentum',
+            labels={
+                'recent_avg': f'Current {score_type} Score',
+                'score_change': f'{score_type} Score Change',
+                'stock_count': 'Number of Stocks'
+            }
+        )
         
-        # Calculate score difference
-        results['score_difference'] = results['latest_bull_score'] - results['latest_bear_score']
+        # Add quadrant lines
+        fig.add_hline(y=0, line_dash="dash", line_color="white", opacity=0.5)
+        fig.add_vline(x=trend_data['recent_avg'].median(), line_dash="dash", line_color="white", opacity=0.5)
         
-        # Sort by absolute score difference
-        results['abs_diff'] = results['score_difference'].abs()
-        crossovers = results.nlargest(max_rows, 'abs_diff')  # Show up to max_rows results
+        fig.update_layout(
+            template='plotly_dark',
+            height=500
+        )
         
-        # Format display columns
-        display_df = pd.DataFrame({
-            'Industry': crossovers['industry'],
-            'Bullish': crossovers['latest_bull_score'].round(2),
-            'Bearish': crossovers['latest_bear_score'].round(2),
-            'Stocks': crossovers['stock_count']
-        })
-        
-        return display_df
+        return fig
         
     except Exception as e:
-        logger.error(f"Error creating crossover table: {str(e)}")
-        return pd.DataFrame()
+        logger.error(f"Error creating momentum scatter: {str(e)}")
+        return go.Figure().update_layout(title="Error creating scatter plot")
+
+def display_trend_summary(trend_data):
+    """Display summary statistics about trends."""
+    try:
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            improving = len(trend_data[trend_data['trend_direction'] == 'Improving'])
+            st.metric("Improving Industries", improving)
+        
+        with col2:
+            declining = len(trend_data[trend_data['trend_direction'] == 'Declining'])
+            st.metric("Declining Industries", declining)
+        
+        with col3:
+            stable = len(trend_data[trend_data['trend_direction'] == 'Stable'])
+            st.metric("Stable Industries", stable)
+        
+        with col4:
+            avg_change = trend_data['score_change'].mean()
+            st.metric("Average Change", f"{avg_change:+.2f}")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error displaying summary: {str(e)}")
+        return False
 
 def main():
-    st.title("Industry Score Structure Analysis")
+    st.set_page_config(page_title="Industry Trend Shifts", layout="wide")
+    st.title("🔄 Industry Score Trend Shifts Analysis")
     
     try:
         # Load data
         with st.spinner("Loading historical data..."):
-            df = load_and_process_historical_data()
-        
-        # Add data summary to sidebar
-        st.sidebar.markdown("### Data Summary")
-        st.sidebar.markdown(f"Date Range: {df['date'].min().strftime('%Y-%m-%d')} to {df['date'].max().strftime('%Y-%m-%d')}")
-        st.sidebar.markdown(f"Total Trading Days: {len(df['date'].unique())}")
+            df = load_historical_data()
         
         # Sidebar controls
-        st.sidebar.markdown("### Analysis Controls")
+        st.sidebar.header("Analysis Settings")
         
         # Market cap filter
         cap_categories = [
@@ -322,86 +265,121 @@ def main():
         ]
         selected_caps = st.sidebar.multiselect(
             "Select Market Cap Categories",
-            options=cap_categories
+            options=cap_categories,
+            default=["Large Cap", "Mid Cap"]  # Default selection
         )
         
         # Score type selection
         score_type = st.sidebar.radio(
             "Select Score Type",
-            ["bullish", "bearish"]
+            ["Bullish", "Bearish"]
         )
         
-        # Structure detection parameters
-        window_size = st.sidebar.slider(
-            "Structure Window Size",
-            min_value=3,
-            max_value=10,
-            value=5,
-            help="Number of periods to detect structure formation"
-        )
+        # Lookback period
+        lookback_options = {
+            "1 Week (5 days)": 5,
+            "2 Weeks (10 days)": 10,
+            "3 Weeks (15 days)": 15,
+            "1 Month (21 days)": 21,
+            "6 Weeks (30 days)": 30
+        }
         
-        threshold = st.sidebar.slider(
-            "Structure Formation Threshold",
-            min_value=0.1,
-            max_value=1.0,
-            value=0.3,
-            step=0.1,
-            help="Percentage of periods needed to confirm structure"
+        lookback_selection = st.sidebar.selectbox(
+            "Trend Analysis Period",
+            options=list(lookback_options.keys()),
+            index=2  # Default to 3 weeks
         )
+        lookback_days = lookback_options[lookback_selection]
         
-        top_n = st.sidebar.slider(
-            "Number of Industries to Show",
-            min_value=5,
-            max_value=20,
-            value=10
-        )
+        # Data info
+        st.sidebar.markdown("### Data Information")
+        st.sidebar.info(f"""
+        **Date Range:** {df['date'].min().strftime('%Y-%m-%d')} to {df['date'].max().strftime('%Y-%m-%d')}
+        
+        **Total Trading Days:** {len(df['date'].unique())}
+        
+        **Analysis Period:** {lookback_selection}
+        """)
         
         if not selected_caps:
             st.warning("👈 Please select at least one Market Cap Category to begin analysis!")
             return
         
-        # Analyze structure
-        structure_results, bullish_pivot, bearish_pivot = analyze_score_structure(
-            df, selected_caps, window_size, threshold
-        )
+        # Calculate trend shifts
+        with st.spinner("Analyzing trend shifts..."):
+            trend_data = calculate_trend_shifts(df, selected_caps, score_type, lookback_days)
         
-        if structure_results.empty:
-            st.warning("No structure formations detected with current settings.")
+        if trend_data.empty:
+            st.warning("No trend data available for the selected criteria.")
             return
         
-        # Show main structure visualization
-        fig1 = create_structure_visualization(structure_results, score_type, top_n)
-        st.plotly_chart(fig1, use_container_width=True)
+        # Display summary metrics
+        st.markdown("### 📊 Trend Summary")
+        display_trend_summary(trend_data)
         
-        # Show potential crossovers
-        st.markdown("### Potential Score Crossovers")
-        crossover_df = display_crossover_table(structure_results)
-        if not crossover_df.empty:
-            st.dataframe(crossover_df, use_container_width=True)
-        else:
-            st.info("No potential crossovers detected.")
+        # Create two columns for charts
+        col1, col2 = st.columns([2, 1])
         
-        # Detailed view for selected industry
-        st.markdown("### Detailed Structure View")
-        selected_industry = st.selectbox(
-            "Select Industry for Detailed View",
-            options=structure_results['industry'].tolist()
-        )
+        with col1:
+            # Main trend shift chart
+            st.markdown("### 📈 Industry Trend Shifts")
+            fig1 = create_trend_shift_chart(trend_data, score_type)
+            st.plotly_chart(fig1, use_container_width=True)
         
-        # Show detailed timeline for selected industry
-        pivot_data = bullish_pivot if score_type == 'bullish' else bearish_pivot
-        fig2 = create_detail_chart(pivot_data, selected_industry, window_size)
+        with col2:
+            # Top movers table
+            st.markdown("### 🏆 Top Movers")
+            
+            # Top improving
+            st.markdown("**Most Improving:**")
+            top_improving = trend_data.head(5)[['industry', 'score_change', 'stock_count']]
+            st.dataframe(top_improving, hide_index=True)
+            
+            # Top declining
+            st.markdown("**Most Declining:**")
+            top_declining = trend_data.tail(5)[['industry', 'score_change', 'stock_count']]
+            st.dataframe(top_declining, hide_index=True)
+        
+        # Momentum scatter plot
+        st.markdown("### 🎯 Score vs Momentum Analysis")
+        fig2 = create_momentum_scatter(trend_data, score_type)
         st.plotly_chart(fig2, use_container_width=True)
         
-        # Add download button
-        csv = structure_results.to_csv(index=False)
+        # Detailed data table
+        st.markdown("### 📋 Detailed Analysis")
+        
+        # Filter options for the table
+        trend_filter = st.selectbox(
+            "Filter by Trend Direction",
+            options=["All", "Improving", "Declining", "Stable"]
+        )
+        
+        if trend_filter != "All":
+            filtered_data = trend_data[trend_data['trend_direction'] == trend_filter]
+        else:
+            filtered_data = trend_data
+        
+        # Display formatted table
+        display_data = filtered_data[['industry', 'recent_avg', 'previous_avg', 'score_change', 'percent_change', 'stock_count', 'trend_direction']].copy()
+        display_data.columns = ['Industry', 'Recent Avg', 'Previous Avg', 'Change', '% Change', 'Stocks', 'Trend']
+        display_data = display_data.round(2)
+        
+        st.dataframe(display_data, use_container_width=True, hide_index=True)
+        
+        # Download button
+        csv = trend_data.to_csv(index=False)
         st.download_button(
-            label="Download Structure Analysis",
+            label="📥 Download Trend Analysis Data",
             data=csv,
-            file_name=f"score_structure_{score_type}_{datetime.now().strftime('%Y%m%d')}.csv",
+            file_name=f"trend_shifts_{score_type.lower()}_{datetime.now().strftime('%Y%m%d')}.csv",
             mime="text/csv"
         )
         
     except Exception as e:
         logger.error(f"Application error: {str(e)}")
-        st.error("An error occurred while analyzing the data. Check the logs for details.")
+        st.error("An error occurred while analyzing the data.")
+        if st.checkbox("Show error details"):
+            st.exception(e)
+
+if __name__ == "__main__":
+    main()
