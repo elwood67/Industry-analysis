@@ -75,21 +75,22 @@ def calculate_trend_shifts(df, selected_caps, score_type, lookback_days):
         
         score_col = f"{score_type.lower()}_score"
         
+        # Also fix the pandas warning by adding observed=True to groupby operations
         # Calculate average scores for each period by industry
         recent_scores = df[
             (df['date'] >= recent_start) & (df['date'] <= latest_date)
-        ].groupby('industry')[score_col].mean()
+        ].groupby('industry', observed=True)[score_col].mean()
         
         middle_scores = df[
             (df['date'] >= middle_start) & (df['date'] <= middle_end)
-        ].groupby('industry')[score_col].mean()
+        ].groupby('industry', observed=True)[score_col].mean()
         
         early_scores = df[
             (df['date'] >= early_start) & (df['date'] <= early_end)
-        ].groupby('industry')[score_col].mean()
+        ].groupby('industry', observed=True)[score_col].mean()
         
         # Calculate stock counts
-        stock_counts = df[df['date'] == latest_date].groupby('industry')['symbol'].count()
+        stock_counts = df[df['date'] == latest_date].groupby('industry', observed=True)['symbol'].count()
         
         # Combine data
         trend_data = pd.DataFrame({
@@ -203,16 +204,18 @@ def create_trend_shift_chart(trend_data, score_type):
                 "<b>%{y}</b><br>" +
                 f"{score_type} Score Change: %{{x:+.1f}}<br>" +
                 "Recent Average: %{customdata[0]:.1f}<br>" +
-                "Previous Average: %{customdata[1]:.1f}<br>" +
-                "Stock Count: %{customdata[2]}<br>" +
-                "Trend: %{customdata[3]}<br>" +
+                "Middle Average: %{customdata[1]:.1f}<br>" +
+                "Market Phase: %{customdata[2]}<br>" +
+                "Stock Count: %{customdata[3]}<br>" +
+                "Momentum Shift: %{customdata[4]:+.1f}<br>" +
                 "<extra></extra>"
             ),
             customdata=np.column_stack((
                 trend_data['recent_avg'].round(1),
-                trend_data['previous_avg'].round(1),
+                trend_data['middle_avg'].round(1),
+                trend_data['market_phase'],
                 trend_data['stock_count'],
-                trend_data['trend_direction']
+                trend_data['momentum_shift'].round(1)
             ))
         ))
         
