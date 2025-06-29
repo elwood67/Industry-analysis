@@ -132,9 +132,13 @@ def calculate_trend_shifts(df, selected_caps, score_type, lookback_days):
             elif recent_chg > 1 and middle_chg > 0:
                 return "Phase 3 - Advancing"
             
-            # Topping patterns (reverse logic for bearish analysis)
-            elif recent_chg < -1 and middle_chg > 1:
-                return "Phase 4 - Topping"
+            # Phase 3: Topping (advancing but momentum slowing)
+            elif recent_chg < 1 and middle_chg > 1 and momentum_shift < -1:
+                return "Phase 3 - Topping"
+            
+            # Phase 4: Early Decline (turning negative after positive)
+            elif recent_chg < -1 and middle_chg > 0:
+                return "Phase 4 - Declining"
             
             else:
                 return "Stable/Transitioning"
@@ -237,6 +241,140 @@ def create_trend_shift_chart(trend_data, score_type):
     except Exception as e:
         logger.error(f"Error creating trend chart: {str(e)}")
         return go.Figure().update_layout(title="Error creating chart")
+
+def create_industry_trend_chart(df, industry, selected_caps, score_type, lookback_days):
+    """Create a detailed trend chart for a specific industry showing phase transitions."""
+    try:
+        # Filter data for the selected industry and market caps
+        if selected_caps:
+            industry_df = df[(df['industry'] == industry) & (df['market_cap_category'].isin(selected_caps))]
+        else:
+            industry_df = df[df['industry'] == industry]
+        
+        if industry_df.empty:
+            return go.Figure().update_layout(title=f"No data available for {industry}")
+        
+        # Get daily averages for the industry
+        score_col = f"{score_type.lower()}_score"
+        daily_scores = industry_df.groupby('date')[score_col].mean().reset_index()
+        daily_scores = daily_scores.sort_values('date')
+        
+        # Calculate the three periods we're using for analysis
+        all_dates = sorted(daily_scores['date'].unique())
+        if len(all_dates) < lookback_days * 3:
+            return go.Figure().update_layout(title=f"Insufficient data for {industry}")
+        
+        # Define period boundaries
+        latest_date = all_dates[-1]
+        recent_start = all_dates[-lookback_days]
+        middle_start = all_dates[-2*lookback_days]
+        middle_end = all_dates[-lookback_days-1]
+        early_start = all_dates[-3*lookback_days] if len(all_dates) >= 3*lookback_days else all_dates[0]
+        early_end = all_dates[-2*lookback_days-1]
+        
+        # Calculate period averages
+        recent_avg = daily_scores[daily_scores['date'] >= recent_start][score_col].mean()
+        middle_avg = daily_scores[(daily_scores['date'] >= middle_start) & (daily_scores['date'] <= middle_end)][score_col].mean()
+        early_avg = daily_scores[(daily_scores['date'] >= early_start) & (daily_scores['date'] <= early_end)][score_col].mean()
+        
+        # Calculate changes for phase determination
+        recent_change = recent_avg - middle_avg
+        middle_change = middle_avg - early_avg
+        momentum_shift = recent_change - middle_change
+        
+        # Determine phase
+        def get_phase():
+            if recent_change < -1 and middle_change < -1:
+                return "Phase 4 - Declining"
+            elif middle_change < -1 and abs(recent_change) < 2 and momentum_shift > 1:
+                return "Phase 1 - Bottoming"
+            elif middle_change < 0 and recent_change > 1 and momentum_shift > 2:
+                return "Phase 2 - Recovery"
+            elif recent_change > 1 and middle_change > 0:
+                return "Phase 3 - Advancing"
+            elif recent_change < 1 and middle_change > 1 and momentum_shift < -1:
+                return "Phase 3 - Topping"
+            elif recent_change < -1 and middle_change > 0:
+                return "Phase 4 - Declining"
+            else:
+                return "Stable/Transitioning"
+        
+        current_phase = get_phase()
+        
+        # Create the chart
+        fig = go.Figure()
+        
+        # Add the main score line
+        fig.add_trace(go.Scatter(
+            x=daily_scores['date'],
+            y=daily_scores[score_col],
+            mode='lines+markers',
+            name=f'{score_type} Score',
+            line=dict(color='white', width=2),
+            marker=dict(size=4),
+            hovertemplate=f"Date: %{{x}}<br>{score_type} Score: %{{y:.1f}}<extra></extra>"
+        ))
+        
+        # Add period average lines
+        fig.add_hline(y=recent_avg, line_dash="solid", line_color="green", opacity=0.7,
+                     annotation_text=f"Recent Avg: {recent_avg:.1f}")
+        fig.add_hline(y=middle_avg, line_dash="dash", line_color="yellow", opacity=0.7,
+                     annotation_text=f"Middle Avg: {middle_avg:.1f}")
+        fig.add_hline(y=early_avg, line_dash="dot", line_color="red", opacity=0.7,
+                     annotation_text=f"Early Avg: {early_avg:.1f}")
+        
+        # Add vertical lines to separate periods
+        fig.add_vline(x=recent_start, line_dash="dash", line_color="white", opacity=0.3)
+        fig.add_vline(x=middle_start, line_dash="dash", line_color="white", opacity=0.3)
+        if len(all_dates) >= 3*lookback_days:
+            fig.add_vline(x=early_start, line_dash="dash", line_color="white", opacity=0.3)
+        
+        # Add background colors for periods
+        fig.add_vrect(
+            x0=recent_start, x1=latest_date,
+            fillcolor="green", opacity=0.1,
+            annotation_text="Recent Period", annotation_position="top left"
+        )
+        fig.add_vrect(
+            x0=middle_start, x1=middle_end,
+            fillcolor="yellow", opacity=0.1,
+            annotation_text="Middle Period", annotation_position="top left"
+        )
+        if len(all_dates) >= 3*lookback_days:
+            fig.add_vrect(
+                x0=early_start, x1=early_end,
+                fillcolor="red", opacity=0.1,
+                annotation_text="Early Period", annotation_position="top left"
+            )
+        
+        # Update layout
+        fig.update_layout(
+            title=f'{industry} - {score_type} Score Trend<br><span style="font-size:14px">Current Phase: {current_phase} | Momentum Shift: {momentum_shift:+.1f}</span>',
+            xaxis_title='Date',
+            yaxis_title=f'{score_type} Score',
+            template='plotly_dark',
+            height=500,
+            hovermode='x unified',
+            showlegend=True,
+            annotations=[
+                dict(
+                    text=f"Recent Change: {recent_change:+.1f}<br>Middle Change: {middle_change:+.1f}<br>Momentum Shift: {momentum_shift:+.1f}",
+                    xref="paper", yref="paper",
+                    x=0.02, y=0.98,
+                    showarrow=False,
+                    font=dict(size=12),
+                    bgcolor="rgba(0,0,0,0.5)",
+                    bordercolor="white",
+                    borderwidth=1
+                )
+            ]
+        )
+        
+        return fig
+        
+    except Exception as e:
+        logger.error(f"Error creating industry trend chart: {str(e)}")
+        return go.Figure().update_layout(title=f"Error creating chart for {industry}")
 
 def create_momentum_scatter(trend_data, score_type):
     """Create a scatter plot showing current score vs momentum."""
@@ -409,6 +547,36 @@ def main():
         st.markdown("### 🎯 Score vs Momentum Analysis")
         fig2 = create_momentum_scatter(trend_data, score_type)
         st.plotly_chart(fig2, use_container_width=True)
+        
+        # Individual Industry Trend Chart
+        st.markdown("### 📈 Individual Industry Trend Analysis")
+        
+        # Industry selector
+        industry_options = sorted(trend_data['industry'].tolist())
+        selected_industry = st.selectbox(
+            "Select Industry for Detailed Trend View",
+            options=industry_options,
+            help="View the detailed score trend and phase analysis for a specific industry"
+        )
+        
+        # Create and display the individual industry chart
+        if selected_industry:
+            with st.spinner(f"Loading trend chart for {selected_industry}..."):
+                industry_fig = create_industry_trend_chart(df, selected_industry, selected_caps, score_type, lookback_days)
+                st.plotly_chart(industry_fig, use_container_width=True)
+            
+            # Show the specific analysis for this industry
+            industry_data = trend_data[trend_data['industry'] == selected_industry]
+            if not industry_data.empty:
+                row = industry_data.iloc[0]
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Current Phase", row['market_phase'])
+                with col2:
+                    st.metric("Recent Change", f"{row['recent_change']:+.1f}")
+                with col3:
+                    st.metric("Momentum Shift", f"{row['momentum_shift']:+.1f}")
         
         # Detailed data table with phase information
         st.markdown("### 📋 Detailed Phase Analysis")
