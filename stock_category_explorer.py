@@ -86,11 +86,16 @@ def create_tradingview_watchlist(df, df_sectors=None):
     
     return '\n'.join(tv_symbols)
 
-def create_download_link(content, filename, link_text):
-    """Create a download link for text content."""
-    b64 = base64.b64encode(content.encode()).decode()
-    href = f'data:file/txt;base64,{b64}'
-    return f'<a href="{href}" download="{filename}">{link_text}</a>'
+def create_filename_safe_string(text):
+    """Convert text to filename-safe string."""
+    import re
+    # Replace spaces and special characters with underscores
+    safe_text = re.sub(r'[^\w\-_\.]', '_', text)
+    # Remove multiple consecutive underscores
+    safe_text = re.sub(r'_+', '_', safe_text)
+    # Remove leading/trailing underscores
+    safe_text = safe_text.strip('_')
+    return safe_text
 
 def main():
     st.title("Stock Category Explorer")
@@ -125,10 +130,11 @@ def main():
         # Get unique categories based on selection
         categories = sorted(df[category_type.lower()].unique())
         
-        # Category selection
-        selected_categories = st.sidebar.multiselect(
-            f"Select {category_type}s",
-            options=categories
+        # Category selection - single select for focused lists
+        selected_category = st.sidebar.selectbox(
+            f"Select {category_type}",
+            options=[""] + categories,
+            help=f"Choose one {category_type.lower()} to create a focused TradingView watchlist"
         )
         
         # Score filtering options
@@ -173,8 +179,8 @@ def main():
         if selected_caps:
             filtered_df = filtered_df[filtered_df['market_cap_category'].isin(selected_caps)]
             
-        if selected_categories:
-            filtered_df = filtered_df[filtered_df[category_type.lower()].isin(selected_categories)]
+        if selected_category:
+            filtered_df = filtered_df[filtered_df[category_type.lower()] == selected_category]
         
         # Apply score filters
         if use_bullish_filter:
@@ -198,10 +204,10 @@ def main():
         # Display summary statistics
         st.sidebar.markdown("### Summary Statistics")
         st.sidebar.markdown(f"Total Stocks: {len(filtered_df)}")
-        if selected_categories or selected_caps:
-            st.sidebar.markdown(f"Total {category_type}s: {len(filtered_df[category_type.lower()].unique())}")
+        if selected_category:
+            st.sidebar.markdown(f"Selected {category_type}: {selected_category}")
         
-        if not (selected_caps or selected_categories):
+        if not (selected_caps or selected_category):
             st.warning("👈 Use the filters in the sidebar to select stocks by market cap and sector/industry!")
             return
             
@@ -240,26 +246,41 @@ def main():
         col1, col2 = st.columns(2)
         
         with col1:
-            # CSV download
+            # CSV download with industry name
+            if selected_category:
+                safe_category = create_filename_safe_string(selected_category)
+                csv_filename = f"{safe_category}_{category_type.lower()}_stocks.csv"
+            else:
+                csv_filename = "filtered_stocks.csv"
+            
             csv = filtered_df[display_columns].to_csv(index=False)
             st.download_button(
                 label="📊 Download CSV",
                 data=csv,
-                file_name="filtered_stocks.csv",
+                file_name=csv_filename,
                 mime="text/csv",
                 help="Download the filtered stocks as a CSV file"
             )
         
         with col2:
-            # TradingView watchlist download
+            # TradingView watchlist download with industry name
             if df_sectors is not None:
                 tv_watchlist = create_tradingview_watchlist(filtered_df, df_sectors)
+                
+                if selected_category:
+                    safe_category = create_filename_safe_string(selected_category)
+                    tv_filename = f"{safe_category}_{category_type.lower()}_watchlist.txt"
+                    button_label = f"📈 Download {selected_category} Watchlist"
+                else:
+                    tv_filename = "tradingview_watchlist.txt"
+                    button_label = "📈 Download TradingView Watchlist"
+                
                 st.download_button(
-                    label="📈 Download TradingView Watchlist",
+                    label=button_label,
                     data=tv_watchlist,
-                    file_name="tradingview_watchlist.txt",
+                    file_name=tv_filename,
                     mime="text/plain",
-                    help="Download as TradingView-compatible watchlist (one symbol per line with exchange prefix)"
+                    help=f"Download {selected_category if selected_category else 'filtered stocks'} as TradingView-compatible watchlist"
                 )
             else:
                 st.info("💡 TradingView watchlist requires exchange data. Please ensure stock_sectors.csv is available in Data/industry_classification/")
@@ -268,6 +289,8 @@ def main():
         if df_sectors is not None and len(filtered_df) > 0:
             with st.expander("🔍 Preview TradingView Watchlist Format"):
                 tv_preview = create_tradingview_watchlist(filtered_df.head(10), df_sectors)
+                if selected_category:
+                    st.markdown(f"**{selected_category} {category_type} Watchlist Preview:**")
                 st.text(f"First 10 symbols:\n{tv_preview}")
                 if len(filtered_df) > 10:
                     st.caption(f"... and {len(filtered_df) - 10} more symbols")
