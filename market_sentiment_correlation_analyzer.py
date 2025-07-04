@@ -682,7 +682,7 @@ def main():
         selected_caps = st.sidebar.multiselect(
             "Market Cap Categories",
             options=cap_categories,
-            default=["Large Cap", "Mid Cap"],
+            default=cap_categories,  # Default to ALL categories selected
             help="Select market cap categories to include in sentiment analysis"
         )
         
@@ -739,7 +739,210 @@ def main():
         with st.spinner("Identifying market turning points..."):
             turning_points = analyzer.identify_market_turning_points(index_data, sentiment_df)
         
-        # Display results
+        # Display results with COOL SENTIMENT METER at the top
+        st.markdown("## 🎯 **REAL-TIME MARKET SENTIMENT DASHBOARD**")
+        
+        # Calculate current sentiment metrics for the meter
+        latest_sentiment = sentiment_df.iloc[-1]
+        current_bullish = latest_sentiment['bullish_pct']
+        current_bearish = latest_sentiment['bearish_pct']
+        current_net = latest_sentiment['net_bullish_pct']
+        
+        # Calculate historical percentiles for context
+        bullish_percentile = (sentiment_df['bullish_pct'] <= current_bullish).mean() * 100
+        bearish_percentile = (sentiment_df['bearish_pct'] <= current_bearish).mean() * 100
+        
+        # Create the SICK sentiment meter
+        def create_sentiment_meter():
+            """Create an awesome circular sentiment meter"""
+            import plotly.graph_objects as go
+            import numpy as np
+            
+            # Create the gauge chart
+            fig = go.Figure()
+            
+            # Main sentiment gauge (bullish sentiment)
+            fig.add_trace(go.Indicator(
+                mode = "gauge+number+delta",
+                value = current_bullish,
+                domain = {'x': [0, 0.48], 'y': [0.15, 0.85]},
+                title = {'text': "🐂 BULLISH", 'font': {'size': 24, 'color': 'white'}},
+                delta = {'reference': sentiment_df['bullish_pct'].mean(), 'increasing': {'color': "lightgreen"}, 'decreasing': {'color': "red"}},
+                gauge = {
+                    'axis': {'range': [None, 80], 'tickwidth': 1, 'tickcolor': "white"},
+                    'bar': {'color': "lightgreen" if current_bullish > 35 else "#FFD700" if current_bullish > 25 else "lightblue"},
+                    'bgcolor': "rgba(0,0,0,0.3)",
+                    'borderwidth': 2,
+                    'bordercolor': "white",
+                    'steps': [
+                        {'range': [0, 25], 'color': "#00FF00"},      # Bright Green - Safe zone
+                        {'range': [25, 35], 'color': "#FFD700"},     # Gold/Yellow - Caution
+                        {'range': [35, 50], 'color': "#FF8C00"},     # Dark Orange - Warning
+                        {'range': [50, 80], 'color': "#FF0000"}      # Bright Red - Danger
+                    ],
+                    'threshold': {
+                        'line': {'color': "red", 'width': 4},
+                        'thickness': 0.75,
+                        'value': 45
+                    }
+                },
+                number = {'font': {'size': 32, 'color': 'white'}, 'suffix': '%'}
+            ))
+            
+            # Bearish sentiment gauge
+            fig.add_trace(go.Indicator(
+                mode = "gauge+number+delta",
+                value = current_bearish,
+                domain = {'x': [0.52, 1], 'y': [0.15, 0.85]},
+                title = {'text': "🐻 BEARISH", 'font': {'size': 24, 'color': 'white'}},
+                delta = {'reference': sentiment_df['bearish_pct'].mean(), 'increasing': {'color': "red"}, 'decreasing': {'color': "lightgreen"}},
+                gauge = {
+                    'axis': {'range': [None, 80], 'tickwidth': 1, 'tickcolor': "white"},
+                    'bar': {'color': "#FF0000" if current_bearish > 40 else "#FF8C00" if current_bearish > 25 else "lightcoral"},
+                    'bgcolor': "rgba(0,0,0,0.3)",
+                    'borderwidth': 2,
+                    'bordercolor': "white",
+                    'steps': [
+                        {'range': [0, 15], 'color': "#FF0000"},      # Bright Red - Complacency
+                        {'range': [15, 25], 'color': "#FF8C00"},     # Dark Orange - Normal
+                        {'range': [25, 40], 'color': "#FFD700"},     # Gold/Yellow - Elevated fear
+                        {'range': [40, 80], 'color': "#00FF00"}      # Bright Green - Opportunity zone
+                    ],
+                    'threshold': {
+                        'line': {'color': "green", 'width': 4},
+                        'thickness': 0.75,
+                        'value': 35
+                    }
+                },
+                number = {'font': {'size': 32, 'color': 'white'}, 'suffix': '%'}
+            ))
+            
+            # Net sentiment bar (bottom)
+            net_color = "green" if current_net > 10 else "red" if current_net < -10 else "orange"
+            fig.add_trace(go.Indicator(
+                mode = "number+delta",
+                value = current_net,
+                domain = {'x': [0.2, 0.8], 'y': [0, 0.12]},
+                title = {'text': "⚖️ NET SENTIMENT", 'font': {'size': 20, 'color': 'white'}},
+                delta = {'reference': 0, 'position': "right"},
+                number = {'font': {'size': 36, 'color': net_color}, 'suffix': '%', 'prefix': '+' if current_net > 0 else ''}
+            ))
+            
+            fig.update_layout(
+                paper_bgcolor = "rgba(0,0,0,0)",
+                plot_bgcolor = "rgba(0,0,0,0)",
+                font = {'color': "white", 'family': "Arial Black"},
+                height = 450,
+                margin = dict(l=20, r=20, t=60, b=20)
+            )
+            
+            return fig
+        
+        # Display the meter
+        meter_fig = create_sentiment_meter()
+        st.plotly_chart(meter_fig, use_container_width=True)
+        
+        # Add gauge legend/explanation
+        st.markdown("### 🎨 **Gauge Color Legend**")
+        
+        col_legend1, col_legend2 = st.columns(2)
+        
+        with col_legend1:
+            st.markdown("""
+            **🐂 Bullish Gauge Zones:**
+            - 🟢 **Green (0-25%)**: Safe Zone - Normal bullish sentiment
+            - 🟡 **Yellow (25-35%)**: Caution Zone - Elevated optimism  
+            - 🟠 **Orange (35-50%)**: Warning Zone - High risk territory
+            - 🔴 **Red (50%+)**: Danger Zone - Extreme euphoria
+            - **Red Line at 45%**: Historical peak threshold
+            """)
+        
+        with col_legend2:
+            st.markdown("""
+            **🐻 Bearish Gauge Zones:**
+            - 🔴 **Red (0-15%)**: Complacency Zone - Too little fear
+            - 🟠 **Orange (15-25%)**: Normal Zone - Healthy skepticism
+            - 🟡 **Yellow (25-40%)**: Elevated Fear - Market stress
+            - 🟢 **Green (40%+)**: Opportunity Zone - Potential bottoms
+            - **Green Line at 35%**: Historical opportunity threshold
+            """)
+        
+        # Add context indicators below the meter
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            # Bullish percentile indicator
+            if bullish_percentile > 90:
+                st.error("🚨 EXTREME HIGH")
+            elif bullish_percentile > 75:
+                st.warning("⚠️ HIGH RISK")
+            elif bullish_percentile > 50:
+                st.info("📈 ELEVATED")
+            else:
+                st.success("✅ NORMAL")
+            st.caption(f"Bullish {bullish_percentile:.0f}th percentile")
+        
+        with col2:
+            # Bearish percentile indicator  
+            if bearish_percentile > 90:
+                st.success("🎯 EXTREME OPPORTUNITY")
+            elif bearish_percentile > 75:
+                st.info("📈 OPPORTUNITY ZONE")
+            elif bearish_percentile > 50:
+                st.warning("⚠️ ELEVATED FEAR")
+            else:
+                st.error("😴 COMPLACENT")
+            st.caption(f"Bearish {bearish_percentile:.0f}th percentile")
+        
+        with col3:
+            # Momentum indicator
+            recent_momentum = sentiment_df['bullish_momentum_5d'].iloc[-1] if 'bullish_momentum_5d' in sentiment_df.columns else 0
+            if abs(recent_momentum) > 5:
+                momentum_emoji = "🚀" if recent_momentum > 0 else "📉"
+                st.warning(f"{momentum_emoji} STRONG")
+            elif abs(recent_momentum) > 2:
+                momentum_emoji = "📈" if recent_momentum > 0 else "📉"
+                st.info(f"{momentum_emoji} MODERATE")
+            else:
+                st.success("😴 STABLE")
+            st.caption(f"5d Momentum: {recent_momentum:+.1f}%")
+        
+        with col4:
+            # Volume indicator
+            if 'extreme_bullish_pct' in latest_sentiment:
+                extreme_bullish = latest_sentiment['extreme_bullish_pct']
+                if extreme_bullish > 15:
+                    st.error("🔥 EXTREME")
+                elif extreme_bullish > 8:
+                    st.warning("⚡ HIGH")
+                elif extreme_bullish > 4:
+                    st.info("📊 MODERATE")
+                else:
+                    st.success("😌 LOW")
+                st.caption(f"Extreme Bulls: {extreme_bullish:.1f}%")
+        
+        with col5:
+            # Overall market phase
+            if current_bullish > 45 and current_bearish < 20:
+                st.error("🔴 EUPHORIA")
+                phase_text = "Potential Top"
+            elif current_bullish < 15 and current_bearish > 40:
+                st.success("🟢 CAPITULATION") 
+                phase_text = "Potential Bottom"
+            elif current_bullish > 35:
+                st.warning("🟡 FROTHY")
+                phase_text = "Caution Advised"
+            elif current_bearish > 30:
+                st.info("🔵 FEARFUL")
+                phase_text = "Watch for Opportunity"
+            else:
+                st.success("⚪ NEUTRAL")
+                phase_text = "Balanced Market"
+            st.caption(phase_text)
+        
+        # Add a sleek separator
+        st.markdown("---")
+        
         st.markdown("## 📈 Sentiment vs Index Performance")
         
         # Chart controls
@@ -870,51 +1073,172 @@ def main():
             fig_turning = create_turning_points_analysis(turning_points, turning_point_index)
             st.plotly_chart(fig_turning, use_container_width=True)
             
-            # Show turning points summary
+            # Enhanced turning points summary with ALL data
             if turning_point_index in turning_points:
                 tp_data = turning_points[turning_point_index]
                 peaks_df = pd.DataFrame(tp_data['peaks'])
                 troughs_df = pd.DataFrame(tp_data['troughs'])
                 
+                # Combine ALL turning points across ALL indices for comprehensive analysis
+                all_peaks = []
+                all_troughs = []
+                
+                for idx_symbol, idx_tp_data in turning_points.items():
+                    if idx_tp_data['peaks']:
+                        for peak in idx_tp_data['peaks']:
+                            peak['index_name'] = analyzer.indices[idx_symbol]
+                            all_peaks.append(peak)
+                    
+                    if idx_tp_data['troughs']:
+                        for trough in idx_tp_data['troughs']:
+                            trough['index_name'] = analyzer.indices[idx_symbol]
+                            all_troughs.append(trough)
+                
+                all_peaks_df = pd.DataFrame(all_peaks)
+                all_troughs_df = pd.DataFrame(all_troughs)
+                
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    st.markdown("### 📈 Market Peaks Summary")
-                    if not peaks_df.empty:
-                        avg_bullish_at_peaks = peaks_df['bullish_pct_at_peak'].mean()
-                        avg_bearish_at_peaks = peaks_df['bearish_pct_at_peak'].mean()
+                    st.markdown("### 📈 Market Peaks Analysis")
+                    if not all_peaks_df.empty:
+                        # Enhanced peak statistics
+                        avg_bullish_all_peaks = all_peaks_df['bullish_pct_at_peak'].mean()
+                        avg_bearish_all_peaks = all_peaks_df['bearish_pct_at_peak'].mean()
+                        max_bullish_peak = all_peaks_df['bullish_pct_at_peak'].max()
+                        min_bullish_peak = all_peaks_df['bullish_pct_at_peak'].min()
                         
-                        st.metric("Avg Bullish % at Peaks", f"{avg_bullish_at_peaks:.1f}%")
-                        st.metric("Avg Bearish % at Peaks", f"{avg_bearish_at_peaks:.1f}%")
-                        st.metric("Number of Peaks", len(peaks_df))
+                        st.metric("📊 Total Peaks Identified", len(all_peaks_df))
+                        st.metric("📈 Average Bullish % at Peaks", f"{avg_bullish_all_peaks:.1f}%")
+                        st.metric("📉 Average Bearish % at Peaks", f"{avg_bearish_all_peaks:.1f}%")
                         
-                        # Show recent peaks
-                        if len(peaks_df) > 0:
-                            recent_peaks = peaks_df.nlargest(3, 'date')[['date', 'bullish_pct_at_peak', 'bearish_pct_at_peak']]
-                            recent_peaks['date'] = pd.to_datetime(recent_peaks['date']).dt.strftime('%Y-%m-%d')
-                            st.markdown("**Recent Peaks:**")
-                            st.dataframe(recent_peaks, hide_index=True)
+                        # Peak severity levels
+                        extreme_peaks = len(all_peaks_df[all_peaks_df['bullish_pct_at_peak'] > 60])
+                        high_peaks = len(all_peaks_df[all_peaks_df['bullish_pct_at_peak'] > 45])
+                        moderate_peaks = len(all_peaks_df[all_peaks_df['bullish_pct_at_peak'] > 35])
+                        
+                        st.markdown("**📊 Peak Severity Levels:**")
+                        st.write(f"🔴 Extreme (>60% bullish): {extreme_peaks} peaks")
+                        st.write(f"🟠 High (>45% bullish): {high_peaks} peaks") 
+                        st.write(f"🟡 Moderate (>35% bullish): {moderate_peaks} peaks")
+                        
+                        # Show range
+                        st.markdown(f"**📈 Bullish Range:** {min_bullish_peak:.1f}% - {max_bullish_peak:.1f}%")
+                        
+                        # Recent peaks table
+                        st.markdown("**🕒 Recent Major Peaks:**")
+                        recent_peaks = all_peaks_df.nlargest(5, 'date')[['date', 'index_name', 'bullish_pct_at_peak', 'bearish_pct_at_peak']]
+                        recent_peaks['date'] = pd.to_datetime(recent_peaks['date']).dt.strftime('%Y-%m-%d')
+                        recent_peaks.columns = ['Date', 'Index', 'Bullish %', 'Bearish %']
+                        st.dataframe(recent_peaks, hide_index=True)
                     else:
-                        st.info("No peaks identified")
+                        st.info("No peaks identified across all indices")
                 
                 with col2:
-                    st.markdown("### 📉 Market Troughs Summary")
-                    if not troughs_df.empty:
-                        avg_bullish_at_troughs = troughs_df['bullish_pct_at_trough'].mean()
-                        avg_bearish_at_troughs = troughs_df['bearish_pct_at_trough'].mean()
+                    st.markdown("### 📉 Market Troughs Analysis")
+                    if not all_troughs_df.empty:
+                        # Enhanced trough statistics
+                        avg_bullish_all_troughs = all_troughs_df['bullish_pct_at_trough'].mean()
+                        avg_bearish_all_troughs = all_troughs_df['bearish_pct_at_trough'].mean()
+                        min_bullish_trough = all_troughs_df['bullish_pct_at_trough'].min()
+                        max_bearish_trough = all_troughs_df['bearish_pct_at_trough'].max()
                         
-                        st.metric("Avg Bullish % at Troughs", f"{avg_bullish_at_troughs:.1f}%")
-                        st.metric("Avg Bearish % at Troughs", f"{avg_bearish_at_troughs:.1f}%")
-                        st.metric("Number of Troughs", len(troughs_df))
+                        st.metric("📊 Total Troughs Identified", len(all_troughs_df))
+                        st.metric("📉 Average Bullish % at Troughs", f"{avg_bullish_all_troughs:.1f}%")
+                        st.metric("📈 Average Bearish % at Troughs", f"{avg_bearish_all_troughs:.1f}%")
                         
-                        # Show recent troughs
-                        if len(troughs_df) > 0:
-                            recent_troughs = troughs_df.nlargest(3, 'date')[['date', 'bullish_pct_at_trough', 'bearish_pct_at_trough']]
-                            recent_troughs['date'] = pd.to_datetime(recent_troughs['date']).dt.strftime('%Y-%m-%d')
-                            st.markdown("**Recent Troughs:**")
-                            st.dataframe(recent_troughs, hide_index=True)
+                        # Trough severity levels
+                        extreme_troughs = len(all_troughs_df[all_troughs_df['bearish_pct_at_trough'] > 50])
+                        high_troughs = len(all_troughs_df[all_troughs_df['bearish_pct_at_trough'] > 35])
+                        moderate_troughs = len(all_troughs_df[all_troughs_df['bearish_pct_at_trough'] > 25])
+                        
+                        st.markdown("**📊 Trough Severity Levels:**")
+                        st.write(f"🔴 Extreme (>50% bearish): {extreme_troughs} troughs")
+                        st.write(f"🟠 High (>35% bearish): {high_troughs} troughs")
+                        st.write(f"🟡 Moderate (>25% bearish): {moderate_troughs} troughs")
+                        
+                        # Show range
+                        st.markdown(f"**📉 Bullish Range at Troughs:** {min_bullish_trough:.1f}% - {all_troughs_df['bullish_pct_at_trough'].max():.1f}%")
+                        st.markdown(f"**📈 Bearish Range at Troughs:** {all_troughs_df['bearish_pct_at_trough'].min():.1f}% - {max_bearish_trough:.1f}%")
+                        
+                        # Recent troughs table
+                        st.markdown("**🕒 Recent Major Troughs:**")
+                        recent_troughs = all_troughs_df.nlargest(5, 'date')[['date', 'index_name', 'bullish_pct_at_trough', 'bearish_pct_at_trough']]
+                        recent_troughs['date'] = pd.to_datetime(recent_troughs['date']).dt.strftime('%Y-%m-%d')
+                        recent_troughs.columns = ['Date', 'Index', 'Bullish %', 'Bearish %']
+                        st.dataframe(recent_troughs, hide_index=True)
                     else:
-                        st.info("No troughs identified")
+                        st.info("No troughs identified across all indices")
+                
+                # Cross-index summary
+                st.markdown("### 🌍 Cross-Index Turning Points Summary")
+                
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric("🎯 Total Turning Points", len(all_peaks_df) + len(all_troughs_df))
+                
+                with col2:
+                    st.metric("📈 Total Peaks", len(all_peaks_df))
+                
+                with col3:
+                    st.metric("📉 Total Troughs", len(all_troughs_df))
+                
+                with col4:
+                    if not all_peaks_df.empty and not all_troughs_df.empty:
+                        sentiment_spread = avg_bullish_all_peaks - avg_bullish_all_troughs
+                        st.metric("📊 Peak-Trough Spread", f"{sentiment_spread:.1f}%")
+                
+                # Enhanced insights based on ALL data
+                st.markdown("### 💡 Enhanced Market Timing Insights")
+                
+                if not all_peaks_df.empty and not all_troughs_df.empty:
+                    # Calculate comprehensive statistics
+                    bullish_peak_75th = np.percentile(all_peaks_df['bullish_pct_at_peak'], 75)
+                    bullish_peak_90th = np.percentile(all_peaks_df['bullish_pct_at_peak'], 90)
+                    bearish_trough_75th = np.percentile(all_troughs_df['bearish_pct_at_trough'], 75)
+                    bearish_trough_90th = np.percentile(all_troughs_df['bearish_pct_at_trough'], 90)
+                    
+                    current_bullish = latest_sentiment['bullish_pct']
+                    current_bearish = latest_sentiment['bearish_pct']
+                    
+                    insights = []
+                    
+                    # Peak warnings
+                    if current_bullish >= bullish_peak_90th:
+                        insights.append(f"🚨 **EXTREME PEAK ALERT**: Current bullish sentiment ({current_bullish:.1f}%) exceeds 90% of historical peaks")
+                    elif current_bullish >= bullish_peak_75th:
+                        insights.append(f"⚠️ **PEAK WARNING**: Current bullish sentiment ({current_bullish:.1f}%) exceeds 75% of historical peaks")
+                    
+                    # Trough opportunities  
+                    if current_bearish >= bearish_trough_90th:
+                        insights.append(f"🎯 **EXTREME BOTTOM SIGNAL**: Current bearish sentiment ({current_bearish:.1f}%) exceeds 90% of historical troughs")
+                    elif current_bearish >= bearish_trough_75th:
+                        insights.append(f"📈 **BOTTOM OPPORTUNITY**: Current bearish sentiment ({current_bearish:.1f}%) exceeds 75% of historical troughs")
+                    
+                    # Historical context
+                    insights.append(f"📊 **Historical Context**: Peak bullish readings typically range {all_peaks_df['bullish_pct_at_peak'].min():.1f}%-{all_peaks_df['bullish_pct_at_peak'].max():.1f}%")
+                    insights.append(f"📊 **Historical Context**: Trough bearish readings typically range {all_troughs_df['bearish_pct_at_trough'].min():.1f}%-{all_troughs_df['bearish_pct_at_trough'].max():.1f}%")
+                    
+                    for insight in insights:
+                        st.markdown(insight)
+                        
+                    # Trading thresholds based on historical data
+                    st.markdown("### 🎯 Data-Driven Trading Thresholds")
+                    
+                    st.info(f"""
+                    **📈 Bullish Sentiment Levels (Based on {len(all_peaks_df)} Historical Peaks):**
+                    - 🟢 Normal: < {np.percentile(all_peaks_df['bullish_pct_at_peak'], 50):.0f}%
+                    - 🟡 Elevated: {np.percentile(all_peaks_df['bullish_pct_at_peak'], 50):.0f}% - {np.percentile(all_peaks_df['bullish_pct_at_peak'], 75):.0f}%
+                    - 🟠 High Risk: {np.percentile(all_peaks_df['bullish_pct_at_peak'], 75):.0f}% - {np.percentile(all_peaks_df['bullish_pct_at_peak'], 90):.0f}%
+                    - 🔴 Extreme Risk: > {np.percentile(all_peaks_df['bullish_pct_at_peak'], 90):.0f}%
+                    
+                    **📉 Bearish Sentiment Levels (Based on {len(all_troughs_df)} Historical Troughs):**
+                    - 🟢 Normal: < {np.percentile(all_troughs_df['bearish_pct_at_trough'], 50):.0f}%
+                    - 🟡 Elevated: {np.percentile(all_troughs_df['bearish_pct_at_trough'], 50):.0f}% - {np.percentile(all_troughs_df['bearish_pct_at_trough'], 75):.0f}%
+                    - 🟠 Opportunity Zone: {np.percentile(all_troughs_df['bearish_pct_at_trough'], 75):.0f}% - {np.percentile(all_troughs_df['bearish_pct_at_trough'], 90):.0f}%
+                    - 🔴 Extreme Opportunity: > {np.percentile(all_troughs_df['bearish_pct_at_trough'], 90):.0f}%
+                    """)
         else:
             st.warning("No turning points data available.")
         
