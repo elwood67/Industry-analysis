@@ -296,11 +296,147 @@ class MarketSentimentAnalyzer:
             return {}
     
     def identify_market_turning_points(self, index_data, sentiment_df, window=20):
-        """Identify potential market turning points and analyze sentiment at those times."""
+        """Analyze sentiment at manually defined major market turning points (2009-2025)."""
         try:
+            # MANUALLY DEFINED MAJOR TURNING POINTS (2009-2025)
+            # These are the MOST SIGNIFICANT market peaks and troughs
+            
+            manual_turning_points = {
+                'SPY': {
+                    'name': 'S&P 500',
+                    'peaks': [
+                        '2009-09-16',  # Recovery rally peak
+                        '2011-04-29',  # QE2 peak
+                        '2012-04-02',  # European debt crisis peak
+                        '2014-12-29',  # QE infinity peak
+                        '2015-05-20',  # Pre-crash peak
+                        '2018-01-26',  # Tax cut euphoria
+                        '2018-09-21',  # Pre-crash peak
+                        '2020-02-19',  # Pre-COVID peak
+                        '2021-01-29',  # Meme stock mania
+                        '2021-11-08',  # Inflation denial peak
+                        '2024-03-28',  # AI bubble peak
+                        '2024-07-16',  # Election rally peak
+                        '2025-01-17'   # Inauguration peak
+                    ],
+                    'troughs': [
+                        '2009-03-09',  # Financial crisis bottom (82.1% bearish)
+                        '2010-05-06',  # Flash crash
+                        '2011-10-03',  # Debt ceiling crisis
+                        '2015-08-24',  # China crash
+                        '2016-01-20',  # Oil crash (82.1% bearish)
+                        '2018-12-24',  # Christmas Eve massacre
+                        '2020-03-23',  # COVID crash (76% bearish)
+                        '2022-06-16',  # Bear market intermediate low
+                        '2022-10-12',  # Bear market final low
+                        '2023-03-13',  # Banking crisis
+                        '2023-10-27',  # Bond yield spike
+                        '2024-08-05'   # Japan carry trade unwind
+                    ]
+                },
+                'IWM': {
+                    'name': 'Russell 2000',
+                    'peaks': [
+                        '2009-09-15',  # Small cap recovery
+                        '2011-04-29',  # QE2 small cap peak
+                        '2012-03-26',  # Risk-on peak
+                        '2014-07-01',  # Small cap bubble
+                        '2015-06-23',  # Pre-crash peak
+                        '2018-01-16',  # Small cap tax cut peak
+                        '2018-08-31',  # Trade war peak
+                        '2020-02-13',  # Pre-COVID small cap peak
+                        '2021-01-27',  # Meme mania peak
+                        '2021-03-15',  # Reopening trade peak
+                        '2021-11-08',  # Small cap speculation
+                        '2024-07-10',  # Trump trade peak
+                        '2024-12-31',  # Year-end rally
+                        '2025-01-15'   # Small cap rotation
+                    ],
+                    'troughs': [
+                        '2009-03-09',  # Crisis bottom
+                        '2010-05-25',  # European crisis
+                        '2011-10-03',  # Small cap selloff
+                        '2015-08-24',  # Growth scare
+                        '2016-01-20',  # Energy crash
+                        '2018-12-24',  # Small cap carnage
+                        '2020-03-18',  # COVID small cap crash
+                        '2022-05-12',  # Growth scare
+                        '2022-06-17',  # Bear market low
+                        '2022-09-30',  # Rate fear peak
+                        '2023-03-13',  # Banking crisis
+                        '2024-04-19'   # Earnings disappointment
+                    ]
+                },
+                'QQQ': {
+                    'name': 'NASDAQ 100',
+                    'peaks': [
+                        '2009-09-16',  # Tech recovery
+                        '2011-04-29',  # Apple peak
+                        '2012-04-02',  # Facebook IPO era
+                        '2014-12-29',  # Tech dominance
+                        '2015-07-20',  # Pre-correction peak
+                        '2018-01-29',  # FAANG mania
+                        '2018-08-29',  # Tech leadership
+                        '2020-02-19',  # Pre-COVID tech peak
+                        '2021-01-27',  # Tesla/meme peak
+                        '2021-11-22',  # Tech bubble peak
+                        '2024-03-21',  # AI mania peak
+                        '2024-07-10',  # Mega-cap peak
+                        '2025-01-13'   # Tech rotation
+                    ],
+                    'troughs': [
+                        '2009-03-09',  # Tech crash bottom
+                        '2010-05-06',  # Flash crash tech
+                        '2011-10-03',  # European tech selloff
+                        '2015-08-24',  # China tech scare
+                        '2016-01-20',  # Apple/oil crash
+                        '2018-12-24',  # Tech wreckage
+                        '2020-03-23',  # COVID tech crash
+                        '2022-05-11',  # Growth implosion
+                        '2022-06-16',  # Tech bear market
+                        '2022-12-28',  # Rate peak fears
+                        '2023-03-13',  # SVB tech crisis
+                        '2024-08-05'   # Mag 7 selloff
+                    ]
+                },
+                'DIA': {
+                    'name': 'Dow Jones',
+                    'peaks': [
+                        '2009-09-16',  # Industrial recovery
+                        '2011-04-29',  # Commodity peak
+                        '2012-04-02',  # Manufacturing peak
+                        '2014-12-29',  # Energy peak
+                        '2015-05-19',  # Dollar strength peak
+                        '2018-01-26',  # Industrial euphoria
+                        '2018-10-03',  # Trade war peak
+                        '2020-02-12',  # Pre-COVID Dow peak
+                        '2021-05-07',  # Reopening peak
+                        '2021-11-08',  # Infrastructure peak
+                        '2024-12-13',  # Trump industrial
+                        '2025-01-20'   # Inauguration peak
+                    ],
+                    'troughs': [
+                        '2009-03-06',  # Industrial bottom
+                        '2010-05-06',  # Flash crash
+                        '2011-10-03',  # Manufacturing fear
+                        '2015-08-24',  # Commodity crash
+                        '2016-01-20',  # Industrial recession
+                        '2018-12-26',  # Dow Christmas crash
+                        '2020-03-23',  # COVID industrial
+                        '2022-06-17',  # Recession fears
+                        '2022-09-30',  # Manufacturing PMI
+                        '2023-03-13',  # Banking fears
+                        '2024-08-05'   # Recession scare
+                    ]
+                }
+            }
+            
             turning_points = {}
             
             for symbol, idx_info in index_data.items():
+                if symbol not in manual_turning_points:
+                    continue  # Skip indices we haven't defined
+                    
                 index_df = idx_info['data'].copy()
                 
                 # Merge with sentiment data - both timezone-naive
@@ -310,63 +446,91 @@ class MarketSentimentAnalyzer:
                     logger.warning(f"Insufficient data for turning points analysis of {symbol}: {len(merged_df)} records")
                     continue
                 
-                # Find significant peaks and troughs in the index
-                close_prices = merged_df['Close'].values
-                dates = merged_df['date'].values
+                # Get manual turning points for this symbol
+                manual_peaks = manual_turning_points[symbol]['peaks']
+                manual_troughs = manual_turning_points[symbol]['troughs']
                 
-                # More sophisticated peak/trough detection
-                peaks, peak_properties = find_peaks(close_prices, distance=window, prominence=np.std(close_prices)*0.5)
-                troughs, trough_properties = find_peaks(-close_prices, distance=window, prominence=np.std(close_prices)*0.5)
-                
-                # Analyze sentiment at turning points
+                # Analyze sentiment at manual turning points
                 peak_analysis = []
                 trough_analysis = []
                 
-                # Analyze peaks (potential market tops)
-                for peak_idx in peaks:
-                    if peak_idx >= window and peak_idx < len(merged_df) - window:
-                        peak_date = dates[peak_idx]
-                        peak_price = close_prices[peak_idx]
+                # Analyze manual peaks
+                for peak_date_str in manual_peaks:
+                    try:
+                        peak_date = pd.to_datetime(peak_date_str).tz_localize(None)
                         
-                        # Get sentiment data around the peak
-                        window_data = merged_df.iloc[peak_idx-window:peak_idx+window+1]
+                        # Find closest date in our data
+                        merged_df['date_diff'] = abs(merged_df['date'] - peak_date)
+                        closest_idx = merged_df['date_diff'].idxmin()
                         
-                        peak_analysis.append({
-                            'date': peak_date,
-                            'price': peak_price,
-                            'type': 'peak',
-                            'bullish_pct_avg': window_data['bullish_pct'].mean(),
-                            'bearish_pct_avg': window_data['bearish_pct'].mean(),
-                            'net_bullish_avg': window_data['net_bullish_pct'].mean(),
-                            'extreme_bullish_avg': window_data['extreme_bullish_pct'].mean(),
-                            'extreme_bearish_avg': window_data['extreme_bearish_pct'].mean(),
-                            'bullish_pct_at_peak': merged_df.iloc[peak_idx]['bullish_pct'],
-                            'bearish_pct_at_peak': merged_df.iloc[peak_idx]['bearish_pct'],
-                            'days_before_after': window
-                        })
+                        if merged_df.loc[closest_idx, 'date_diff'].days <= 5:  # Within 5 days
+                            closest_row = merged_df.loc[closest_idx]
+                            
+                            # Get window data around the peak
+                            start_idx = max(0, closest_idx - window)
+                            end_idx = min(len(merged_df), closest_idx + window + 1)
+                            window_data = merged_df.iloc[start_idx:end_idx]
+                            
+                            peak_analysis.append({
+                                'date': closest_row['date'],
+                                'price': closest_row['Close'],
+                                'type': 'peak',
+                                'manual_date': peak_date_str,
+                                'days_off': merged_df.loc[closest_idx, 'date_diff'].days,
+                                'bullish_pct_avg': window_data['bullish_pct'].mean(),
+                                'bearish_pct_avg': window_data['bearish_pct'].mean(),
+                                'net_bullish_avg': window_data['net_bullish_pct'].mean(),
+                                'extreme_bullish_avg': window_data['extreme_bullish_pct'].mean(),
+                                'extreme_bearish_avg': window_data['extreme_bearish_pct'].mean(),
+                                'bullish_pct_at_peak': closest_row['bullish_pct'],
+                                'bearish_pct_at_peak': closest_row['bearish_pct'],
+                                'days_before_after': window
+                            })
+                            logger.info(f"Found peak for {symbol} on {peak_date_str}: sentiment {closest_row['bullish_pct']:.1f}% bullish")
+                        else:
+                            logger.warning(f"No data within 5 days of manual peak {peak_date_str} for {symbol}")
+                            
+                    except Exception as e:
+                        logger.warning(f"Error processing manual peak {peak_date_str} for {symbol}: {e}")
                 
-                # Analyze troughs (potential market bottoms)
-                for trough_idx in troughs:
-                    if trough_idx >= window and trough_idx < len(merged_df) - window:
-                        trough_date = dates[trough_idx]
-                        trough_price = close_prices[trough_idx]
+                # Analyze manual troughs
+                for trough_date_str in manual_troughs:
+                    try:
+                        trough_date = pd.to_datetime(trough_date_str).tz_localize(None)
                         
-                        # Get sentiment data around the trough
-                        window_data = merged_df.iloc[trough_idx-window:trough_idx+window+1]
+                        # Find closest date in our data
+                        merged_df['date_diff'] = abs(merged_df['date'] - trough_date)
+                        closest_idx = merged_df['date_diff'].idxmin()
                         
-                        trough_analysis.append({
-                            'date': trough_date,
-                            'price': trough_price,
-                            'type': 'trough',
-                            'bullish_pct_avg': window_data['bullish_pct'].mean(),
-                            'bearish_pct_avg': window_data['bearish_pct'].mean(),
-                            'net_bullish_avg': window_data['net_bullish_pct'].mean(),
-                            'extreme_bullish_avg': window_data['extreme_bullish_pct'].mean(),
-                            'extreme_bearish_avg': window_data['extreme_bearish_pct'].mean(),
-                            'bullish_pct_at_trough': merged_df.iloc[trough_idx]['bullish_pct'],
-                            'bearish_pct_at_trough': merged_df.iloc[trough_idx]['bearish_pct'],
-                            'days_before_after': window
-                        })
+                        if merged_df.loc[closest_idx, 'date_diff'].days <= 5:  # Within 5 days
+                            closest_row = merged_df.loc[closest_idx]
+                            
+                            # Get window data around the trough
+                            start_idx = max(0, closest_idx - window)
+                            end_idx = min(len(merged_df), closest_idx + window + 1)
+                            window_data = merged_df.iloc[start_idx:end_idx]
+                            
+                            trough_analysis.append({
+                                'date': closest_row['date'],
+                                'price': closest_row['Close'],
+                                'type': 'trough',
+                                'manual_date': trough_date_str,
+                                'days_off': merged_df.loc[closest_idx, 'date_diff'].days,
+                                'bullish_pct_avg': window_data['bullish_pct'].mean(),
+                                'bearish_pct_avg': window_data['bearish_pct'].mean(),
+                                'net_bullish_avg': window_data['net_bullish_pct'].mean(),
+                                'extreme_bullish_avg': window_data['extreme_bullish_pct'].mean(),
+                                'extreme_bearish_avg': window_data['extreme_bearish_pct'].mean(),
+                                'bullish_pct_at_trough': closest_row['bullish_pct'],
+                                'bearish_pct_at_trough': closest_row['bearish_pct'],
+                                'days_before_after': window
+                            })
+                            logger.info(f"Found trough for {symbol} on {trough_date_str}: sentiment {closest_row['bearish_pct']:.1f}% bearish")
+                        else:
+                            logger.warning(f"No data within 5 days of manual trough {trough_date_str} for {symbol}")
+                            
+                    except Exception as e:
+                        logger.warning(f"Error processing manual trough {trough_date_str} for {symbol}: {e}")
                 
                 turning_points[symbol] = {
                     'name': idx_info['name'],
@@ -374,12 +538,14 @@ class MarketSentimentAnalyzer:
                     'troughs': trough_analysis,
                     'merged_data': merged_df
                 }
+                
+                logger.info(f"Manual turning points for {symbol}: {len(peak_analysis)} peaks, {len(trough_analysis)} troughs")
             
-            logger.info(f"Identified turning points for {len(turning_points)} indices")
+            logger.info(f"Identified manual turning points for {len(turning_points)} indices")
             return turning_points
             
         except Exception as e:
-            logger.error(f"Error identifying turning points: {str(e)}")
+            logger.error(f"Error identifying manual turning points: {str(e)}")
             return {}
 
 def create_sentiment_index_chart(sentiment_df, index_data, selected_index, sentiment_metric):
