@@ -572,9 +572,7 @@ def create_ultimate_sentiment_meter(sentiment_df, analyzer):
         delta = {'reference': sentiment_df['bullish_pct'].mean(), 'increasing': {'color': "orange"}, 'decreasing': {'color': "lightgreen"}},
         gauge = {
             'axis': {'range': [None, 70], 'tickwidth': 1, 'tickcolor': "white"},
-            'bar': {'color': "red" if current_bullish >= analyzer.bullish_thresholds['danger'] else 
-                            "orange" if current_bullish >= analyzer.bullish_thresholds['warning'] else
-                            "yellow" if current_bullish >= analyzer.bullish_thresholds['caution'] else "lightgreen"},
+            'bar': {'color': "white"},
             'bgcolor': "rgba(0,0,0,0.3)",
             'borderwidth': 2,
             'bordercolor': "white",
@@ -585,7 +583,7 @@ def create_ultimate_sentiment_meter(sentiment_df, analyzer):
                 {'range': [analyzer.bullish_thresholds['danger'], 70], 'color': "#FF0000"}      # DANGER: 44%+
             ],
             'threshold': {
-                'line': {'color': "red", 'width': 4},
+                'line': {'color': "white", 'width': 4},
                 'thickness': 0.75,
                 'value': analyzer.bullish_thresholds['danger']  # RED LINE AT 44%
             }
@@ -602,9 +600,7 @@ def create_ultimate_sentiment_meter(sentiment_df, analyzer):
         delta = {'reference': sentiment_df['bearish_pct'].mean(), 'increasing': {'color': "lightgreen"}, 'decreasing': {'color': "red"}},
         gauge = {
             'axis': {'range': [None, 95], 'tickwidth': 1, 'tickcolor': "white"},
-            'bar': {'color': "lightgreen" if current_bearish >= analyzer.bearish_thresholds['opportunity'] else 
-                            "yellow" if current_bearish >= analyzer.bearish_thresholds['fearful'] else
-                            "orange" if current_bearish >= analyzer.bearish_thresholds['normal'] else "red"},
+            'bar': {'color': "white"},
             'bgcolor': "rgba(0,0,0,0.3)",
             'borderwidth': 2,
             'bordercolor': "white",
@@ -615,7 +611,7 @@ def create_ultimate_sentiment_meter(sentiment_df, analyzer):
                 {'range': [analyzer.bearish_thresholds['opportunity'], 95], 'color': "#00FF00"}      # OPPORTUNITY: 83%+
             ],
             'threshold': {
-                'line': {'color': "green", 'width': 4},
+                'line': {'color': "white", 'width': 4},
                 'thickness': 0.75,
                 'value': analyzer.bearish_thresholds['opportunity']  # GREEN LINE AT 83%
             }
@@ -641,7 +637,7 @@ def create_ultimate_sentiment_meter(sentiment_df, analyzer):
         height = 450,
         margin = dict(l=20, r=20, t=60, b=20),
         title = {
-            'text': f"🎯 PERFECTLY CALIBRATED SENTIMENT METER 🎯<br><sub>Based on 62 Historical Turning Points (2009-2025)</sub>",
+            'text': f"🎯 CALIBRATED SENTIMENT METER 🎯<br><sub></sub>",
             'x': 0.5,
             'font': {'size': 28, 'color': 'white'}
         }
@@ -1092,7 +1088,7 @@ def main():
             - 🟡 **CAUTION ({analyzer.bullish_thresholds['caution']}-{analyzer.bullish_thresholds['warning']}%)**: Elevated optimism - Watch closely  
             - 🟠 **WARNING ({analyzer.bullish_thresholds['warning']}-{analyzer.bullish_thresholds['danger']}%)**: High risk territory - Consider reducing
             - 🔴 **DANGER ({analyzer.bullish_thresholds['danger']}%+)**: Extreme euphoria - Historical peak zone!
-            - **🚨 RED LINE at {analyzer.bullish_thresholds['danger']}%**: 75th percentile of all peaks
+            - **🚨 WHIE LINE at {analyzer.bullish_thresholds['danger']}%**: 75th percentile of all peaks
             """)
         
         with col_legend2:
@@ -1102,7 +1098,7 @@ def main():
             - 🟠 **NORMAL ({analyzer.bearish_thresholds['normal']}-{analyzer.bearish_thresholds['fearful']}%)**: Healthy skepticism
             - 🟡 **FEARFUL ({analyzer.bearish_thresholds['fearful']}-{analyzer.bearish_thresholds['opportunity']}%)**: High fear - Getting interesting
             - 🟢 **OPPORTUNITY ({analyzer.bearish_thresholds['opportunity']}%+)**: Extreme fear - Historical bottom zone!
-            - **💚 GREEN LINE at {analyzer.bearish_thresholds['opportunity']}%**: 75th percentile of all troughs
+            - **💚 WHITE LINE at {analyzer.bearish_thresholds['opportunity']}%**: 75th percentile of all troughs
             """)
         
         # Current market assessment with enhanced context
