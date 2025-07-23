@@ -1,10 +1,10 @@
 {
   "date_range": {
     "start": "2009-01-01",
-    "end": "2025-07-21"
+    "end": "2025-07-22"
   },
-  "total_trading_days": 968,
-  "total_records": 4113136,
-  "file_size": 20.481728553771973,
-  "last_updated": "2025-07-21 21:28:56"
+  "total_trading_days": 969,
+  "total_records": 4118712,
+  "file_size": 20.511034965515137,
+  "last_updated": "2025-07-23 08:16:17"
 }
