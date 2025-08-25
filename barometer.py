@@ -249,14 +249,14 @@ def calculate_percent_changes(daily_data, lookback_days, group_by):
         st.warning(f"Adjusted lookback period from {lookback_days} to {max_possible_lookback} days due to data availability")
         lookback_days = max_possible_lookback
     
-    # Calculate the date indices
+    # Calculate the date indices - FIXED: Previous period should be consecutive days
     latest_date = unique_dates[-1]
-    current_start_date = unique_dates[-lookback_days-1] if lookback_days < len(unique_dates) else unique_dates[0]
+    current_start_date = unique_dates[-(lookback_days + 1)] if lookback_days + 1 <= len(unique_dates) else unique_dates[0]
     
-    # For previous period, go back another lookback_days
-    previous_end_date = unique_dates[-lookback_days-2] if lookback_days + 1 < len(unique_dates) else unique_dates[0]
-    previous_start_idx = max(0, -2 * lookback_days - 2)
-    previous_start_date = unique_dates[previous_start_idx]
+    # For previous period, the end date is one day before current start
+    # and the start is lookback_days before that
+    previous_end_date = unique_dates[-(lookback_days + 2)] if lookback_days + 2 <= len(unique_dates) else unique_dates[0]
+    previous_start_date = unique_dates[-(2 * lookback_days + 2)] if 2 * lookback_days + 2 <= len(unique_dates) else unique_dates[0]
     
     # Filter data for the relevant dates
     latest_data = daily_data[daily_data['fetch_date'] == latest_date]
@@ -267,8 +267,11 @@ def calculate_percent_changes(daily_data, lookback_days, group_by):
     # Prepare the result dataframe
     percent_changes = []
     
+    # Calculate percent change for ALL groups - ensure we process every single one
+    unique_groups = daily_data[group_by].unique()
+    
     # Calculate percent change for each group
-    for group in all_groups:
+    for group in unique_groups:
         # Current period data
         latest_group = latest_data[latest_data[group_by] == group]
         current_start_group = current_start_data[current_start_data[group_by] == group]
@@ -625,6 +628,7 @@ def main():
             st.info(f"**Previous Period:** {previous_start_date} to {previous_end_date}")
         
         # Sort by current percent change (ascending for horizontal bar chart)
+        # IMPORTANT: Don't filter or limit the data - show ALL groups
         pct_sorted = percent_changes.sort_values('current_percent_change', ascending=True)
         
         # Create the grouped bar chart using plotly graph objects
@@ -679,7 +683,7 @@ def main():
             barmode='group',
             bargap=0.15,
             bargroupgap=0.1,
-            height=max(600, len(pct_sorted) * 25),
+            height=max(800, len(pct_sorted) * 20),  # Increased height to accommodate all groups
             xaxis=dict(
                 showgrid=True,
                 gridwidth=1,
