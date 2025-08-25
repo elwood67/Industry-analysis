@@ -249,14 +249,23 @@ def calculate_percent_changes(daily_data, lookback_days, group_by):
         st.warning(f"Adjusted lookback period from {lookback_days} to {max_possible_lookback} days due to data availability")
         lookback_days = max_possible_lookback
     
-    # Calculate the date indices - FIXED: Previous period should be consecutive days
-    latest_date = unique_dates[-1]
-    current_start_date = unique_dates[-(lookback_days + 1)] if lookback_days + 1 <= len(unique_dates) else unique_dates[0]
+    # Calculate the date indices - FIXED: Correct indexing for 5-day periods
+    # For 5 days: we want days at indices -5, -4, -3, -2, -1 (last 5 days)
+    # Previous 5 days: indices -10, -9, -8, -7, -6
     
-    # For previous period, the end date is one day before current start
-    # and the start is lookback_days before that
-    previous_end_date = unique_dates[-(lookback_days + 2)] if lookback_days + 2 <= len(unique_dates) else unique_dates[0]
-    previous_start_date = unique_dates[-(2 * lookback_days + 2)] if 2 * lookback_days + 2 <= len(unique_dates) else unique_dates[0]
+    latest_date = unique_dates[-1]  # This should be Aug 22
+    
+    # Current period: last lookback_days of data
+    # For 5 days, this gets index -6 (which is 5 days before the last day, so Aug 18)
+    current_start_date = unique_dates[-lookback_days] if lookback_days <= len(unique_dates) else unique_dates[0]
+    
+    # Previous period ends one day before current period starts
+    # For 5 days, this gets index -6 (which would be Aug 15)
+    previous_end_date = unique_dates[-(lookback_days + 1)] if lookback_days + 1 <= len(unique_dates) else unique_dates[0]
+    
+    # Previous period starts lookback_days before it ends
+    # For 5 days, this gets index -10 (which would be Aug 11)
+    previous_start_date = unique_dates[-(2 * lookback_days)] if 2 * lookback_days <= len(unique_dates) else unique_dates[0]
     
     # Filter data for the relevant dates
     latest_data = daily_data[daily_data['fetch_date'] == latest_date]
