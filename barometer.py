@@ -643,41 +643,30 @@ def main():
         # Create the grouped bar chart using plotly graph objects
         fig_pct = go.Figure()
         
-        # Add bars for current period
+        # Add bars for current period - using a consistent blue color
         fig_pct.add_trace(go.Bar(
             name='Current Period',
             y=pct_sorted[group_by],
             x=pct_sorted['current_percent_change'],
             orientation='h',
             marker=dict(
-                color=pct_sorted['current_percent_change'],
-                colorscale=[[0, 'red'], [0.5, 'white'], [1, 'green']],
-                cmin=-max(abs(pct_sorted['current_percent_change'].min()), 
-                         abs(pct_sorted['current_percent_change'].max())),
-                cmax=max(abs(pct_sorted['current_percent_change'].min()), 
-                        abs(pct_sorted['current_percent_change'].max())),
-                showscale=False
+                color='rgb(99, 110, 250)',  # Consistent blue color for all current period bars
+                line=dict(color='rgb(69, 80, 220)', width=1)  # Darker blue border
             ),
             text=pct_sorted['current_percent_change'].apply(lambda x: f"{x:.1f}%"),
             textposition='outside',
             hovertemplate='<b>%{y}</b><br>Current Period: %{x:.2f}%<extra></extra>'
         ))
         
-        # Add bars for previous period with transparency
+        # Add bars for previous period - using a consistent gray color
         fig_pct.add_trace(go.Bar(
             name='Previous Period',
             y=pct_sorted[group_by],
             x=pct_sorted['previous_percent_change'],
             orientation='h',
             marker=dict(
-                color=pct_sorted['previous_percent_change'],
-                colorscale=[[0, 'rgba(255,0,0,0.5)'], [0.5, 'rgba(255,255,255,0.5)'], [1, 'rgba(0,255,0,0.5)']],
-                cmin=-max(abs(pct_sorted['previous_percent_change'].min()), 
-                         abs(pct_sorted['previous_percent_change'].max())) if not pct_sorted['previous_percent_change'].isna().all() else 0,
-                cmax=max(abs(pct_sorted['previous_percent_change'].min()), 
-                        abs(pct_sorted['previous_percent_change'].max())) if not pct_sorted['previous_percent_change'].isna().all() else 0,
-                showscale=False,
-                opacity=0.6
+                color='rgba(150, 150, 150, 0.6)',  # Consistent gray color with transparency
+                line=dict(color='rgba(100, 100, 100, 0.8)', width=1)  # Darker gray border
             ),
             text=pct_sorted['previous_percent_change'].apply(lambda x: f"{x:.1f}%"),
             textposition='outside',
