@@ -1,2 +1,108 @@
 symbol,sector,industry,exchange,market_cap_B
-LICN,Industrials,Specialty Business Services,NCM,0.01
+AAPL,Technology,Consumer Electronics,NMS,3545.22
+MSFT,Technology,Software - Infrastructure,NMS,3085.55
+NVDA,Technology,Semiconductors,NMS,3052.68
+GOOG,Communication Services,Internet Content & Information,NMS,2504.76
+AMZN,Consumer Cyclical,Internet Retail,NMS,2499.21
+META,Communication Services,Internet Content & Information,NMS,1740.62
+TSLA,Consumer Cyclical,Auto Manufacturers,NMS,1301.4
+TSM,Technology,Semiconductors,NYQ,1085.65
+AVGO,Technology,Semiconductors,NMS,1037.17
+WMT,Consumer Defensive,Discount Stores,NYQ,788.56
+JPM,Financial Services,Banks - Diversified,NYQ,747.8
+LLY,Healthcare,Drug Manufacturers - General,NYQ,729.42
+V,Financial Services,Credit Services,NYQ,659.34
+MA,Financial Services,Credit Services,NYQ,517.37
+UNH,Healthcare,Healthcare Plans,NYQ,499.24
+ORCL,Technology,Software - Infrastructure,NYQ,475.65
+XOM,Energy,Oil & Gas Integrated,NYQ,465.03
+COST,Consumer Defensive,Discount Stores,NMS,434.97
+NFLX,Communication Services,Entertainment,NMS,417.82
+HD,Consumer Cyclical,Home Improvement Retail,NYQ,411.75
+PG,Consumer Defensive,Household & Personal Products,NYQ,389.22
+NVO,Healthcare,Drug Manufacturers - General,NYQ,377.05
+JNJ,Healthcare,Drug Manufacturers - General,NYQ,368.05
+BAC,Financial Services,Banks - Diversified,NYQ,352.38
+CRM,Technology,Software - Application,NYQ,328.8
+SAP,Technology,Software - Application,NYQ,325.07
+ABBV,Healthcare,Drug Manufacturers - General,NYQ,324.98
+ASML,Technology,Semiconductor Equipment & Materials,NMS,290.7
+CVX,Energy,Oil & Gas Integrated,NYQ,278.71
+KO,Consumer Defensive,Beverages - Non-Alcoholic,NYQ,275.91
+TMUS,Communication Services,Telecom Services,NMS,266.65
+WFC,Financial Services,Banks - Diversified,NYQ,259.17
+TM,Consumer Cyclical,Auto Manufacturers,NYQ,252.64
+MRK,Healthcare,Drug Manufacturers - General,NYQ,249.98
+CSCO,Technology,Communication Equipment,NMS,241.36
+ACN,Technology,Information Technology Services,NYQ,240.78
+IBM,Technology,Information Technology Services,NYQ,238.81
+BABA,Consumer Cyclical,Internet Retail,NYQ,234.84
+TMO,Healthcare,Diagnostics & Research,NYQ,228.64
+AXP,Financial Services,Credit Services,NYQ,223.9
+MS,Financial Services,Capital Markets,NYQ,222.46
+ABT,Healthcare,Medical Devices,NYQ,221.89
+AZN,Healthcare,Drug Manufacturers - General,NMS,219.43
+GE,Industrials,Aerospace & Defense,NYQ,218.57
+BX,Financial Services,Asset Management,NYQ,216.28
+LIN,Basic Materials,Specialty Chemicals,NMS,212.42
+NOW,Technology,Software - Application,NYQ,210.28
+MCD,Consumer Cyclical,Restaurants,NYQ,208.05
+NVS,Healthcare,Drug Manufacturers - General,NYQ,207.51
+PEP,Consumer Defensive,Beverages - Non-Alcoholic,NMS,206.75
+DIS,Communication Services,Entertainment,NYQ,205.13
+ISRG,Healthcare,Medical Instruments & Supplies,NMS,203.97
+PM,Consumer Defensive,Tobacco,NYQ,202.44
+SHEL,Energy,Oil & Gas Integrated,NYQ,200.51
+GS,Financial Services,Capital Markets,NYQ,200.46
+AMD,Technology,Semiconductors,NMS,192.89
+QCOM,Technology,Semiconductors,NMS,191.16
+ADBE,Technology,Software - Infrastructure,NMS,190.42
+PLTR,Technology,Software - Infrastructure,NMS,187.91
+HSBC,Financial Services,Banks - Diversified,NYQ,187.01
+CAT,Industrials,Farm & Heavy Construction Machinery,NYQ,179.33
+RY,Financial Services,Banks - Diversified,NYQ,172.9
+RTX,Industrials,Aerospace & Defense,NYQ,171.64
+T,Communication Services,Telecom Services,NYQ,170.29
+TXN,Technology,Semiconductors,NMS,168.4
+INTU,Technology,Software - Application,NMS,168.37
+ARM,Technology,Semiconductors,NMS,167.69
+BLK,Financial Services,Asset Management,NYQ,166.57
+VZ,Communication Services,Telecom Services,NYQ,165.82
+SPGI,Financial Services,Financial Data & Stock Exchanges,NYQ,161.79
+DHR,Healthcare,Diagnostics & Research,NYQ,160.17
+BKNG,Consumer Cyclical,Travel Services,NMS,158.01
+PDD,Consumer Cyclical,Internet Retail,NMS,155.42
+HDB,Financial Services,Banks - Regional,NYQ,154.64
+KKR,Financial Services,Asset Management,NYQ,154.17
+C,Financial Services,Banks - Diversified,NYQ,153.66
+AMGN,Healthcare,Drug Manufacturers - General,NMS,153.42
+SCHW,Financial Services,Capital Markets,NYQ,151.42
+SHOP,Technology,Software - Application,NYQ,151.19
+BSX,Healthcare,Medical Devices,NYQ,150.86
+FMX,Consumer Defensive,Beverages - Brewers,NYQ,150.58
+PFE,Healthcare,Drug Manufacturers - General,NYQ,150.29
+UNP,Industrials,Railroads,NYQ,150.22
+SYK,Healthcare,Medical Devices,NYQ,149.17
+MUFG,Financial Services,Banks - Diversified,NYQ,148.91
+AMAT,Technology,Semiconductor Equipment & Materials,NMS,147.68
+NEE,Utilities,Utilities - Regulated Electric,NYQ,147.16
+LOW,Consumer Cyclical,Home Improvement Retail,NYQ,146.83
+HON,Industrials,Conglomerates,NMS,145.69
+ANET,Technology,Computer Hardware,NYQ,145.16
+PGR,Financial Services,Insurance - Property & Casualty,NYQ,144.37
+UL,Consumer Defensive,Household & Personal Products,NYQ,143.6
+UBER,Technology,Software - Application,NYQ,140.77
+TJX,Consumer Cyclical,Apparel Retail,NYQ,140.28
+SNY,Healthcare,Drug Manufacturers - General,NMS,136.24
+SONY,Technology,Consumer Electronics,NYQ,134.47
+BA,Industrials,Aerospace & Defense,NYQ,132.25
+TTE,Energy,Oil & Gas Integrated,NYQ,131.11
+DE,Industrials,Farm & Heavy Construction Machinery,NYQ,129.79
+ETN,Industrials,Specialty Industrial Machinery,NYQ,129.01
+CMCSA,Communication Services,Telecom Services,NMS,128.48
+COP,Energy,Oil & Gas E&P,NYQ,127.84
+BHP,Basic Materials,Other Industrial Metals & Mining,NYQ,125.87
+APP,Technology,Software - Application,NMS,124.03
+ADP,Technology,Software - Application,NMS,123.29
+FI,Technology,Information Technology Services,NYQ,122.91
+SBUX,Consumer Cyclical,Restaurants,NMS,122.32
