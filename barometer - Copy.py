@@ -226,48 +226,97 @@ def calculate_trend_scores(daily_changes, score_start_date, group_by):
 
 @st.cache_data
 def calculate_percent_changes(daily_data, lookback_days, group_by):
-    """Calculate percent changes over a lookback period."""
+    """Calculate percent changes for current and previous periods for each group."""
     
     if 'market_cap' not in daily_data.columns:
         return pd.DataFrame()
     
+    # Sort by date
+    daily_data = daily_data.sort_values('fetch_date')
+    
     # Get unique dates sorted
     unique_dates = sorted(daily_data['fetch_date'].unique())
+    all_groups = daily_data[group_by].unique()
     
-    if len(unique_dates) <= lookback_days:
-        st.warning(f"Not enough dates for {lookback_days}-day lookback")
-        return pd.DataFrame()
+    # We need at least 2 * lookback_days + 1 dates for both current and previous periods
+    min_required_dates = 2 * lookback_days + 1
+    if len(unique_dates) < min_required_dates:
+        # Adjust lookback if we don't have enough data
+        max_possible_lookback = (len(unique_dates) - 1) // 2
+        if max_possible_lookback < 1:
+            st.warning("Not enough dates for percent change calculation with previous period")
+            return pd.DataFrame()
+        st.warning(f"Adjusted lookback period from {lookback_days} to {max_possible_lookback} days due to data availability")
+        lookback_days = max_possible_lookback
     
-    # Get reference dates
-    latest_date = unique_dates[-1]
-    reference_date = unique_dates[-(lookback_days + 1)]
+    # Calculate the date indices - FIXED: Correct indexing for 5-day periods
+    # For 5 days: we want days at indices -5, -4, -3, -2, -1 (last 5 days)
+    # Previous 5 days: indices -10, -9, -8, -7, -6
     
-    # Get data for both dates
+    latest_date = unique_dates[-1]  # This should be Aug 22
+    
+    # Current period: last lookback_days of data
+    # For 5 days, this gets index -6 (which is 5 days before the last day, so Aug 18)
+    current_start_date = unique_dates[-lookback_days] if lookback_days <= len(unique_dates) else unique_dates[0]
+    
+    # Previous period ends one day before current period starts
+    # For 5 days, this gets index -6 (which would be Aug 15)
+    previous_end_date = unique_dates[-(lookback_days + 1)] if lookback_days + 1 <= len(unique_dates) else unique_dates[0]
+    
+    # Previous period starts lookback_days before it ends
+    # For 5 days, this gets index -10 (which would be Aug 11)
+    previous_start_date = unique_dates[-(2 * lookback_days)] if 2 * lookback_days <= len(unique_dates) else unique_dates[0]
+    
+    # Filter data for the relevant dates
     latest_data = daily_data[daily_data['fetch_date'] == latest_date]
-    reference_data = daily_data[daily_data['fetch_date'] == reference_date]
+    current_start_data = daily_data[daily_data['fetch_date'] == current_start_date]
+    previous_end_data = daily_data[daily_data['fetch_date'] == previous_end_date]
+    previous_start_data = daily_data[daily_data['fetch_date'] == previous_start_date]
     
-    # Calculate percent changes
+    # Prepare the result dataframe
     percent_changes = []
     
-    for group in daily_data[group_by].unique():
+    # Calculate percent change for ALL groups - ensure we process every single one
+    unique_groups = daily_data[group_by].unique()
+    
+    # Calculate percent change for each group
+    for group in unique_groups:
+        # Current period data
         latest_group = latest_data[latest_data[group_by] == group]
-        reference_group = reference_data[reference_data[group_by] == group]
+        current_start_group = current_start_data[current_start_data[group_by] == group]
         
-        if not latest_group.empty and not reference_group.empty:
+        # Previous period data
+        previous_end_group = previous_end_data[previous_end_data[group_by] == group]
+        previous_start_group = previous_start_data[previous_start_data[group_by] == group]
+        
+        current_pct_change = 0
+        previous_pct_change = 0
+        
+        # Calculate current period percent change
+        if not latest_group.empty and not current_start_group.empty:
             latest_value = latest_group['market_cap'].iloc[0]
-            reference_value = reference_group['market_cap'].iloc[0]
+            current_start_value = current_start_group['market_cap'].iloc[0]
             
-            if reference_value > 0:
-                pct_change = ((latest_value - reference_value) / reference_value) * 100
-                
-                percent_changes.append({
-                    group_by: group,
-                    'percent_change': pct_change,
-                    'latest_value': latest_value,
-                    'reference_value': reference_value,
-                    'latest_date': latest_date,
-                    'reference_date': reference_date
-                })
+            if current_start_value > 0:
+                current_pct_change = ((latest_value - current_start_value) / current_start_value) * 100
+        
+        # Calculate previous period percent change
+        if not previous_end_group.empty and not previous_start_group.empty:
+            previous_end_value = previous_end_group['market_cap'].iloc[0]
+            previous_start_value = previous_start_group['market_cap'].iloc[0]
+            
+            if previous_start_value > 0:
+                previous_pct_change = ((previous_end_value - previous_start_value) / previous_start_value) * 100
+        
+        percent_changes.append({
+            group_by: group,
+            'current_percent_change': current_pct_change,
+            'previous_percent_change': previous_pct_change,
+            'latest_date': latest_date,
+            'current_start_date': current_start_date,
+            'previous_end_date': previous_end_date,
+            'previous_start_date': previous_start_date
+        })
     
     return pd.DataFrame(percent_changes)
 
@@ -572,33 +621,147 @@ def main():
     
     # Percent changes
     if not percent_changes.empty:
-        st.header(f"📊 Percent Change ({percent_change_days} days)")
+        st.header(f"📊 Percent Change: Current vs Previous {percent_change_days} {'Day' if percent_change_days == 1 else 'Days'}")
         
-        pct_sorted = percent_changes.sort_values('percent_change', ascending=False)
+        # Get the date ranges
+        latest_date = percent_changes['latest_date'].iloc[0].strftime('%Y-%m-%d')
+        current_start_date = percent_changes['current_start_date'].iloc[0].strftime('%Y-%m-%d')
+        previous_end_date = percent_changes['previous_end_date'].iloc[0].strftime('%Y-%m-%d')
+        previous_start_date = percent_changes['previous_start_date'].iloc[0].strftime('%Y-%m-%d')
         
-        fig_pct = px.bar(
-            pct_sorted,
-            x=group_by,
-            y='percent_change',
-            color='percent_change',
-            color_continuous_scale='RdYlGn',
-            title=f"Percent Change by {group_by.title()}",
-            height=500
-        )
+        # Display date ranges
+        col1, col2 = st.columns(2)
+        with col1:
+            st.info(f"**Current Period:** {current_start_date} to {latest_date}")
+        with col2:
+            st.info(f"**Previous Period:** {previous_start_date} to {previous_end_date}")
         
+        # Sort by current percent change (ascending for horizontal bar chart)
+        # IMPORTANT: Don't filter or limit the data - show ALL groups
+        pct_sorted = percent_changes.sort_values('current_percent_change', ascending=True)
+        
+        # Create the grouped bar chart using plotly graph objects
+        fig_pct = go.Figure()
+        
+        # Add bars for current period - using a consistent blue color
+        fig_pct.add_trace(go.Bar(
+            name='Current Period',
+            y=pct_sorted[group_by],
+            x=pct_sorted['current_percent_change'],
+            orientation='h',
+            marker=dict(
+                color='rgb(99, 110, 250)',  # Consistent blue color for all current period bars
+                line=dict(color='rgb(69, 80, 220)', width=1)  # Darker blue border
+            ),
+            text=pct_sorted['current_percent_change'].apply(lambda x: f"{x:.1f}%"),
+            textposition='outside',
+            hovertemplate='<b>%{y}</b><br>Current Period: %{x:.2f}%<extra></extra>'
+        ))
+        
+        # Add bars for previous period - using a consistent gray color
+        fig_pct.add_trace(go.Bar(
+            name='Previous Period',
+            y=pct_sorted[group_by],
+            x=pct_sorted['previous_percent_change'],
+            orientation='h',
+            marker=dict(
+                color='rgba(150, 150, 150, 0.6)',  # Consistent gray color with transparency
+                line=dict(color='rgba(100, 100, 100, 0.8)', width=1)  # Darker gray border
+            ),
+            text=pct_sorted['previous_percent_change'].apply(lambda x: f"{x:.1f}%"),
+            textposition='outside',
+            hovertemplate='<b>%{y}</b><br>Previous Period: %{x:.2f}%<extra></extra>'
+        ))
+        
+        # Update layout
         fig_pct.update_layout(
-            xaxis_title=group_by.title(),
-            yaxis_title="Percent Change (%)",
-            xaxis=dict(tickangle=45 if len(pct_sorted) > 15 else 0),
-            yaxis=dict(zeroline=True, zerolinecolor='black')
+            title=f"Percent Change by {group_by.title()} - Comparing {percent_change_days}-Day Periods",
+            xaxis_title="Percent Change (%)",
+            yaxis_title=group_by.title(),
+            barmode='group',
+            bargap=0.15,
+            bargroupgap=0.1,
+            height=max(800, len(pct_sorted) * 20),  # Increased height to accommodate all groups
+            xaxis=dict(
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='lightgray',
+                zeroline=True,
+                zerolinecolor='black',
+                zerolinewidth=2
+            ),
+            yaxis=dict(
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='lightgray'
+            ),
+            margin=dict(l=200, r=100, t=80, b=50),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            ),
+            hovermode='closest'
         )
         
         st.plotly_chart(fig_pct, use_container_width=True)
         
-        # Show data table
+        # Summary statistics
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            avg_current = pct_sorted['current_percent_change'].mean()
+            st.metric("Avg Current Period", f"{avg_current:.2f}%")
+        
+        with col2:
+            avg_previous = pct_sorted['previous_percent_change'].mean()
+            st.metric("Avg Previous Period", f"{avg_previous:.2f}%")
+        
+        with col3:
+            # Count improvements
+            improved = (pct_sorted['current_percent_change'] > 
+                       pct_sorted['previous_percent_change']).sum()
+            total = len(pct_sorted)
+            improvement_pct = (improved / total * 100) if total > 0 else 0
+            st.metric("Improved vs Previous", f"{improved}/{total}", f"{improvement_pct:.1f}%")
+        
+        # Show data table with both periods
         if st.checkbox("Show percent change data"):
+            display_df = pct_sorted[[
+                group_by, 
+                'current_percent_change', 
+                'previous_percent_change'
+            ]].copy()
+            
+            # Calculate difference
+            display_df['change_vs_previous'] = (
+                display_df['current_percent_change'] - 
+                display_df['previous_percent_change']
+            )
+            
+            # Rename columns for clarity
+            display_df.columns = [
+                group_by.title(), 
+                f'Current {percent_change_days}d %', 
+                f'Previous {percent_change_days}d %',
+                'Change vs Previous'
+            ]
+            
+            # Sort by current period for better readability
+            display_df = display_df.sort_values(f'Current {percent_change_days}d %', ascending=False)
+            
+            # Format as percentages
+            for col in display_df.columns[1:]:
+                display_df[col] = display_df[col].round(2)
+            
             st.dataframe(
-                pct_sorted[[group_by, 'percent_change']].round(2),
+                display_df.style.format({
+                    f'Current {percent_change_days}d %': '{:.2f}%',
+                    f'Previous {percent_change_days}d %': '{:.2f}%',
+                    'Change vs Previous': '{:+.2f}%'
+                }).background_gradient(subset=[f'Current {percent_change_days}d %'], cmap='RdYlGn'),
                 use_container_width=True
             )
     
