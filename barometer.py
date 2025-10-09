@@ -677,7 +677,7 @@ def main():
         
         # Update layout
         fig_pct.update_layout(
-            title=f"Percent Change by {group_by.title()} - Comparing {percent_change_days}-Day Periods",
+            title=f"Valuation Percent Change by {group_by.title()} - Comparing {percent_change_days}-Day Periods",
             xaxis_title="Percent Change (%)",
             yaxis_title=group_by.title(),
             barmode='group',
