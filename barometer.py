@@ -11,7 +11,7 @@ from collections import defaultdict
 
 # Set page configuration to wide layout
 st.set_page_config(layout="wide", page_title="Valuation Analysis", page_icon="📊")
-st.title("📊 Valuation Analysis")
+st.title("📊 Valuation Analysis - Complete Suite")
 
 # ------------------------------
 # 1. Data Loading Functions
@@ -103,6 +103,169 @@ def find_data_files():
 # ------------------------------
 # 2. Data Processing Functions
 # ------------------------------
+@st.cache_data
+def calculate_breadth_indicators(market_caps_df, sectors_df, group_by, lookback_days):
+    """Calculate breadth indicators: % stocks up, advance/decline ratio, participation."""
+    
+    # Merge market caps with sector data
+    merged_df = pd.merge(
+        market_caps_df,
+        sectors_df[['symbol', 'sector', 'industry']],
+        on='symbol',
+        how='inner'
+    )
+    
+    # Sort by symbol and date
+    merged_df = merged_df.sort_values(['symbol', 'fetch_date'])
+    
+    # Calculate daily change for each stock
+    merged_df['prev_market_cap'] = merged_df.groupby('symbol')['market_cap'].shift(1)
+    merged_df['daily_change'] = merged_df['market_cap'] - merged_df['prev_market_cap']
+    merged_df['direction'] = np.where(
+        merged_df['daily_change'] > 0, 1,
+        np.where(merged_df['daily_change'] < 0, -1, 0)
+    )
+    
+    # Get unique dates
+    unique_dates = sorted(merged_df['fetch_date'].unique())
+    
+    # Filter to lookback period
+    if len(unique_dates) > lookback_days:
+        start_date = unique_dates[-lookback_days]
+        merged_df = merged_df[merged_df['fetch_date'] >= start_date]
+    
+    # Calculate breadth by group and date
+    breadth_data = merged_df.groupby(['fetch_date', group_by]).agg({
+        'symbol': 'count',  # Total stocks
+        'direction': lambda x: (x == 1).sum()  # Stocks up
+    }).reset_index()
+    
+    breadth_data.columns = ['fetch_date', group_by, 'total_stocks', 'stocks_up']
+    breadth_data['stocks_down'] = breadth_data['total_stocks'] - breadth_data['stocks_up']
+    breadth_data['pct_stocks_up'] = (breadth_data['stocks_up'] / breadth_data['total_stocks']) * 100
+    breadth_data['advance_decline_ratio'] = breadth_data['stocks_up'] / breadth_data['stocks_down'].replace(0, 1)
+    
+    # Calculate breadth momentum (change in % stocks up)
+    breadth_data = breadth_data.sort_values(['fetch_date', group_by])
+    breadth_data['breadth_momentum'] = breadth_data.groupby(group_by)['pct_stocks_up'].diff()
+    
+    return breadth_data
+
+@st.cache_data
+def calculate_relative_strength(daily_data, group_by, lookback_days):
+    """Calculate relative strength vs overall market."""
+    
+    # Sort by date
+    daily_data = daily_data.sort_values('fetch_date')
+    unique_dates = sorted(daily_data['fetch_date'].unique())
+    
+    # Filter to lookback period
+    if len(unique_dates) > lookback_days:
+        start_date = unique_dates[-lookback_days]
+        daily_data = daily_data[daily_data['fetch_date'] >= start_date]
+        unique_dates = sorted(daily_data['fetch_date'].unique())
+    
+    # Calculate overall market performance (sum of all industry market caps)
+    market_totals = daily_data.groupby('fetch_date')['market_cap'].sum().reset_index()
+    market_totals.columns = ['fetch_date', 'market_total']
+    
+    # Calculate market returns
+    market_totals = market_totals.sort_values('fetch_date')
+    market_totals['market_return'] = market_totals['market_total'].pct_change() * 100
+    
+    # Calculate industry returns
+    industry_data = daily_data.sort_values(['fetch_date', group_by])
+    industry_returns = []
+    
+    for group in daily_data[group_by].unique():
+        group_data = daily_data[daily_data[group_by] == group].copy()
+        group_data = group_data.sort_values('fetch_date')
+        group_data['industry_return'] = group_data['market_cap'].pct_change() * 100
+        industry_returns.append(group_data[['fetch_date', group_by, 'industry_return', 'market_cap']])
+    
+    industry_returns_df = pd.concat(industry_returns, ignore_index=True)
+    
+    # Merge with market returns
+    relative_strength = pd.merge(
+        industry_returns_df,
+        market_totals[['fetch_date', 'market_return']],
+        on='fetch_date',
+        how='left'
+    )
+    
+    # Calculate relative strength (industry return - market return)
+    relative_strength['relative_return'] = relative_strength['industry_return'] - relative_strength['market_return']
+    
+    # Calculate cumulative relative strength
+    relative_strength = relative_strength.sort_values(['fetch_date', group_by])
+    relative_strength['cumulative_relative_strength'] = relative_strength.groupby(group_by)['relative_return'].cumsum()
+    
+    return relative_strength
+
+@st.cache_data
+def calculate_volatility_drawdown(daily_data, group_by, lookback_days, volatility_window=20):
+    """Calculate volatility and drawdown metrics."""
+    
+    daily_data = daily_data.sort_values('fetch_date')
+    unique_dates = sorted(daily_data['fetch_date'].unique())
+    
+    # Filter to lookback period
+    if len(unique_dates) > lookback_days:
+        start_date = unique_dates[-lookback_days]
+        daily_data = daily_data[daily_data['fetch_date'] >= start_date]
+    
+    results = []
+    
+    for group in daily_data[group_by].unique():
+        group_data = daily_data[daily_data[group_by] == group].copy()
+        group_data = group_data.sort_values('fetch_date')
+        
+        # Calculate returns
+        group_data['return'] = group_data['market_cap'].pct_change() * 100
+        
+        # Calculate rolling volatility (std dev of returns)
+        group_data['volatility'] = group_data['return'].rolling(window=volatility_window, min_periods=1).std()
+        
+        # Calculate cumulative returns for drawdown calculation
+        group_data['cumulative_return'] = (1 + group_data['return'] / 100).cumprod()
+        
+        # Calculate running maximum (peak)
+        group_data['running_max'] = group_data['cumulative_return'].expanding().max()
+        
+        # Calculate drawdown
+        group_data['drawdown'] = ((group_data['cumulative_return'] - group_data['running_max']) / group_data['running_max']) * 100
+        
+        # Calculate days underwater (days since peak)
+        group_data['is_at_peak'] = group_data['cumulative_return'] == group_data['running_max']
+        group_data['days_underwater'] = 0
+        
+        # Calculate consecutive days underwater
+        days_count = 0
+        for idx in range(len(group_data)):
+            if group_data.iloc[idx]['is_at_peak']:
+                days_count = 0
+            else:
+                days_count += 1
+            group_data.iloc[idx, group_data.columns.get_loc('days_underwater')] = days_count
+        
+        group_data[group_by] = group
+        results.append(group_data[['fetch_date', group_by, 'volatility', 'drawdown', 'days_underwater', 'return', 'market_cap']])
+    
+    volatility_drawdown_df = pd.concat(results, ignore_index=True)
+    
+    # Calculate max drawdown for each group
+    max_drawdown = volatility_drawdown_df.groupby(group_by)['drawdown'].min().reset_index()
+    max_drawdown.columns = [group_by, 'max_drawdown']
+    
+    # Get current metrics (latest date)
+    latest_date = volatility_drawdown_df['fetch_date'].max()
+    current_metrics = volatility_drawdown_df[volatility_drawdown_df['fetch_date'] == latest_date].copy()
+    
+    # Merge max drawdown
+    current_metrics = pd.merge(current_metrics, max_drawdown, on=group_by, how='left')
+    
+    return volatility_drawdown_df, current_metrics
+
 @st.cache_data
 def calculate_momentum(daily_data, periods, group_by):
     """Calculate momentum (rate of change) for multiple periods."""
@@ -359,22 +522,11 @@ def calculate_percent_changes(daily_data, lookback_days, group_by):
         lookback_days = max_possible_lookback
     
     # Calculate the date ranges using actual trading days (not calendar days)
-    # Current period: the most recent lookback_days of trading
-    # For 3 days with data [Mon, Tue, Wed, Thu, Fri], current would be [Wed, Thu, Fri]
-    latest_date = unique_dates[-1]  # Most recent trading day
-    
-    # Current period starts lookback_days ago (counting only trading days)
-    # Index -lookback_days gives us the start of the current period
-    # For 3 days: unique_dates[-3] is 3 trading days before the end
+    latest_date = unique_dates[-1]
     current_start_idx = -lookback_days if lookback_days <= len(unique_dates) else 0
     current_start_date = unique_dates[current_start_idx]
-    
-    # Previous period ends exactly where current period starts
-    # This is the trading day immediately before the current period
     previous_end_idx = current_start_idx - 1 if current_start_idx - 1 >= -len(unique_dates) else 0
     previous_end_date = unique_dates[previous_end_idx]
-    
-    # Previous period starts lookback_days trading days before it ends
     previous_start_idx = previous_end_idx - lookback_days + 1 if previous_end_idx - lookback_days + 1 >= -len(unique_dates) else 0
     previous_start_date = unique_dates[previous_start_idx]
     
@@ -387,10 +539,9 @@ def calculate_percent_changes(daily_data, lookback_days, group_by):
     # Prepare the result dataframe
     percent_changes = []
     
-    # Calculate percent change for ALL groups - ensure we process every single one
+    # Calculate percent change for ALL groups
     unique_groups = daily_data[group_by].unique()
     
-    # Calculate percent change for each group
     for group in unique_groups:
         # Current period data
         latest_group = latest_data[latest_data[group_by] == group]
@@ -434,6 +585,287 @@ def calculate_percent_changes(daily_data, lookback_days, group_by):
 # ------------------------------
 # 3. Visualization Functions
 # ------------------------------
+def create_breadth_chart(breadth_data, group_by):
+    """Create line chart showing breadth (% stocks up) over time."""
+    
+    if breadth_data.empty:
+        return None
+    
+    fig = go.Figure()
+    
+    unique_groups = sorted(breadth_data[group_by].unique())
+    colors = px.colors.qualitative.Plotly
+    color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
+    
+    for group in unique_groups:
+        group_data = breadth_data[breadth_data[group_by] == group]
+        
+        fig.add_trace(go.Scatter(
+            x=group_data['fetch_date'],
+            y=group_data['pct_stocks_up'],
+            mode='lines',
+            name=group,
+            line=dict(color=color_dict[group], width=2),
+            hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Stocks Up: %{y:.1f}%<extra></extra>'
+        ))
+    
+    # Add 50% reference line
+    fig.add_hline(y=50, line_dash="dash", line_color="gray", annotation_text="50%")
+    
+    fig.update_layout(
+        title=f"Market Breadth: % of Stocks Up by {group_by.title()}",
+        xaxis_title="Date",
+        yaxis_title="% of Stocks Up",
+        height=700,
+        hovermode='x unified',
+        showlegend=False,
+        xaxis=dict(showgrid=True, gridcolor='lightgray'),
+        yaxis=dict(showgrid=True, gridcolor='lightgray', range=[0, 100])
+    )
+    
+    return fig
+
+def create_breadth_heatmap(breadth_data, group_by):
+    """Create heatmap of breadth over time."""
+    
+    if breadth_data.empty:
+        return None
+    
+    # Create pivot table
+    breadth_data['date_str'] = breadth_data['fetch_date'].dt.strftime('%Y-%m-%d')
+    pivot_data = breadth_data.pivot(
+        index='date_str',
+        columns=group_by,
+        values='pct_stocks_up'
+    )
+    
+    # Sort dates (newest first)
+    dates = sorted(pivot_data.index, reverse=True)
+    pivot_data = pivot_data.loc[dates]
+    
+    fig = go.Figure(data=go.Heatmap(
+        z=pivot_data.values,
+        x=pivot_data.columns,
+        y=pivot_data.index,
+        colorscale='RdYlGn',
+        zmid=50,
+        zmin=0,
+        zmax=100,
+        hovertemplate='<b>%{y}</b><br>%{x}<br>% Up: %{z:.1f}%<extra></extra>',
+        colorbar=dict(title="% Stocks Up")
+    ))
+    
+    fig.update_layout(
+        title=f"Breadth Heatmap by {group_by.title()}",
+        xaxis_title=group_by.title(),
+        yaxis_title="Date",
+        height=max(400, len(dates) * 20),
+        xaxis=dict(
+            side='top',
+            tickangle=45 if len(pivot_data.columns) > 15 else 0
+        ),
+        yaxis=dict(type='category')
+    )
+    
+    return fig
+
+def create_relative_strength_chart(relative_strength_data, group_by):
+    """Create line chart showing cumulative relative strength."""
+    
+    if relative_strength_data.empty:
+        return None
+    
+    fig = go.Figure()
+    
+    unique_groups = sorted(relative_strength_data[group_by].unique())
+    colors = px.colors.qualitative.Plotly
+    color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
+    
+    for group in unique_groups:
+        group_data = relative_strength_data[relative_strength_data[group_by] == group]
+        
+        fig.add_trace(go.Scatter(
+            x=group_data['fetch_date'],
+            y=group_data['cumulative_relative_strength'],
+            mode='lines',
+            name=group,
+            line=dict(color=color_dict[group], width=2),
+            hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Rel Strength: %{y:.2f}%<extra></extra>'
+        ))
+    
+    # Add zero reference line
+    fig.add_hline(y=0, line_dash="dash", line_color="black", annotation_text="Market")
+    
+    fig.update_layout(
+        title=f"Relative Strength vs Market by {group_by.title()}",
+        xaxis_title="Date",
+        yaxis_title="Cumulative Relative Return (%)",
+        height=700,
+        hovermode='x unified',
+        showlegend=False,
+        xaxis=dict(showgrid=True, gridcolor='lightgray'),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor='lightgray',
+            zeroline=True,
+            zerolinecolor='black',
+            zerolinewidth=2
+        )
+    )
+    
+    return fig
+
+def create_relative_strength_ranking(relative_strength_data, group_by):
+    """Create bar chart of current relative strength rankings."""
+    
+    if relative_strength_data.empty:
+        return None
+    
+    # Get latest date
+    latest_date = relative_strength_data['fetch_date'].max()
+    latest_data = relative_strength_data[relative_strength_data['fetch_date'] == latest_date].copy()
+    
+    # Sort by relative strength
+    latest_data = latest_data.sort_values('cumulative_relative_strength', ascending=True)
+    
+    # Create color based on positive/negative
+    colors = ['rgb(0, 204, 150)' if x > 0 else 'rgb(239, 85, 59)' 
+              for x in latest_data['cumulative_relative_strength']]
+    
+    fig = go.Figure(go.Bar(
+        y=latest_data[group_by],
+        x=latest_data['cumulative_relative_strength'],
+        orientation='h',
+        marker=dict(color=colors, line=dict(width=1, color='rgb(50, 50, 50)')),
+        text=latest_data['cumulative_relative_strength'].apply(lambda x: f"{x:.1f}%"),
+        textposition='outside',
+        hovertemplate='<b>%{y}</b><br>Relative Strength: %{x:.2f}%<extra></extra>'
+    ))
+    
+    fig.update_layout(
+        title=f"Relative Strength Rankings by {group_by.title()} (vs Market)",
+        xaxis_title="Cumulative Relative Return (%)",
+        yaxis_title=group_by.title(),
+        height=max(600, len(latest_data) * 20),
+        xaxis=dict(
+            showgrid=True,
+            gridcolor='lightgray',
+            zeroline=True,
+            zerolinecolor='black',
+            zerolinewidth=2
+        ),
+        margin=dict(l=200, r=100)
+    )
+    
+    return fig
+
+def create_volatility_chart(volatility_data, group_by):
+    """Create line chart showing volatility over time."""
+    
+    if volatility_data.empty:
+        return None
+    
+    fig = go.Figure()
+    
+    unique_groups = sorted(volatility_data[group_by].unique())
+    colors = px.colors.qualitative.Plotly
+    color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
+    
+    for group in unique_groups:
+        group_data = volatility_data[volatility_data[group_by] == group]
+        
+        fig.add_trace(go.Scatter(
+            x=group_data['fetch_date'],
+            y=group_data['volatility'],
+            mode='lines',
+            name=group,
+            line=dict(color=color_dict[group], width=2),
+            hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Volatility: %{y:.2f}%<extra></extra>'
+        ))
+    
+    fig.update_layout(
+        title=f"Rolling Volatility by {group_by.title()}",
+        xaxis_title="Date",
+        yaxis_title="Volatility (Std Dev of Returns %)",
+        height=700,
+        hovermode='x unified',
+        showlegend=False,
+        xaxis=dict(showgrid=True, gridcolor='lightgray'),
+        yaxis=dict(showgrid=True, gridcolor='lightgray')
+    )
+    
+    return fig
+
+def create_drawdown_chart(volatility_data, group_by):
+    """Create line chart showing drawdowns over time."""
+    
+    if volatility_data.empty:
+        return None
+    
+    fig = go.Figure()
+    
+    unique_groups = sorted(volatility_data[group_by].unique())
+    colors = px.colors.qualitative.Plotly
+    color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
+    
+    for group in unique_groups:
+        group_data = volatility_data[volatility_data[group_by] == group]
+        
+        fig.add_trace(go.Scatter(
+            x=group_data['fetch_date'],
+            y=group_data['drawdown'],
+            mode='lines',
+            name=group,
+            line=dict(color=color_dict[group], width=2),
+            fill='tozeroy',
+            fillcolor=f'rgba{tuple(list(px.colors.hex_to_rgb(color_dict[group])) + [0.2])}',
+            hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Drawdown: %{y:.2f}%<extra></extra>'
+        ))
+    
+    fig.update_layout(
+        title=f"Drawdowns from Peak by {group_by.title()}",
+        xaxis_title="Date",
+        yaxis_title="Drawdown (%)",
+        height=700,
+        hovermode='x unified',
+        showlegend=False,
+        xaxis=dict(showgrid=True, gridcolor='lightgray'),
+        yaxis=dict(showgrid=True, gridcolor='lightgray')
+    )
+    
+    return fig
+
+def create_risk_metrics_table(current_metrics, group_by):
+    """Create a table showing current risk metrics."""
+    
+    if current_metrics.empty:
+        return None
+    
+    # Prepare display data
+    display_df = current_metrics[[
+        group_by, 'volatility', 'drawdown', 'max_drawdown', 'days_underwater'
+    ]].copy()
+    
+    # Sort by volatility
+    display_df = display_df.sort_values('volatility', ascending=False)
+    
+    # Rename columns
+    display_df.columns = [
+        group_by.title(),
+        'Current Volatility (%)',
+        'Current Drawdown (%)',
+        'Max Drawdown (%)',
+        'Days Underwater'
+    ]
+    
+    # Format numbers
+    display_df['Current Volatility (%)'] = display_df['Current Volatility (%)'].round(2)
+    display_df['Current Drawdown (%)'] = display_df['Current Drawdown (%)'].round(2)
+    display_df['Max Drawdown (%)'] = display_df['Max Drawdown (%)'].round(2)
+    display_df['Days Underwater'] = display_df['Days Underwater'].astype(int)
+    
+    return display_df
+
 def create_momentum_bar_chart(momentum_df, periods, group_by):
     """Create grouped bar chart showing momentum across different periods."""
     
@@ -447,11 +879,11 @@ def create_momentum_bar_chart(momentum_df, periods, group_by):
     
     # Define colors for different periods
     colors = {
-        3: 'rgb(255, 127, 14)',     # Orange
-        5: 'rgb(99, 110, 250)',      # Blue
-        10: 'rgb(239, 85, 59)',      # Red-Orange
-        20: 'rgb(0, 204, 150)',      # Green
-        30: 'rgb(171, 99, 250)',     # Purple
+        3: 'rgb(255, 127, 14)',
+        5: 'rgb(99, 110, 250)',
+        10: 'rgb(239, 85, 59)',
+        20: 'rgb(0, 204, 150)',
+        30: 'rgb(171, 99, 250)',
     }
     
     # Add a bar for each period
@@ -862,6 +1294,41 @@ def main():
         help="How many days to show in momentum trends"
     )
     
+    # Advanced analysis settings
+    st.sidebar.subheader("📈 Advanced Analysis")
+    
+    breadth_lookback = st.sidebar.slider(
+        "Breadth lookback (days)",
+        min_value=10,
+        max_value=min(max_days, 60),
+        value=30,
+        help="How many days to show in breadth analysis"
+    )
+    
+    relative_strength_lookback = st.sidebar.slider(
+        "Relative strength lookback (days)",
+        min_value=10,
+        max_value=min(max_days, 60),
+        value=30,
+        help="How many days to show in relative strength analysis"
+    )
+    
+    volatility_lookback = st.sidebar.slider(
+        "Volatility/Drawdown lookback (days)",
+        min_value=20,
+        max_value=min(max_days, 90),
+        value=60,
+        help="How many days to show in volatility and drawdown analysis"
+    )
+    
+    volatility_window = st.sidebar.slider(
+        "Volatility window (days)",
+        min_value=5,
+        max_value=30,
+        value=20,
+        help="Rolling window for volatility calculation"
+    )
+    
     # Process data
     with st.spinner("Processing data..."):
         try:
@@ -887,6 +1354,29 @@ def main():
                         momentum_lookback
                     )
             
+            # Calculate breadth indicators
+            breadth_data = calculate_breadth_indicators(
+                market_caps_df,
+                sectors_df,
+                group_by,
+                breadth_lookback
+            )
+            
+            # Calculate relative strength
+            relative_strength_data = calculate_relative_strength(
+                daily_changes,
+                group_by,
+                relative_strength_lookback
+            )
+            
+            # Calculate volatility and drawdown
+            volatility_data, current_risk_metrics = calculate_volatility_drawdown(
+                daily_changes,
+                group_by,
+                volatility_lookback,
+                volatility_window
+            )
+            
             # Filter for display period
             filtered_scores = trend_scores[
                 trend_scores['date'] >= pd.Timestamp(display_start_date)
@@ -894,6 +1384,8 @@ def main():
             
         except Exception as e:
             st.error(f"❌ Error processing data: {str(e)}")
+            import traceback
+            st.error(traceback.format_exc())
             st.stop()
     
     # Show summary stats
@@ -907,270 +1399,383 @@ def main():
     with col4:
         st.metric(f"Total {group_by.title()}s", f"{len(sectors_df[group_by].unique())}")
     
-    # Main visualizations
-    st.header(f"📈 Trend Analysis by {group_by.title()}")
-    st.info(f"Score calculation: +1 for up days, -1 for down days. Scores reset to 0 starting {score_start_date}")
+    # Create tabs for different analyses
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        "📈 Trend Scores",
+        "🚀 Momentum",
+        "📊 Breadth Analysis", 
+        "🎯 Relative Strength",
+        "⚠️ Risk Analysis",
+        "🔥 Heatmaps"
+    ])
     
-    # Trend line chart
-    if not filtered_scores.empty:
-        fig_trends = create_trend_line_chart(filtered_scores, group_by, score_start_date)
-        if fig_trends:
-            st.plotly_chart(fig_trends, use_container_width=True)
-    
-    # Current scores
-    st.header("📊 Current Scores")
-    if not filtered_scores.empty:
-        latest_date = filtered_scores['date'].max()
-        current_data = filtered_scores[filtered_scores['date'] == latest_date]
+    # Tab 1: Trend Scores
+    with tab1:
+        st.header(f"📈 Trend Analysis by {group_by.title()}")
+        st.info(f"Score calculation: +1 for up days, -1 for down days. Scores reset to 0 starting {score_start_date}")
         
-        fig_current = create_current_scores_chart(current_data, group_by)
-        if fig_current:
-            st.plotly_chart(fig_current, use_container_width=True)
-    
-    # Percent changes
-    if not percent_changes.empty:
-        st.header(f"📊 Percent Change: Current vs Previous {percent_change_days} {'Day' if percent_change_days == 1 else 'Days'}")
+        # Trend line chart
+        if not filtered_scores.empty:
+            fig_trends = create_trend_line_chart(filtered_scores, group_by, score_start_date)
+            if fig_trends:
+                st.plotly_chart(fig_trends, use_container_width=True)
         
-        # Get the date ranges
-        latest_date = percent_changes['latest_date'].iloc[0].strftime('%Y-%m-%d')
-        current_start_date = percent_changes['current_start_date'].iloc[0].strftime('%Y-%m-%d')
-        previous_end_date = percent_changes['previous_end_date'].iloc[0].strftime('%Y-%m-%d')
-        previous_start_date = percent_changes['previous_start_date'].iloc[0].strftime('%Y-%m-%d')
-        
-        # Display date ranges
-        col1, col2 = st.columns(2)
-        with col1:
-            st.info(f"**Current Period:** {current_start_date} to {latest_date}")
-        with col2:
-            st.info(f"**Previous Period:** {previous_start_date} to {previous_end_date}")
-        
-        # Sort by current percent change (ascending for horizontal bar chart)
-        # IMPORTANT: Don't filter or limit the data - show ALL groups
-        pct_sorted = percent_changes.sort_values('current_percent_change', ascending=True)
-        
-        # Create the grouped bar chart using plotly graph objects
-        fig_pct = go.Figure()
-        
-        # Add bars for current period - using a consistent blue color
-        fig_pct.add_trace(go.Bar(
-            name='Current Period',
-            y=pct_sorted[group_by],
-            x=pct_sorted['current_percent_change'],
-            orientation='h',
-            marker=dict(
-                color='rgb(99, 110, 250)',  # Consistent blue color for all current period bars
-                line=dict(color='rgb(69, 80, 220)', width=1)  # Darker blue border
-            ),
-            text=pct_sorted['current_percent_change'].apply(lambda x: f"{x:.1f}%"),
-            textposition='outside',
-            hovertemplate='<b>%{y}</b><br>Current Period: %{x:.2f}%<extra></extra>'
-        ))
-        
-        # Add bars for previous period - using a consistent gray color
-        fig_pct.add_trace(go.Bar(
-            name='Previous Period',
-            y=pct_sorted[group_by],
-            x=pct_sorted['previous_percent_change'],
-            orientation='h',
-            marker=dict(
-                color='rgba(150, 150, 150, 0.6)',  # Consistent gray color with transparency
-                line=dict(color='rgba(100, 100, 100, 0.8)', width=1)  # Darker gray border
-            ),
-            text=pct_sorted['previous_percent_change'].apply(lambda x: f"{x:.1f}%"),
-            textposition='outside',
-            hovertemplate='<b>%{y}</b><br>Previous Period: %{x:.2f}%<extra></extra>'
-        ))
-        
-        # Update layout
-        fig_pct.update_layout(
-            title=f"Valuation Percent Change by {group_by.title()} - Comparing {percent_change_days}-Day Periods",
-            xaxis_title="Percent Change (%)",
-            yaxis_title=group_by.title(),
-            barmode='group',
-            bargap=0.15,
-            bargroupgap=0.1,
-            height=max(800, len(pct_sorted) * 20),  # Increased height to accommodate all groups
-            xaxis=dict(
-                showgrid=True,
-                gridwidth=1,
-                gridcolor='lightgray',
-                zeroline=True,
-                zerolinecolor='black',
-                zerolinewidth=2
-            ),
-            yaxis=dict(
-                showgrid=True,
-                gridwidth=1,
-                gridcolor='lightgray'
-            ),
-            margin=dict(l=200, r=100, t=80, b=50),
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=1.02,
-                xanchor="right",
-                x=1
-            ),
-            hovermode='closest'
-        )
-        
-        st.plotly_chart(fig_pct, use_container_width=True)
-        
-        # Summary statistics
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            avg_current = pct_sorted['current_percent_change'].mean()
-            st.metric("Avg Current Period", f"{avg_current:.2f}%")
-        
-        with col2:
-            avg_previous = pct_sorted['previous_percent_change'].mean()
-            st.metric("Avg Previous Period", f"{avg_previous:.2f}%")
-        
-        with col3:
-            # Count improvements
-            improved = (pct_sorted['current_percent_change'] > 
-                       pct_sorted['previous_percent_change']).sum()
-            total = len(pct_sorted)
-            improvement_pct = (improved / total * 100) if total > 0 else 0
-            st.metric("Improved vs Previous", f"{improved}/{total}", f"{improvement_pct:.1f}%")
-        
-        # Show data table with both periods
-        if st.checkbox("Show percent change data"):
-            display_df = pct_sorted[[
-                group_by, 
-                'current_percent_change', 
-                'previous_percent_change'
-            ]].copy()
+        # Current scores
+        st.subheader("📊 Current Scores")
+        if not filtered_scores.empty:
+            latest_date = filtered_scores['date'].max()
+            current_data = filtered_scores[filtered_scores['date'] == latest_date]
             
-            # Calculate difference
-            display_df['change_vs_previous'] = (
-                display_df['current_percent_change'] - 
-                display_df['previous_percent_change']
+            fig_current = create_current_scores_chart(current_data, group_by)
+            if fig_current:
+                st.plotly_chart(fig_current, use_container_width=True)
+        
+        # Percent changes
+        if not percent_changes.empty:
+            st.subheader(f"📊 Percent Change: Current vs Previous {percent_change_days} {'Day' if percent_change_days == 1 else 'Days'}")
+            
+            # Get the date ranges
+            latest_date = percent_changes['latest_date'].iloc[0].strftime('%Y-%m-%d')
+            current_start_date = percent_changes['current_start_date'].iloc[0].strftime('%Y-%m-%d')
+            previous_end_date = percent_changes['previous_end_date'].iloc[0].strftime('%Y-%m-%d')
+            previous_start_date = percent_changes['previous_start_date'].iloc[0].strftime('%Y-%m-%d')
+            
+            # Display date ranges
+            col1, col2 = st.columns(2)
+            with col1:
+                st.info(f"**Current Period:** {current_start_date} to {latest_date}")
+            with col2:
+                st.info(f"**Previous Period:** {previous_start_date} to {previous_end_date}")
+            
+            # Sort by current percent change
+            pct_sorted = percent_changes.sort_values('current_percent_change', ascending=True)
+            
+            # Create the grouped bar chart
+            fig_pct = go.Figure()
+            
+            # Add bars for current period
+            fig_pct.add_trace(go.Bar(
+                name='Current Period',
+                y=pct_sorted[group_by],
+                x=pct_sorted['current_percent_change'],
+                orientation='h',
+                marker=dict(
+                    color='rgb(99, 110, 250)',
+                    line=dict(color='rgb(69, 80, 220)', width=1)
+                ),
+                text=pct_sorted['current_percent_change'].apply(lambda x: f"{x:.1f}%"),
+                textposition='outside',
+                hovertemplate='<b>%{y}</b><br>Current Period: %{x:.2f}%<extra></extra>'
+            ))
+            
+            # Add bars for previous period
+            fig_pct.add_trace(go.Bar(
+                name='Previous Period',
+                y=pct_sorted[group_by],
+                x=pct_sorted['previous_percent_change'],
+                orientation='h',
+                marker=dict(
+                    color='rgba(150, 150, 150, 0.6)',
+                    line=dict(color='rgba(100, 100, 100, 0.8)', width=1)
+                ),
+                text=pct_sorted['previous_percent_change'].apply(lambda x: f"{x:.1f}%"),
+                textposition='outside',
+                hovertemplate='<b>%{y}</b><br>Previous Period: %{x:.2f}%<extra></extra>'
+            ))
+            
+            # Update layout
+            fig_pct.update_layout(
+                title=f"Valuation Percent Change by {group_by.title()} - Comparing {percent_change_days}-Day Periods",
+                xaxis_title="Percent Change (%)",
+                yaxis_title=group_by.title(),
+                barmode='group',
+                bargap=0.15,
+                bargroupgap=0.1,
+                height=max(800, len(pct_sorted) * 20),
+                xaxis=dict(
+                    showgrid=True,
+                    gridwidth=1,
+                    gridcolor='lightgray',
+                    zeroline=True,
+                    zerolinecolor='black',
+                    zerolinewidth=2
+                ),
+                yaxis=dict(
+                    showgrid=True,
+                    gridwidth=1,
+                    gridcolor='lightgray'
+                ),
+                margin=dict(l=200, r=100, t=80, b=50),
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                ),
+                hovermode='closest'
             )
             
-            # Rename columns for clarity
-            display_df.columns = [
-                group_by.title(), 
-                f'Current {percent_change_days}d %', 
-                f'Previous {percent_change_days}d %',
-                'Change vs Previous'
-            ]
+            st.plotly_chart(fig_pct, use_container_width=True)
             
-            # Sort by current period for better readability
-            display_df = display_df.sort_values(f'Current {percent_change_days}d %', ascending=False)
+            # Summary statistics
+            col1, col2, col3 = st.columns(3)
             
-            # Format as percentages
-            for col in display_df.columns[1:]:
-                display_df[col] = display_df[col].round(2)
+            with col1:
+                avg_current = pct_sorted['current_percent_change'].mean()
+                st.metric("Avg Current Period", f"{avg_current:.2f}%")
             
-            st.dataframe(
-                display_df.style.format({
-                    f'Current {percent_change_days}d %': '{:.2f}%',
-                    f'Previous {percent_change_days}d %': '{:.2f}%',
-                    'Change vs Previous': '{:+.2f}%'
-                }).background_gradient(subset=[f'Current {percent_change_days}d %'], cmap='RdYlGn'),
-                use_container_width=True
-            )
+            with col2:
+                avg_previous = pct_sorted['previous_percent_change'].mean()
+                st.metric("Avg Previous Period", f"{avg_previous:.2f}%")
+            
+            with col3:
+                improved = (pct_sorted['current_percent_change'] > 
+                           pct_sorted['previous_percent_change']).sum()
+                total = len(pct_sorted)
+                improvement_pct = (improved / total * 100) if total > 0 else 0
+                st.metric("Improved vs Previous", f"{improved}/{total}", f"{improvement_pct:.1f}%")
     
-    # Momentum Analysis Section
-    if not momentum_data.empty and momentum_periods:
-        st.header("🚀 Momentum Analysis")
+    # Tab 2: Momentum Analysis
+    with tab2:
+        if not momentum_data.empty and momentum_periods:
+            st.header("🚀 Momentum Analysis")
+            st.info("""
+            **Momentum** measures the rate of change in market capitalization over different time periods. 
+            Positive momentum indicates accelerating growth, while negative momentum indicates accelerating decline.
+            """)
+            
+            # Multi-period momentum comparison
+            st.subheader(f"📊 Multi-Period Momentum Comparison")
+            fig_momentum = create_momentum_bar_chart(momentum_data, momentum_periods, group_by)
+            if fig_momentum:
+                st.plotly_chart(fig_momentum, use_container_width=True)
+            
+            # Momentum statistics
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                avg_momentum = momentum_data['avg_momentum'].mean()
+                st.metric("Average Momentum", f"{avg_momentum:.2f}%")
+            
+            with col2:
+                positive_count = (momentum_data['avg_momentum'] > 0).sum()
+                total_count = len(momentum_data)
+                st.metric("Positive Momentum", f"{positive_count}/{total_count}", 
+                         f"{(positive_count/total_count*100):.1f}%")
+            
+            with col3:
+                if not momentum_data.empty:
+                    strongest_idx = momentum_data['avg_momentum'].abs().idxmax()
+                    strongest_group = momentum_data.loc[strongest_idx, group_by]
+                    strongest_value = momentum_data.loc[strongest_idx, 'avg_momentum']
+                    st.metric("Strongest", strongest_group, f"{strongest_value:.2f}%")
+            
+            with col4:
+                avg_consistency = momentum_data['momentum_consistency'].mean()
+                st.metric("Avg Consistency (σ)", f"{avg_consistency:.2f}%")
+            
+            # Momentum trends over time
+            if not momentum_trends_data.empty:
+                st.subheader(f"📈 {momentum_trend_period}-Day Momentum Trends")
+                
+                fig_momentum_trends = create_momentum_trend_lines(
+                    momentum_trends_data, 
+                    group_by, 
+                    momentum_trend_period
+                )
+                if fig_momentum_trends:
+                    st.plotly_chart(fig_momentum_trends, use_container_width=True)
+                
+                st.subheader(f"🔥 {momentum_trend_period}-Day Momentum Heatmap")
+                fig_momentum_heatmap = create_momentum_heatmap(
+                    momentum_trends_data,
+                    group_by,
+                    momentum_trend_period
+                )
+                if fig_momentum_heatmap:
+                    st.plotly_chart(fig_momentum_heatmap, use_container_width=True)
+            
+            # Momentum rankings table
+            if st.checkbox("Show momentum rankings"):
+                st.subheader("🏆 Momentum Rankings")
+                
+                display_cols = [group_by] + [f'momentum_{p}d' for p in sorted(momentum_periods)] + ['avg_momentum', 'momentum_consistency']
+                momentum_display = momentum_data[display_cols].copy()
+                
+                rename_dict = {f'momentum_{p}d': f'{p}d %' for p in momentum_periods}
+                rename_dict['avg_momentum'] = 'Avg %'
+                rename_dict['momentum_consistency'] = 'Consistency (σ)'
+                momentum_display = momentum_display.rename(columns=rename_dict)
+                
+                momentum_display = momentum_display.sort_values('Avg %', ascending=False)
+                
+                pct_cols = [col for col in momentum_display.columns if col.endswith('%') or col == 'Consistency (σ)']
+                for col in pct_cols:
+                    momentum_display[col] = momentum_display[col].round(2)
+                
+                st.dataframe(
+                    momentum_display.style.format({
+                        col: '{:.2f}%' for col in pct_cols
+                    }).background_gradient(subset=['Avg %'], cmap='RdYlGn'),
+                    use_container_width=True
+                )
+    
+    # Tab 3: Breadth Analysis
+    with tab3:
+        st.header("📊 Breadth Analysis")
         st.info("""
-        **Momentum** measures the rate of change in market capitalization over different time periods. 
-        Positive momentum indicates accelerating growth, while negative momentum indicates accelerating decline.
+        **Breadth** measures the participation rate in market moves. High breadth (most stocks up) = strong, healthy trend.
+        Low breadth (few stocks up) = weak trend that may reverse.
         """)
         
-        # Multi-period momentum comparison
-        st.subheader(f"📊 Multi-Period Momentum Comparison")
-        fig_momentum = create_momentum_bar_chart(momentum_data, momentum_periods, group_by)
-        if fig_momentum:
-            st.plotly_chart(fig_momentum, use_container_width=True)
-        
-        # Momentum statistics
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            avg_momentum = momentum_data['avg_momentum'].mean()
-            st.metric("Average Momentum", f"{avg_momentum:.2f}%")
-        
-        with col2:
-            positive_count = (momentum_data['avg_momentum'] > 0).sum()
-            total_count = len(momentum_data)
-            st.metric("Positive Momentum", f"{positive_count}/{total_count}", 
-                     f"{(positive_count/total_count*100):.1f}%")
-        
-        with col3:
-            # Find strongest momentum
-            if not momentum_data.empty:
-                strongest_idx = momentum_data['avg_momentum'].abs().idxmax()
-                strongest_group = momentum_data.loc[strongest_idx, group_by]
-                strongest_value = momentum_data.loc[strongest_idx, 'avg_momentum']
-                st.metric("Strongest", strongest_group, f"{strongest_value:.2f}%")
-        
-        with col4:
-            # Momentum consistency (lower is more consistent across periods)
-            avg_consistency = momentum_data['momentum_consistency'].mean()
-            st.metric("Avg Consistency (σ)", f"{avg_consistency:.2f}%")
-        
-        # Momentum trends over time
-        if not momentum_trends_data.empty:
-            st.subheader(f"📈 {momentum_trend_period}-Day Momentum Trends")
+        if not breadth_data.empty:
+            # Breadth statistics
+            latest_breadth = breadth_data[breadth_data['fetch_date'] == breadth_data['fetch_date'].max()]
             
-            # Line chart
-            fig_momentum_trends = create_momentum_trend_lines(
-                momentum_trends_data, 
-                group_by, 
-                momentum_trend_period
-            )
-            if fig_momentum_trends:
-                st.plotly_chart(fig_momentum_trends, use_container_width=True)
+            col1, col2, col3, col4 = st.columns(4)
             
-            # Heatmap
-            st.subheader(f"🔥 {momentum_trend_period}-Day Momentum Heatmap")
-            fig_momentum_heatmap = create_momentum_heatmap(
-                momentum_trends_data,
-                group_by,
-                momentum_trend_period
-            )
-            if fig_momentum_heatmap:
-                st.plotly_chart(fig_momentum_heatmap, use_container_width=True)
-        
-        # Momentum rankings table
-        if st.checkbox("Show momentum rankings"):
-            st.subheader("🏆 Momentum Rankings")
+            with col1:
+                avg_breadth = latest_breadth['pct_stocks_up'].mean()
+                st.metric("Avg % Stocks Up", f"{avg_breadth:.1f}%")
             
-            # Prepare display dataframe
-            display_cols = [group_by] + [f'momentum_{p}d' for p in sorted(momentum_periods)] + ['avg_momentum', 'momentum_consistency']
-            momentum_display = momentum_data[display_cols].copy()
+            with col2:
+                strong_breadth = (latest_breadth['pct_stocks_up'] > 60).sum()
+                total_groups = len(latest_breadth)
+                st.metric("Strong Breadth (>60%)", f"{strong_breadth}/{total_groups}")
             
-            # Rename columns
-            rename_dict = {f'momentum_{p}d': f'{p}d %' for p in momentum_periods}
-            rename_dict['avg_momentum'] = 'Avg %'
-            rename_dict['momentum_consistency'] = 'Consistency (σ)'
-            momentum_display = momentum_display.rename(columns=rename_dict)
+            with col3:
+                weak_breadth = (latest_breadth['pct_stocks_up'] < 40).sum()
+                st.metric("Weak Breadth (<40%)", f"{weak_breadth}/{total_groups}")
             
-            # Sort by average momentum
-            momentum_display = momentum_display.sort_values('Avg %', ascending=False)
+            with col4:
+                best_breadth_idx = latest_breadth['pct_stocks_up'].idxmax()
+                best_breadth_group = latest_breadth.loc[best_breadth_idx, group_by]
+                best_breadth_value = latest_breadth.loc[best_breadth_idx, 'pct_stocks_up']
+                st.metric("Best Breadth", best_breadth_group, f"{best_breadth_value:.1f}%")
             
-            # Format percentages
-            pct_cols = [col for col in momentum_display.columns if col.endswith('%') or col == 'Consistency (σ)']
-            for col in pct_cols:
-                momentum_display[col] = momentum_display[col].round(2)
+            # Breadth line chart
+            st.subheader("📈 Breadth Trends Over Time")
+            fig_breadth = create_breadth_chart(breadth_data, group_by)
+            if fig_breadth:
+                st.plotly_chart(fig_breadth, use_container_width=True)
             
-            # Display with styling
-            st.dataframe(
-                momentum_display.style.format({
-                    col: '{:.2f}%' for col in pct_cols
-                }).background_gradient(subset=['Avg %'], cmap='RdYlGn'),
-                use_container_width=True
-            )
+            # Breadth heatmap
+            st.subheader("🔥 Breadth Heatmap")
+            fig_breadth_heatmap = create_breadth_heatmap(breadth_data, group_by)
+            if fig_breadth_heatmap:
+                st.plotly_chart(fig_breadth_heatmap, use_container_width=True)
     
-    # Heatmap
-    st.header("🔥 Daily Direction Heatmap")
-    fig_heatmap = create_heatmap(daily_changes, group_by, display_start_date)
-    if fig_heatmap:
-        st.plotly_chart(fig_heatmap, use_container_width=True)
+    # Tab 4: Relative Strength
+    with tab4:
+        st.header("🎯 Relative Strength Analysis")
+        st.info("""
+        **Relative Strength** shows performance vs the overall market. Positive = outperforming, Negative = underperforming.
+        Leaders have sustained positive relative strength. Use this to identify where to allocate capital.
+        """)
+        
+        if not relative_strength_data.empty:
+            # Get latest relative strength
+            latest_rs = relative_strength_data[relative_strength_data['fetch_date'] == relative_strength_data['fetch_date'].max()]
+            
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                outperformers = (latest_rs['cumulative_relative_strength'] > 0).sum()
+                total_groups = len(latest_rs)
+                st.metric("Outperforming Market", f"{outperformers}/{total_groups}")
+            
+            with col2:
+                strongest_idx = latest_rs['cumulative_relative_strength'].idxmax()
+                strongest_group = latest_rs.loc[strongest_idx, group_by]
+                strongest_value = latest_rs.loc[strongest_idx, 'cumulative_relative_strength']
+                st.metric("Strongest", strongest_group, f"+{strongest_value:.1f}%")
+            
+            with col3:
+                weakest_idx = latest_rs['cumulative_relative_strength'].idxmin()
+                weakest_group = latest_rs.loc[weakest_idx, group_by]
+                weakest_value = latest_rs.loc[weakest_idx, 'cumulative_relative_strength']
+                st.metric("Weakest", weakest_group, f"{weakest_value:.1f}%")
+            
+            with col4:
+                avg_rs = latest_rs['cumulative_relative_strength'].mean()
+                st.metric("Avg Rel Strength", f"{avg_rs:.2f}%")
+            
+            # Relative strength rankings
+            st.subheader("🏆 Relative Strength Rankings")
+            fig_rs_ranking = create_relative_strength_ranking(relative_strength_data, group_by)
+            if fig_rs_ranking:
+                st.plotly_chart(fig_rs_ranking, use_container_width=True)
+            
+            # Relative strength trends
+            st.subheader("📈 Relative Strength Trends Over Time")
+            fig_rs_trends = create_relative_strength_chart(relative_strength_data, group_by)
+            if fig_rs_trends:
+                st.plotly_chart(fig_rs_trends, use_container_width=True)
+    
+    # Tab 5: Risk Analysis
+    with tab5:
+        st.header("⚠️ Risk Analysis: Volatility & Drawdowns")
+        st.info("""
+        **Volatility** = Risk/choppiness. **Drawdown** = % decline from peak. 
+        High volatility + deep drawdowns = risky. Low volatility + shallow drawdowns = stable.
+        """)
+        
+        if not current_risk_metrics.empty:
+            # Risk metrics summary
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                avg_vol = current_risk_metrics['volatility'].mean()
+                st.metric("Avg Volatility", f"{avg_vol:.2f}%")
+            
+            with col2:
+                in_drawdown = (current_risk_metrics['drawdown'] < 0).sum()
+                total_groups = len(current_risk_metrics)
+                st.metric("In Drawdown", f"{in_drawdown}/{total_groups}")
+            
+            with col3:
+                worst_drawdown = current_risk_metrics['drawdown'].min()
+                worst_dd_idx = current_risk_metrics['drawdown'].idxmin()
+                worst_dd_group = current_risk_metrics.loc[worst_dd_idx, group_by]
+                st.metric("Worst Current DD", f"{worst_drawdown:.1f}%", worst_dd_group)
+            
+            with col4:
+                max_days_underwater = current_risk_metrics['days_underwater'].max()
+                st.metric("Max Days Underwater", int(max_days_underwater))
+            
+            # Risk metrics table
+            st.subheader("📋 Current Risk Metrics")
+            risk_table = create_risk_metrics_table(current_risk_metrics, group_by)
+            if risk_table is not None:
+                st.dataframe(
+                    risk_table.style.background_gradient(
+                        subset=['Current Volatility (%)'], cmap='YlOrRd'
+                    ).background_gradient(
+                        subset=['Current Drawdown (%)', 'Max Drawdown (%)'], cmap='RdYlGn_r'
+                    ),
+                    use_container_width=True
+                )
+        
+        if not volatility_data.empty:
+            # Volatility chart
+            st.subheader("📉 Rolling Volatility")
+            fig_vol = create_volatility_chart(volatility_data, group_by)
+            if fig_vol:
+                st.plotly_chart(fig_vol, use_container_width=True)
+            
+            # Drawdown chart
+            st.subheader("📊 Drawdowns from Peak")
+            fig_dd = create_drawdown_chart(volatility_data, group_by)
+            if fig_dd:
+                st.plotly_chart(fig_dd, use_container_width=True)
+    
+    # Tab 6: Heatmaps
+    with tab6:
+        st.header("🔥 Daily Direction Heatmap")
+        fig_heatmap = create_heatmap(daily_changes, group_by, display_start_date)
+        if fig_heatmap:
+            st.plotly_chart(fig_heatmap, use_container_width=True)
     
     # Optional detailed data
     if st.checkbox("Show detailed data"):
@@ -1181,7 +1786,7 @@ def main():
         )
     
     # Export functionality
-    if st.button("💾 Export Data"):
+    if st.button("💾 Export All Data"):
         export_date = datetime.now().strftime("%Y%m%d_%H%M")
         
         output = BytesIO()
@@ -1193,13 +1798,21 @@ def main():
                 momentum_data.to_excel(writer, sheet_name='Momentum', index=False)
             if not momentum_trends_data.empty:
                 momentum_trends_data.to_excel(writer, sheet_name='Momentum_Trends', index=False)
+            if not breadth_data.empty:
+                breadth_data.to_excel(writer, sheet_name='Breadth', index=False)
+            if not relative_strength_data.empty:
+                relative_strength_data.to_excel(writer, sheet_name='Relative_Strength', index=False)
+            if not volatility_data.empty:
+                volatility_data.to_excel(writer, sheet_name='Volatility_Drawdown', index=False)
+            if not current_risk_metrics.empty:
+                current_risk_metrics.to_excel(writer, sheet_name='Current_Risk_Metrics', index=False)
             daily_changes.to_excel(writer, sheet_name='Daily_Changes', index=False)
         
         output.seek(0)
         st.download_button(
-            label="📥 Download Excel File",
+            label="📥 Download Complete Analysis (Excel)",
             data=output,
-            file_name=f"valuation_analysis_{export_date}.xlsx",
+            file_name=f"complete_valuation_analysis_{export_date}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
