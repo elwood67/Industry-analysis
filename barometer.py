@@ -591,36 +591,235 @@ def create_breadth_chart(breadth_data, group_by):
     if breadth_data.empty:
         return None
     
+    unique_groups = sorted(breadth_data[group_by].unique())
+    num_groups = len(unique_groups)
+    
     fig = go.Figure()
     
-    unique_groups = sorted(breadth_data[group_by].unique())
-    colors = px.colors.qualitative.Plotly
-    color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
-    
-    for group in unique_groups:
-        group_data = breadth_data[breadth_data[group_by] == group]
+    # If many groups (>20), show aggregate statistics instead of individual lines
+    if num_groups > 20:
+        # Calculate aggregate statistics by date
+        agg_stats = breadth_data.groupby('fetch_date')['pct_stocks_up'].agg([
+            ('mean', 'mean'),
+            ('median', 'median'),
+            ('q25', lambda x: x.quantile(0.25)),
+            ('q75', lambda x: x.quantile(0.75)),
+            ('min', 'min'),
+            ('max', 'max')
+        ]).reset_index()
+        
+        # Add max/min range (very light)
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['max'],
+            mode='lines',
+            name='Max',
+            line=dict(color='rgba(150, 150, 150, 0.3)', width=1),
+            showlegend=True,
+            hovertemplate='Max: %{y:.1f}%<extra></extra>'
+        ))
         
         fig.add_trace(go.Scatter(
-            x=group_data['fetch_date'],
-            y=group_data['pct_stocks_up'],
+            x=agg_stats['fetch_date'],
+            y=agg_stats['min'],
             mode='lines',
-            name=group,
-            line=dict(color=color_dict[group], width=2),
-            hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Stocks Up: %{y:.1f}%<extra></extra>'
+            name='Min',
+            line=dict(color='rgba(150, 150, 150, 0.3)', width=1),
+            fill='tonexty',
+            fillcolor='rgba(150, 150, 150, 0.1)',
+            showlegend=True,
+            hovertemplate='Min: %{y:.1f}%<extra></extra>'
         ))
+        
+        # Add quartile range (shaded)
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['q75'],
+            mode='lines',
+            name='75th Percentile',
+            line=dict(color='rgba(99, 110, 250, 0.4)', width=1),
+            showlegend=True,
+            hovertemplate='75th: %{y:.1f}%<extra></extra>'
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['q25'],
+            mode='lines',
+            name='25th Percentile',
+            line=dict(color='rgba(99, 110, 250, 0.4)', width=1),
+            fill='tonexty',
+            fillcolor='rgba(99, 110, 250, 0.2)',
+            showlegend=True,
+            hovertemplate='25th: %{y:.1f}%<extra></extra>'
+        ))
+        
+        # Add median line (prominent)
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['median'],
+            mode='lines',
+            name='Median',
+            line=dict(color='rgb(255, 127, 14)', width=3),
+            showlegend=True,
+            hovertemplate='Median: %{y:.1f}%<extra></extra>'
+        ))
+        
+        # Add mean line (prominent)
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['mean'],
+            mode='lines',
+            name='Average',
+            line=dict(color='rgb(99, 110, 250)', width=3),
+            showlegend=True,
+            hovertemplate='Average: %{y:.1f}%<extra></extra>'
+        ))
+        
+        title_text = f"Market Breadth: Aggregate Statistics Across {num_groups} {group_by.title()}s"
+        
+    else:
+        # For few groups, show individual lines
+        colors = px.colors.qualitative.Plotly
+        color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
+        
+        for group in unique_groups:
+            group_data = breadth_data[breadth_data[group_by] == group]
+            
+            fig.add_trace(go.Scatter(
+                x=group_data['fetch_date'],
+                y=group_data['pct_stocks_up'],
+                mode='lines',
+                name=group,
+                line=dict(color=color_dict[group], width=2),
+                hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Stocks Up: %{y:.1f}%<extra></extra>'
+            ))
+        
+        title_text = f"Market Breadth: % of Stocks Up by {group_by.title()}"
     
     # Add 50% reference line
-    fig.add_hline(y=50, line_dash="dash", line_color="gray", annotation_text="50%")
+    fig.add_hline(y=50, line_dash="dash", line_color="gray", annotation_text="50% Line")
     
     fig.update_layout(
-        title=f"Market Breadth: % of Stocks Up by {group_by.title()}",
+        title=title_text,
         xaxis_title="Date",
         yaxis_title="% of Stocks Up",
         height=700,
         hovermode='x unified',
-        showlegend=False,
+        showlegend=True if num_groups > 20 else False,
         xaxis=dict(showgrid=True, gridcolor='lightgray'),
-        yaxis=dict(showgrid=True, gridcolor='lightgray', range=[0, 100])
+        yaxis=dict(showgrid=True, gridcolor='lightgray', range=[0, 100]),
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=0.99,
+            xanchor="right",
+            x=0.99,
+            bgcolor="rgba(255, 255, 255, 0.8)"
+        )
+    )
+    
+    return fig
+
+def create_breadth_distribution(breadth_data, group_by):
+    """Create histogram showing distribution of breadth across groups over time."""
+    
+    if breadth_data.empty:
+        return None
+    
+    # Get latest date
+    latest_date = breadth_data['fetch_date'].max()
+    latest_breadth = breadth_data[breadth_data['fetch_date'] == latest_date]
+    
+    # Create histogram
+    fig = go.Figure()
+    
+    fig.add_trace(go.Histogram(
+        x=latest_breadth['pct_stocks_up'],
+        nbinsx=20,
+        name='Distribution',
+        marker=dict(
+            color='rgb(99, 110, 250)',
+            line=dict(color='rgb(255, 255, 255)', width=1)
+        ),
+        hovertemplate='Breadth Range: %{x}%<br>Count: %{y}<extra></extra>'
+    ))
+    
+    # Add vertical lines for reference
+    mean_breadth = latest_breadth['pct_stocks_up'].mean()
+    median_breadth = latest_breadth['pct_stocks_up'].median()
+    
+    fig.add_vline(x=50, line_dash="dash", line_color="gray", annotation_text="50%")
+    fig.add_vline(x=mean_breadth, line_dash="dot", line_color="blue", 
+                  annotation_text=f"Avg: {mean_breadth:.1f}%")
+    
+    fig.update_layout(
+        title=f"Breadth Distribution Across {group_by.title()}s (Latest: {latest_date.strftime('%Y-%m-%d')})",
+        xaxis_title="% of Stocks Up",
+        yaxis_title=f"Number of {group_by.title()}s",
+        height=500,
+        showlegend=False,
+        xaxis=dict(showgrid=True, gridcolor='lightgray', range=[0, 100]),
+        yaxis=dict(showgrid=True, gridcolor='lightgray')
+    )
+    
+    return fig
+
+def create_breadth_top_bottom(breadth_data, group_by, n=10):
+    """Create bar chart showing top and bottom N groups by breadth."""
+    
+    if breadth_data.empty:
+        return None
+    
+    # Get latest date
+    latest_date = breadth_data['fetch_date'].max()
+    latest_breadth = breadth_data[breadth_data['fetch_date'] == latest_date].copy()
+    
+    # Sort and get top/bottom N
+    latest_breadth = latest_breadth.sort_values('pct_stocks_up', ascending=False)
+    
+    if len(latest_breadth) > n * 2:
+        # Get top N and bottom N
+        top_n = latest_breadth.head(n)
+        bottom_n = latest_breadth.tail(n)
+        display_data = pd.concat([top_n, bottom_n])
+    else:
+        display_data = latest_breadth
+    
+    # Sort for display
+    display_data = display_data.sort_values('pct_stocks_up', ascending=True)
+    
+    # Color based on value
+    colors = ['rgb(239, 85, 59)' if x < 40 else 'rgb(255, 193, 7)' if x < 60 else 'rgb(0, 204, 150)' 
+              for x in display_data['pct_stocks_up']]
+    
+    fig = go.Figure(go.Bar(
+        y=display_data[group_by],
+        x=display_data['pct_stocks_up'],
+        orientation='h',
+        marker=dict(color=colors, line=dict(width=1, color='rgb(50, 50, 50)')),
+        text=display_data['pct_stocks_up'].apply(lambda x: f"{x:.1f}%"),
+        textposition='outside',
+        hovertemplate='<b>%{y}</b><br>Breadth: %{x:.1f}%<br>Stocks Up: %{customdata[0]:.0f}/%{customdata[1]:.0f}<extra></extra>',
+        customdata=display_data[['stocks_up', 'total_stocks']].values
+    ))
+    
+    # Add reference lines
+    fig.add_vline(x=50, line_dash="dash", line_color="gray", annotation_text="50%")
+    fig.add_vline(x=60, line_dash="dot", line_color="green", opacity=0.3)
+    fig.add_vline(x=40, line_dash="dot", line_color="red", opacity=0.3)
+    
+    fig.update_layout(
+        title=f"Breadth Leaders & Laggards by {group_by.title()} (Top & Bottom {n})",
+        xaxis_title="% of Stocks Up",
+        yaxis_title=group_by.title(),
+        height=max(600, len(display_data) * 25),
+        xaxis=dict(
+            showgrid=True,
+            gridcolor='lightgray',
+            range=[0, 100]
+        ),
+        margin=dict(l=200, r=100)
     )
     
     return fig
@@ -1654,14 +1853,83 @@ def main():
                 best_breadth_value = latest_breadth.loc[best_breadth_idx, 'pct_stocks_up']
                 st.metric("Best Breadth", best_breadth_group, f"{best_breadth_value:.1f}%")
             
-            # Breadth line chart
+            # Breadth distribution
+            num_groups = len(breadth_data[group_by].unique())
+            if num_groups > 20:
+                st.subheader("📊 Breadth Distribution")
+                st.caption(f"Showing distribution across {num_groups} {group_by}s - too many to display individually")
+                fig_breadth_dist = create_breadth_distribution(breadth_data, group_by)
+                if fig_breadth_dist:
+                    st.plotly_chart(fig_breadth_dist, use_container_width=True)
+            
+            # Breadth trends (aggregate for many groups, individual for few)
             st.subheader("📈 Breadth Trends Over Time")
+            if num_groups > 20:
+                st.caption(f"Showing aggregate statistics (mean, median, quartiles) across {num_groups} {group_by}s")
             fig_breadth = create_breadth_chart(breadth_data, group_by)
             if fig_breadth:
                 st.plotly_chart(fig_breadth, use_container_width=True)
             
+            # Top/Bottom performers
+            if num_groups > 20:
+                st.subheader("🏆 Breadth Leaders & Laggards")
+                st.caption("Top and bottom performers by breadth")
+                fig_breadth_top_bottom = create_breadth_top_bottom(breadth_data, group_by, n=15)
+                if fig_breadth_top_bottom:
+                    st.plotly_chart(fig_breadth_top_bottom, use_container_width=True)
+            
+            # Industry selector for detailed view
+            if num_groups > 20:
+                st.subheader("🔍 Compare Specific Groups")
+                selected_groups = st.multiselect(
+                    f"Select {group_by}s to compare (max 10)",
+                    options=sorted(breadth_data[group_by].unique()),
+                    max_selections=10,
+                    help=f"Select up to 10 {group_by}s to view their individual breadth trends"
+                )
+                
+                if selected_groups:
+                    filtered_breadth = breadth_data[breadth_data[group_by].isin(selected_groups)]
+                    
+                    fig_selected = go.Figure()
+                    colors = px.colors.qualitative.Plotly
+                    
+                    for i, group in enumerate(selected_groups):
+                        group_data = filtered_breadth[filtered_breadth[group_by] == group]
+                        fig_selected.add_trace(go.Scatter(
+                            x=group_data['fetch_date'],
+                            y=group_data['pct_stocks_up'],
+                            mode='lines',
+                            name=group,
+                            line=dict(color=colors[i % len(colors)], width=2),
+                            hovertemplate=f'<b>{group}</b><br>Date: %{{x}}<br>Breadth: %{{y:.1f}}%<extra></extra>'
+                        ))
+                    
+                    fig_selected.add_hline(y=50, line_dash="dash", line_color="gray", annotation_text="50%")
+                    
+                    fig_selected.update_layout(
+                        title=f"Selected {group_by.title()}s Breadth Comparison",
+                        xaxis_title="Date",
+                        yaxis_title="% of Stocks Up",
+                        height=600,
+                        hovermode='x unified',
+                        xaxis=dict(showgrid=True, gridcolor='lightgray'),
+                        yaxis=dict(showgrid=True, gridcolor='lightgray', range=[0, 100]),
+                        legend=dict(
+                            orientation="v",
+                            yanchor="top",
+                            y=0.99,
+                            xanchor="left",
+                            x=0.01
+                        )
+                    )
+                    
+                    st.plotly_chart(fig_selected, use_container_width=True)
+            
             # Breadth heatmap
             st.subheader("🔥 Breadth Heatmap")
+            if num_groups > 30:
+                st.caption(f"Heatmap across all {num_groups} {group_by}s")
             fig_breadth_heatmap = create_breadth_heatmap(breadth_data, group_by)
             if fig_breadth_heatmap:
                 st.plotly_chart(fig_breadth_heatmap, use_container_width=True)
