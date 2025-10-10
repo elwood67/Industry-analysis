@@ -874,34 +874,122 @@ def create_relative_strength_chart(relative_strength_data, group_by):
     if relative_strength_data.empty:
         return None
     
+    unique_groups = sorted(relative_strength_data[group_by].unique())
+    num_groups = len(unique_groups)
+    
     fig = go.Figure()
     
-    unique_groups = sorted(relative_strength_data[group_by].unique())
-    colors = px.colors.qualitative.Plotly
-    color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
-    
-    for group in unique_groups:
-        group_data = relative_strength_data[relative_strength_data[group_by] == group]
+    # If many groups (>20), show aggregate statistics instead of individual lines
+    if num_groups > 20:
+        # Calculate aggregate statistics by date
+        agg_stats = relative_strength_data.groupby('fetch_date')['cumulative_relative_strength'].agg([
+            ('mean', 'mean'),
+            ('median', 'median'),
+            ('q25', lambda x: x.quantile(0.25)),
+            ('q75', lambda x: x.quantile(0.75)),
+            ('min', 'min'),
+            ('max', 'max')
+        ]).reset_index()
+        
+        # Add max/min range (very light)
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['max'],
+            mode='lines',
+            name='Max',
+            line=dict(color='rgba(0, 204, 150, 0.3)', width=1),
+            showlegend=True,
+            hovertemplate='Max: %{y:.2f}%<extra></extra>'
+        ))
         
         fig.add_trace(go.Scatter(
-            x=group_data['fetch_date'],
-            y=group_data['cumulative_relative_strength'],
+            x=agg_stats['fetch_date'],
+            y=agg_stats['min'],
             mode='lines',
-            name=group,
-            line=dict(color=color_dict[group], width=2),
-            hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Rel Strength: %{y:.2f}%<extra></extra>'
+            name='Min',
+            line=dict(color='rgba(239, 85, 59, 0.3)', width=1),
+            fill='tonexty',
+            fillcolor='rgba(150, 150, 150, 0.1)',
+            showlegend=True,
+            hovertemplate='Min: %{y:.2f}%<extra></extra>'
         ))
+        
+        # Add quartile range (shaded)
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['q75'],
+            mode='lines',
+            name='75th Percentile',
+            line=dict(color='rgba(99, 110, 250, 0.4)', width=1),
+            showlegend=True,
+            hovertemplate='75th: %{y:.2f}%<extra></extra>'
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['q25'],
+            mode='lines',
+            name='25th Percentile',
+            line=dict(color='rgba(99, 110, 250, 0.4)', width=1),
+            fill='tonexty',
+            fillcolor='rgba(99, 110, 250, 0.2)',
+            showlegend=True,
+            hovertemplate='25th: %{y:.2f}%<extra></extra>'
+        ))
+        
+        # Add median line (prominent)
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['median'],
+            mode='lines',
+            name='Median',
+            line=dict(color='rgb(255, 127, 14)', width=3),
+            showlegend=True,
+            hovertemplate='Median: %{y:.2f}%<extra></extra>'
+        ))
+        
+        # Add mean line (prominent)
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['mean'],
+            mode='lines',
+            name='Average',
+            line=dict(color='rgb(99, 110, 250)', width=3),
+            showlegend=True,
+            hovertemplate='Average: %{y:.2f}%<extra></extra>'
+        ))
+        
+        title_text = f"Relative Strength: Aggregate Statistics Across {num_groups} {group_by.title()}s"
+        
+    else:
+        # For few groups, show individual lines
+        colors = px.colors.qualitative.Plotly
+        color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
+        
+        for group in unique_groups:
+            group_data = relative_strength_data[relative_strength_data[group_by] == group]
+            
+            fig.add_trace(go.Scatter(
+                x=group_data['fetch_date'],
+                y=group_data['cumulative_relative_strength'],
+                mode='lines',
+                name=group,
+                line=dict(color=color_dict[group], width=2),
+                hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Rel Strength: %{y:.2f}%<extra></extra>'
+            ))
+        
+        title_text = f"Relative Strength vs Market by {group_by.title()}"
     
     # Add zero reference line
-    fig.add_hline(y=0, line_dash="dash", line_color="black", annotation_text="Market")
+    fig.add_hline(y=0, line_dash="dash", line_color="black", annotation_text="Market Baseline")
     
     fig.update_layout(
-        title=f"Relative Strength vs Market by {group_by.title()}",
+        title=title_text,
         xaxis_title="Date",
         yaxis_title="Cumulative Relative Return (%)",
         height=700,
         hovermode='x unified',
-        showlegend=False,
+        showlegend=True if num_groups > 20 else False,
         xaxis=dict(showgrid=True, gridcolor='lightgray'),
         yaxis=dict(
             showgrid=True,
@@ -909,7 +997,130 @@ def create_relative_strength_chart(relative_strength_data, group_by):
             zeroline=True,
             zerolinecolor='black',
             zerolinewidth=2
+        ),
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=0.99,
+            xanchor="right",
+            x=0.99,
+            bgcolor="rgba(255, 255, 255, 0.8)"
         )
+    )
+    
+    return fig
+
+def create_relative_strength_distribution(relative_strength_data, group_by):
+    """Create histogram showing distribution of relative strength."""
+    
+    if relative_strength_data.empty:
+        return None
+    
+    # Get latest date
+    latest_date = relative_strength_data['fetch_date'].max()
+    latest_rs = relative_strength_data[relative_strength_data['fetch_date'] == latest_date]
+    
+    # Create histogram
+    fig = go.Figure()
+    
+    # Separate positive and negative for coloring
+    positive_rs = latest_rs[latest_rs['cumulative_relative_strength'] >= 0]
+    negative_rs = latest_rs[latest_rs['cumulative_relative_strength'] < 0]
+    
+    fig.add_trace(go.Histogram(
+        x=positive_rs['cumulative_relative_strength'],
+        nbinsx=15,
+        name='Outperformers',
+        marker=dict(
+            color='rgb(0, 204, 150)',
+            line=dict(color='rgb(255, 255, 255)', width=1)
+        ),
+        hovertemplate='RS Range: %{x:.1f}%<br>Count: %{y}<extra></extra>'
+    ))
+    
+    fig.add_trace(go.Histogram(
+        x=negative_rs['cumulative_relative_strength'],
+        nbinsx=15,
+        name='Underperformers',
+        marker=dict(
+            color='rgb(239, 85, 59)',
+            line=dict(color='rgb(255, 255, 255)', width=1)
+        ),
+        hovertemplate='RS Range: %{x:.1f}%<br>Count: %{y}<extra></extra>'
+    ))
+    
+    # Add vertical lines for reference
+    mean_rs = latest_rs['cumulative_relative_strength'].mean()
+    
+    fig.add_vline(x=0, line_dash="dash", line_color="black", annotation_text="Market")
+    fig.add_vline(x=mean_rs, line_dash="dot", line_color="blue", 
+                  annotation_text=f"Avg: {mean_rs:.1f}%")
+    
+    fig.update_layout(
+        title=f"Relative Strength Distribution (Latest: {latest_date.strftime('%Y-%m-%d')})",
+        xaxis_title="Cumulative Relative Return (%)",
+        yaxis_title=f"Number of {group_by.title()}s",
+        height=500,
+        barmode='overlay',
+        xaxis=dict(showgrid=True, gridcolor='lightgray'),
+        yaxis=dict(showgrid=True, gridcolor='lightgray')
+    )
+    
+    return fig
+
+def create_relative_strength_top_bottom(relative_strength_data, group_by, n=15):
+    """Create bar chart showing top and bottom N groups by relative strength."""
+    
+    if relative_strength_data.empty:
+        return None
+    
+    # Get latest date
+    latest_date = relative_strength_data['fetch_date'].max()
+    latest_rs = relative_strength_data[relative_strength_data['fetch_date'] == latest_date].copy()
+    
+    # Sort and get top/bottom N
+    latest_rs = latest_rs.sort_values('cumulative_relative_strength', ascending=False)
+    
+    if len(latest_rs) > n * 2:
+        top_n = latest_rs.head(n)
+        bottom_n = latest_rs.tail(n)
+        display_data = pd.concat([top_n, bottom_n])
+    else:
+        display_data = latest_rs
+    
+    # Sort for display
+    display_data = display_data.sort_values('cumulative_relative_strength', ascending=True)
+    
+    # Color based on value
+    colors = ['rgb(0, 204, 150)' if x > 0 else 'rgb(239, 85, 59)' 
+              for x in display_data['cumulative_relative_strength']]
+    
+    fig = go.Figure(go.Bar(
+        y=display_data[group_by],
+        x=display_data['cumulative_relative_strength'],
+        orientation='h',
+        marker=dict(color=colors, line=dict(width=1, color='rgb(50, 50, 50)')),
+        text=display_data['cumulative_relative_strength'].apply(lambda x: f"{x:+.1f}%"),
+        textposition='outside',
+        hovertemplate='<b>%{y}</b><br>Rel Strength: %{x:.2f}%<extra></extra>'
+    ))
+    
+    # Add reference line
+    fig.add_vline(x=0, line_dash="dash", line_color="black", annotation_text="Market")
+    
+    fig.update_layout(
+        title=f"Relative Strength Leaders & Laggards (Top & Bottom {n})",
+        xaxis_title="Cumulative Relative Return (%)",
+        yaxis_title=group_by.title(),
+        height=max(600, len(display_data) * 25),
+        xaxis=dict(
+            showgrid=True,
+            gridcolor='lightgray',
+            zeroline=True,
+            zerolinecolor='black',
+            zerolinewidth=2
+        ),
+        margin=dict(l=200, r=100)
     )
     
     return fig
@@ -964,33 +1175,128 @@ def create_volatility_chart(volatility_data, group_by):
     if volatility_data.empty:
         return None
     
+    unique_groups = sorted(volatility_data[group_by].unique())
+    num_groups = len(unique_groups)
+    
     fig = go.Figure()
     
-    unique_groups = sorted(volatility_data[group_by].unique())
-    colors = px.colors.qualitative.Plotly
-    color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
-    
-    for group in unique_groups:
-        group_data = volatility_data[volatility_data[group_by] == group]
+    # If many groups (>20), show aggregate statistics
+    if num_groups > 20:
+        # Calculate aggregate statistics by date
+        agg_stats = volatility_data.groupby('fetch_date')['volatility'].agg([
+            ('mean', 'mean'),
+            ('median', 'median'),
+            ('q25', lambda x: x.quantile(0.25)),
+            ('q75', lambda x: x.quantile(0.75)),
+            ('min', 'min'),
+            ('max', 'max')
+        ]).reset_index()
+        
+        # Add max/min range
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['max'],
+            mode='lines',
+            name='Max',
+            line=dict(color='rgba(239, 85, 59, 0.3)', width=1),
+            showlegend=True,
+            hovertemplate='Max: %{y:.2f}%<extra></extra>'
+        ))
         
         fig.add_trace(go.Scatter(
-            x=group_data['fetch_date'],
-            y=group_data['volatility'],
+            x=agg_stats['fetch_date'],
+            y=agg_stats['min'],
             mode='lines',
-            name=group,
-            line=dict(color=color_dict[group], width=2),
-            hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Volatility: %{y:.2f}%<extra></extra>'
+            name='Min',
+            line=dict(color='rgba(239, 85, 59, 0.3)', width=1),
+            fill='tonexty',
+            fillcolor='rgba(239, 85, 59, 0.1)',
+            showlegend=True,
+            hovertemplate='Min: %{y:.2f}%<extra></extra>'
         ))
+        
+        # Add quartile range
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['q75'],
+            mode='lines',
+            name='75th Percentile',
+            line=dict(color='rgba(255, 127, 14, 0.4)', width=1),
+            showlegend=True,
+            hovertemplate='75th: %{y:.2f}%<extra></extra>'
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['q25'],
+            mode='lines',
+            name='25th Percentile',
+            line=dict(color='rgba(255, 127, 14, 0.4)', width=1),
+            fill='tonexty',
+            fillcolor='rgba(255, 127, 14, 0.2)',
+            showlegend=True,
+            hovertemplate='25th: %{y:.2f}%<extra></extra>'
+        ))
+        
+        # Add median and mean
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['median'],
+            mode='lines',
+            name='Median',
+            line=dict(color='rgb(255, 127, 14)', width=3),
+            showlegend=True,
+            hovertemplate='Median: %{y:.2f}%<extra></extra>'
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['mean'],
+            mode='lines',
+            name='Average',
+            line=dict(color='rgb(239, 85, 59)', width=3),
+            showlegend=True,
+            hovertemplate='Average: %{y:.2f}%<extra></extra>'
+        ))
+        
+        title_text = f"Rolling Volatility: Aggregate Statistics Across {num_groups} {group_by.title()}s"
+        
+    else:
+        # For few groups, show individual lines
+        colors = px.colors.qualitative.Plotly
+        color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
+        
+        for group in unique_groups:
+            group_data = volatility_data[volatility_data[group_by] == group]
+            
+            fig.add_trace(go.Scatter(
+                x=group_data['fetch_date'],
+                y=group_data['volatility'],
+                mode='lines',
+                name=group,
+                line=dict(color=color_dict[group], width=2),
+                hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Volatility: %{y:.2f}%<extra></extra>'
+            ))
+        
+        title_text = f"Rolling Volatility by {group_by.title()}"
     
     fig.update_layout(
-        title=f"Rolling Volatility by {group_by.title()}",
+        title=title_text,
         xaxis_title="Date",
         yaxis_title="Volatility (Std Dev of Returns %)",
         height=700,
         hovermode='x unified',
-        showlegend=False,
+        showlegend=True if num_groups > 20 else False,
         xaxis=dict(showgrid=True, gridcolor='lightgray'),
-        yaxis=dict(showgrid=True, gridcolor='lightgray')
+        yaxis=dict(showgrid=True, gridcolor='lightgray'),
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=0.99,
+            xanchor="right",
+            x=0.99,
+            bgcolor="rgba(255, 255, 255, 0.8)"
+        )
     )
     
     return fig
@@ -1001,35 +1307,130 @@ def create_drawdown_chart(volatility_data, group_by):
     if volatility_data.empty:
         return None
     
+    unique_groups = sorted(volatility_data[group_by].unique())
+    num_groups = len(unique_groups)
+    
     fig = go.Figure()
     
-    unique_groups = sorted(volatility_data[group_by].unique())
-    colors = px.colors.qualitative.Plotly
-    color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
-    
-    for group in unique_groups:
-        group_data = volatility_data[volatility_data[group_by] == group]
+    # If many groups (>20), show aggregate statistics
+    if num_groups > 20:
+        # Calculate aggregate statistics by date
+        agg_stats = volatility_data.groupby('fetch_date')['drawdown'].agg([
+            ('mean', 'mean'),
+            ('median', 'median'),
+            ('q25', lambda x: x.quantile(0.25)),
+            ('q75', lambda x: x.quantile(0.75)),
+            ('min', 'min'),  # Most negative (worst)
+            ('max', 'max')   # Least negative (best)
+        ]).reset_index()
+        
+        # Add worst/best range
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['max'],  # Best (least negative)
+            mode='lines',
+            name='Best',
+            line=dict(color='rgba(0, 204, 150, 0.3)', width=1),
+            showlegend=True,
+            hovertemplate='Best: %{y:.2f}%<extra></extra>'
+        ))
         
         fig.add_trace(go.Scatter(
-            x=group_data['fetch_date'],
-            y=group_data['drawdown'],
+            x=agg_stats['fetch_date'],
+            y=agg_stats['min'],  # Worst (most negative)
             mode='lines',
-            name=group,
-            line=dict(color=color_dict[group], width=2),
-            fill='tozeroy',
-            fillcolor=f'rgba{tuple(list(px.colors.hex_to_rgb(color_dict[group])) + [0.2])}',
-            hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Drawdown: %{y:.2f}%<extra></extra>'
+            name='Worst',
+            line=dict(color='rgba(239, 85, 59, 0.3)', width=1),
+            fill='tonexty',
+            fillcolor='rgba(239, 85, 59, 0.1)',
+            showlegend=True,
+            hovertemplate='Worst: %{y:.2f}%<extra></extra>'
         ))
+        
+        # Add quartile range
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['q75'],
+            mode='lines',
+            name='75th Percentile',
+            line=dict(color='rgba(255, 127, 14, 0.4)', width=1),
+            showlegend=True,
+            hovertemplate='75th: %{y:.2f}%<extra></extra>'
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['q25'],
+            mode='lines',
+            name='25th Percentile',
+            line=dict(color='rgba(255, 127, 14, 0.4)', width=1),
+            fill='tonexty',
+            fillcolor='rgba(255, 127, 14, 0.2)',
+            showlegend=True,
+            hovertemplate='25th: %{y:.2f}%<extra></extra>'
+        ))
+        
+        # Add median and mean
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['median'],
+            mode='lines',
+            name='Median',
+            line=dict(color='rgb(255, 127, 14)', width=3),
+            showlegend=True,
+            hovertemplate='Median: %{y:.2f}%<extra></extra>'
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'],
+            y=agg_stats['mean'],
+            mode='lines',
+            name='Average',
+            line=dict(color='rgb(239, 85, 59)', width=3),
+            showlegend=True,
+            hovertemplate='Average: %{y:.2f}%<extra></extra>'
+        ))
+        
+        title_text = f"Drawdowns from Peak: Aggregate Statistics Across {num_groups} {group_by.title()}s"
+        
+    else:
+        # For few groups, show individual lines
+        colors = px.colors.qualitative.Plotly
+        color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
+        
+        for group in unique_groups:
+            group_data = volatility_data[volatility_data[group_by] == group]
+            
+            fig.add_trace(go.Scatter(
+                x=group_data['fetch_date'],
+                y=group_data['drawdown'],
+                mode='lines',
+                name=group,
+                line=dict(color=color_dict[group], width=2),
+                fill='tozeroy',
+                fillcolor=f'rgba{tuple(list(px.colors.hex_to_rgb(color_dict[group])) + [0.2])}',
+                hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Drawdown: %{y:.2f}%<extra></extra>'
+            ))
+        
+        title_text = f"Drawdowns from Peak by {group_by.title()}"
     
     fig.update_layout(
-        title=f"Drawdowns from Peak by {group_by.title()}",
+        title=title_text,
         xaxis_title="Date",
         yaxis_title="Drawdown (%)",
         height=700,
         hovermode='x unified',
-        showlegend=False,
+        showlegend=True if num_groups > 20 else False,
         xaxis=dict(showgrid=True, gridcolor='lightgray'),
-        yaxis=dict(showgrid=True, gridcolor='lightgray')
+        yaxis=dict(showgrid=True, gridcolor='lightgray'),
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=0.99,
+            xanchor="right",
+            x=0.99,
+            bgcolor="rgba(255, 255, 255, 0.8)"
+        )
     )
     
     return fig
@@ -1141,31 +1542,118 @@ def create_momentum_trend_lines(momentum_trends, group_by, momentum_period):
     if momentum_trends.empty:
         return None
     
+    unique_groups = sorted(momentum_trends[group_by].unique())
+    num_groups = len(unique_groups)
+    
     fig = go.Figure()
     
-    unique_groups = sorted(momentum_trends[group_by].unique())
-    colors = px.colors.qualitative.Plotly
-    color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
-    
-    for group in unique_groups:
-        group_data = momentum_trends[momentum_trends[group_by] == group]
+    # If many groups (>20), show aggregate statistics
+    if num_groups > 20:
+        # Calculate aggregate statistics by date
+        agg_stats = momentum_trends.groupby('date')['momentum'].agg([
+            ('mean', 'mean'),
+            ('median', 'median'),
+            ('q25', lambda x: x.quantile(0.25)),
+            ('q75', lambda x: x.quantile(0.75)),
+            ('min', 'min'),
+            ('max', 'max')
+        ]).reset_index()
+        
+        # Add max/min range
+        fig.add_trace(go.Scatter(
+            x=agg_stats['date'],
+            y=agg_stats['max'],
+            mode='lines',
+            name='Max',
+            line=dict(color='rgba(0, 204, 150, 0.3)', width=1),
+            showlegend=True,
+            hovertemplate='Max: %{y:.2f}%<extra></extra>'
+        ))
         
         fig.add_trace(go.Scatter(
-            x=group_data['date'],
-            y=group_data['momentum'],
+            x=agg_stats['date'],
+            y=agg_stats['min'],
             mode='lines',
-            name=group,
-            line=dict(color=color_dict[group], width=2),
-            hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Momentum: %{y:.2f}%<extra></extra>'
+            name='Min',
+            line=dict(color='rgba(239, 85, 59, 0.3)', width=1),
+            fill='tonexty',
+            fillcolor='rgba(150, 150, 150, 0.1)',
+            showlegend=True,
+            hovertemplate='Min: %{y:.2f}%<extra></extra>'
         ))
+        
+        # Add quartile range
+        fig.add_trace(go.Scatter(
+            x=agg_stats['date'],
+            y=agg_stats['q75'],
+            mode='lines',
+            name='75th Percentile',
+            line=dict(color='rgba(99, 110, 250, 0.4)', width=1),
+            showlegend=True,
+            hovertemplate='75th: %{y:.2f}%<extra></extra>'
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=agg_stats['date'],
+            y=agg_stats['q25'],
+            mode='lines',
+            name='25th Percentile',
+            line=dict(color='rgba(99, 110, 250, 0.4)', width=1),
+            fill='tonexty',
+            fillcolor='rgba(99, 110, 250, 0.2)',
+            showlegend=True,
+            hovertemplate='25th: %{y:.2f}%<extra></extra>'
+        ))
+        
+        # Add median and mean
+        fig.add_trace(go.Scatter(
+            x=agg_stats['date'],
+            y=agg_stats['median'],
+            mode='lines',
+            name='Median',
+            line=dict(color='rgb(255, 127, 14)', width=3),
+            showlegend=True,
+            hovertemplate='Median: %{y:.2f}%<extra></extra>'
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=agg_stats['date'],
+            y=agg_stats['mean'],
+            mode='lines',
+            name='Average',
+            line=dict(color='rgb(99, 110, 250)', width=3),
+            showlegend=True,
+            hovertemplate='Average: %{y:.2f}%<extra></extra>'
+        ))
+        
+        title_text = f"{momentum_period}-Day Momentum: Aggregate Statistics Across {num_groups} {group_by.title()}s"
+        
+    else:
+        # For few groups, show individual lines
+        colors = px.colors.qualitative.Plotly
+        color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
+        
+        for group in unique_groups:
+            group_data = momentum_trends[momentum_trends[group_by] == group]
+            
+            fig.add_trace(go.Scatter(
+                x=group_data['date'],
+                y=group_data['momentum'],
+                mode='lines',
+                name=group,
+                line=dict(color=color_dict[group], width=2),
+                hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Momentum: %{y:.2f}%<extra></extra>'
+            ))
+        
+        title_text = f"{momentum_period}-Day Momentum Trends by {group_by.title()}"
     
     fig.update_layout(
-        title=f"{momentum_period}-Day Momentum Trends by {group_by.title()}",
+        title=title_text,
         xaxis_title="Date",
         yaxis_title=f"{momentum_period}-Day Rate of Change (%)",
         height=700,
         hovermode='x unified',
-        showlegend=False,
+        showlegend=True if num_groups > 20 else False,
         xaxis=dict(showgrid=True, gridcolor='lightgray'),
         yaxis=dict(
             showgrid=True,
@@ -1173,6 +1661,14 @@ def create_momentum_trend_lines(momentum_trends, group_by, momentum_period):
             zeroline=True,
             zerolinecolor='black',
             zerolinewidth=2
+        ),
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=0.99,
+            xanchor="right",
+            x=0.99,
+            bgcolor="rgba(255, 255, 255, 0.8)"
         )
     )
     
@@ -1232,6 +1728,9 @@ def create_trend_line_chart(filtered_scores, group_by, score_start_date):
         st.warning("No data available for visualization")
         return None
     
+    unique_groups = sorted(filtered_scores[group_by].unique())
+    num_groups = len(unique_groups)
+    
     # Create hover data
     hover_data = defaultdict(list)
     for _, row in filtered_scores.iterrows():
@@ -1241,63 +1740,155 @@ def create_trend_line_chart(filtered_scores, group_by, score_start_date):
         key = (date_str, score)
         hover_data[key].append(group)
     
-    # Create figure
     fig = go.Figure()
     
-    # Get unique groups and colors
-    unique_groups = sorted(filtered_scores[group_by].unique())
-    colors = px.colors.qualitative.Plotly
-    color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
-    
-    # Add traces for each group
-    for group in unique_groups:
-        group_data = filtered_scores[filtered_scores[group_by] == group]
+    # If many groups (>20), show aggregate statistics
+    if num_groups > 20:
+        # Calculate aggregate statistics by date
+        agg_stats = filtered_scores.groupby('date')['score'].agg([
+            ('mean', 'mean'),
+            ('median', 'median'),
+            ('q25', lambda x: x.quantile(0.25)),
+            ('q75', lambda x: x.quantile(0.75)),
+            ('min', 'min'),
+            ('max', 'max')
+        ]).reset_index()
         
-        # Create hover text
-        hover_texts = []
-        for _, row in group_data.iterrows():
-            date_str = row['date'].strftime('%Y-%m-%d')
-            score = row['score']
-            
-            # Find other groups with same score on same date
-            same_score_groups = hover_data.get((date_str, score), [])
-            other_groups = [g for g in same_score_groups if g != group]
-            
-            if other_groups:
-                hover_text = f"<b>{group}</b><br>Date: {date_str}<br>Score: {score}<br><br>"
-                hover_text += f"Also at score {score}:<br>" + "<br>".join(other_groups)
-                hover_text += f"<br><br>Total: {len(same_score_groups)} groups"
-            else:
-                hover_text = f"<b>{group}</b><br>Date: {date_str}<br>Score: {score}"
-            
-            hover_texts.append(hover_text)
-        
-        # Add line trace
+        # Add max/min range
         fig.add_trace(go.Scatter(
-            x=group_data['date'],
-            y=group_data['score'],
+            x=agg_stats['date'],
+            y=agg_stats['max'],
             mode='lines',
-            name=group,
-            line=dict(color=color_dict[group], width=3),
-            hoverinfo='text',
-            hovertext=hover_texts,
-            hoverlabel=dict(
-                bgcolor='rgba(0, 0, 0, 0.8)',
-                font=dict(color='white', size=12),
-                bordercolor='white'
-            )
+            name='Max Score',
+            line=dict(color='rgba(0, 204, 150, 0.3)', width=1),
+            showlegend=True,
+            hovertemplate='Max: %{y:.0f}<extra></extra>'
         ))
+        
+        fig.add_trace(go.Scatter(
+            x=agg_stats['date'],
+            y=agg_stats['min'],
+            mode='lines',
+            name='Min Score',
+            line=dict(color='rgba(239, 85, 59, 0.3)', width=1),
+            fill='tonexty',
+            fillcolor='rgba(150, 150, 150, 0.1)',
+            showlegend=True,
+            hovertemplate='Min: %{y:.0f}<extra></extra>'
+        ))
+        
+        # Add quartile range
+        fig.add_trace(go.Scatter(
+            x=agg_stats['date'],
+            y=agg_stats['q75'],
+            mode='lines',
+            name='75th Percentile',
+            line=dict(color='rgba(99, 110, 250, 0.4)', width=1),
+            showlegend=True,
+            hovertemplate='75th: %{y:.0f}<extra></extra>'
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=agg_stats['date'],
+            y=agg_stats['q25'],
+            mode='lines',
+            name='25th Percentile',
+            line=dict(color='rgba(99, 110, 250, 0.4)', width=1),
+            fill='tonexty',
+            fillcolor='rgba(99, 110, 250, 0.2)',
+            showlegend=True,
+            hovertemplate='25th: %{y:.0f}<extra></extra>'
+        ))
+        
+        # Add median and mean
+        fig.add_trace(go.Scatter(
+            x=agg_stats['date'],
+            y=agg_stats['median'],
+            mode='lines',
+            name='Median Score',
+            line=dict(color='rgb(255, 127, 14)', width=3),
+            showlegend=True,
+            hovertemplate='Median: %{y:.0f}<extra></extra>'
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=agg_stats['date'],
+            y=agg_stats['mean'],
+            mode='lines',
+            name='Average Score',
+            line=dict(color='rgb(99, 110, 250)', width=3),
+            showlegend=True,
+            hovertemplate='Average: %{y:.0f}<extra></extra>'
+        ))
+        
+        title_text = f"Trend Scores: Aggregate Statistics Across {num_groups} {group_by.title()}s (Reset at {score_start_date})"
+        show_legend = True
+        
+    else:
+        # For few groups, show individual lines
+        colors = px.colors.qualitative.Plotly
+        color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
+        
+        # Add traces for each group
+        for group in unique_groups:
+            group_data = filtered_scores[filtered_scores[group_by] == group]
+            
+            # Create hover text
+            hover_texts = []
+            for _, row in group_data.iterrows():
+                date_str = row['date'].strftime('%Y-%m-%d')
+                score = row['score']
+                
+                # Find other groups with same score on same date
+                same_score_groups = hover_data.get((date_str, score), [])
+                other_groups = [g for g in same_score_groups if g != group]
+                
+                if other_groups:
+                    hover_text = f"<b>{group}</b><br>Date: {date_str}<br>Score: {score}<br><br>"
+                    hover_text += f"Also at score {score}:<br>" + "<br>".join(other_groups)
+                    hover_text += f"<br><br>Total: {len(same_score_groups)} groups"
+                else:
+                    hover_text = f"<b>{group}</b><br>Date: {date_str}<br>Score: {score}"
+                
+                hover_texts.append(hover_text)
+            
+            # Add line trace
+            fig.add_trace(go.Scatter(
+                x=group_data['date'],
+                y=group_data['score'],
+                mode='lines',
+                name=group,
+                line=dict(color=color_dict[group], width=3),
+                hoverinfo='text',
+                hovertext=hover_texts,
+                hoverlabel=dict(
+                    bgcolor='rgba(0, 0, 0, 0.8)',
+                    font=dict(color='white', size=12),
+                    bordercolor='white'
+                )
+            ))
+        
+        title_text = f"Trend Scores by {group_by.title()} (Reset at {score_start_date})"
+        show_legend = False
     
     # Update layout
     fig.update_layout(
-        title=f"Trend Scores by {group_by.title()} (Reset at {score_start_date})",
+        title=title_text,
         xaxis_title="Date",
         yaxis_title="Cumulative Score",
         height=800,
         hovermode='closest',
-        showlegend=False,
+        showlegend=show_legend,
         xaxis=dict(showgrid=True, gridcolor='lightgray'),
-        yaxis=dict(showgrid=True, gridcolor='lightgray', zeroline=True, zerolinecolor='black')
+        yaxis=dict(showgrid=True, gridcolor='lightgray', zeroline=True, zerolinecolor='black'),
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=0.99,
+            xanchor="right",
+            x=0.99,
+            bgcolor="rgba(255, 255, 255, 0.8)"
+        ) if show_legend else None
     )
     
     return fig
@@ -1615,9 +2206,95 @@ def main():
         
         # Trend line chart
         if not filtered_scores.empty:
+            num_groups = len(filtered_scores[group_by].unique())
+            if num_groups > 20:
+                st.caption(f"Showing aggregate statistics across {num_groups} {group_by}s")
+            
             fig_trends = create_trend_line_chart(filtered_scores, group_by, score_start_date)
             if fig_trends:
                 st.plotly_chart(fig_trends, use_container_width=True)
+            
+            # Group selector for detailed view
+            if num_groups > 20:
+                st.subheader("🔍 Compare Specific Groups")
+                selected_trend_groups = st.multiselect(
+                    f"Select {group_by}s to compare (max 10)",
+                    options=sorted(filtered_scores[group_by].unique()),
+                    max_selections=10,
+                    help=f"Select up to 10 {group_by}s to view their individual trend scores",
+                    key="trend_selector"
+                )
+                
+                if selected_trend_groups:
+                    filtered_trends = filtered_scores[filtered_scores[group_by].isin(selected_trend_groups)]
+                    
+                    # Create hover data
+                    hover_data = defaultdict(list)
+                    for _, row in filtered_trends.iterrows():
+                        date_str = row['date'].strftime('%Y-%m-%d')
+                        score = row['score']
+                        group = row[group_by]
+                        key = (date_str, score)
+                        hover_data[key].append(group)
+                    
+                    fig_selected_trends = go.Figure()
+                    colors = px.colors.qualitative.Plotly
+                    color_dict = {group: colors[i % len(colors)] for i, group in enumerate(selected_trend_groups)}
+                    
+                    for group in selected_trend_groups:
+                        group_data = filtered_trends[filtered_trends[group_by] == group]
+                        
+                        # Create hover text
+                        hover_texts = []
+                        for _, row in group_data.iterrows():
+                            date_str = row['date'].strftime('%Y-%m-%d')
+                            score = row['score']
+                            
+                            same_score_groups = hover_data.get((date_str, score), [])
+                            other_groups = [g for g in same_score_groups if g != group]
+                            
+                            if other_groups:
+                                hover_text = f"<b>{group}</b><br>Date: {date_str}<br>Score: {score}<br><br>"
+                                hover_text += f"Also at score {score}:<br>" + "<br>".join(other_groups)
+                                hover_text += f"<br><br>Total: {len(same_score_groups)} groups"
+                            else:
+                                hover_text = f"<b>{group}</b><br>Date: {date_str}<br>Score: {score}"
+                            
+                            hover_texts.append(hover_text)
+                        
+                        fig_selected_trends.add_trace(go.Scatter(
+                            x=group_data['date'],
+                            y=group_data['score'],
+                            mode='lines',
+                            name=group,
+                            line=dict(color=color_dict[group], width=3),
+                            hoverinfo='text',
+                            hovertext=hover_texts,
+                            hoverlabel=dict(
+                                bgcolor='rgba(0, 0, 0, 0.8)',
+                                font=dict(color='white', size=12),
+                                bordercolor='white'
+                            )
+                        ))
+                    
+                    fig_selected_trends.update_layout(
+                        title=f"Selected {group_by.title()}s Trend Score Comparison",
+                        xaxis_title="Date",
+                        yaxis_title="Cumulative Score",
+                        height=700,
+                        hovermode='closest',
+                        xaxis=dict(showgrid=True, gridcolor='lightgray'),
+                        yaxis=dict(showgrid=True, gridcolor='lightgray', zeroline=True, zerolinecolor='black'),
+                        legend=dict(
+                            orientation="v",
+                            yanchor="top",
+                            y=0.99,
+                            xanchor="left",
+                            x=0.01
+                        )
+                    )
+                    
+                    st.plotly_chart(fig_selected_trends, use_container_width=True)
         
         # Current scores
         st.subheader("📊 Current Scores")
@@ -1778,6 +2455,10 @@ def main():
             if not momentum_trends_data.empty:
                 st.subheader(f"📈 {momentum_trend_period}-Day Momentum Trends")
                 
+                num_groups = len(momentum_trends_data[group_by].unique())
+                if num_groups > 20:
+                    st.caption(f"Showing aggregate statistics across {num_groups} {group_by}s")
+                
                 fig_momentum_trends = create_momentum_trend_lines(
                     momentum_trends_data, 
                     group_by, 
@@ -1785,6 +2466,61 @@ def main():
                 )
                 if fig_momentum_trends:
                     st.plotly_chart(fig_momentum_trends, use_container_width=True)
+                
+                # Group selector for detailed view
+                if num_groups > 20:
+                    st.subheader("🔍 Compare Specific Groups")
+                    selected_mom_groups = st.multiselect(
+                        f"Select {group_by}s to compare (max 10)",
+                        options=sorted(momentum_trends_data[group_by].unique()),
+                        max_selections=10,
+                        help=f"Select up to 10 {group_by}s to view their individual momentum trends",
+                        key="momentum_selector"
+                    )
+                    
+                    if selected_mom_groups:
+                        filtered_mom = momentum_trends_data[momentum_trends_data[group_by].isin(selected_mom_groups)]
+                        
+                        fig_selected_mom = go.Figure()
+                        colors = px.colors.qualitative.Plotly
+                        
+                        for i, group in enumerate(selected_mom_groups):
+                            group_data = filtered_mom[filtered_mom[group_by] == group]
+                            fig_selected_mom.add_trace(go.Scatter(
+                                x=group_data['date'],
+                                y=group_data['momentum'],
+                                mode='lines',
+                                name=group,
+                                line=dict(color=colors[i % len(colors)], width=2),
+                                hovertemplate=f'<b>{group}</b><br>Date: %{{x}}<br>Momentum: %{{y:.2f}}%<extra></extra>'
+                            ))
+                        
+                        fig_selected_mom.add_hline(y=0, line_dash="dash", line_color="black")
+                        
+                        fig_selected_mom.update_layout(
+                            title=f"Selected {group_by.title()}s {momentum_trend_period}-Day Momentum Comparison",
+                            xaxis_title="Date",
+                            yaxis_title=f"{momentum_trend_period}-Day Momentum (%)",
+                            height=600,
+                            hovermode='x unified',
+                            xaxis=dict(showgrid=True, gridcolor='lightgray'),
+                            yaxis=dict(
+                                showgrid=True,
+                                gridcolor='lightgray',
+                                zeroline=True,
+                                zerolinecolor='black',
+                                zerolinewidth=2
+                            ),
+                            legend=dict(
+                                orientation="v",
+                                yanchor="top",
+                                y=0.99,
+                                xanchor="left",
+                                x=0.01
+                            )
+                        )
+                        
+                        st.plotly_chart(fig_selected_mom, use_container_width=True)
                 
                 st.subheader(f"🔥 {momentum_trend_period}-Day Momentum Heatmap")
                 fig_momentum_heatmap = create_momentum_heatmap(
@@ -1969,17 +2705,91 @@ def main():
                 avg_rs = latest_rs['cumulative_relative_strength'].mean()
                 st.metric("Avg Rel Strength", f"{avg_rs:.2f}%")
             
-            # Relative strength rankings
-            st.subheader("🏆 Relative Strength Rankings")
-            fig_rs_ranking = create_relative_strength_ranking(relative_strength_data, group_by)
-            if fig_rs_ranking:
-                st.plotly_chart(fig_rs_ranking, use_container_width=True)
+            # Get number of groups for smart display
+            num_groups = len(relative_strength_data[group_by].unique())
             
-            # Relative strength trends
+            # Distribution
+            if num_groups > 20:
+                st.subheader("📊 Relative Strength Distribution")
+                st.caption(f"Showing distribution across {num_groups} {group_by}s")
+                fig_rs_dist = create_relative_strength_distribution(relative_strength_data, group_by)
+                if fig_rs_dist:
+                    st.plotly_chart(fig_rs_dist, use_container_width=True)
+            
+            # Top/Bottom performers (always useful, even for few groups)
+            st.subheader("🏆 Relative Strength Leaders & Laggards")
+            if num_groups > 30:
+                st.caption("Top and bottom performers vs market")
+                fig_rs_top_bottom = create_relative_strength_top_bottom(relative_strength_data, group_by, n=15)
+            else:
+                # Show all if there aren't too many
+                fig_rs_top_bottom = create_relative_strength_ranking(relative_strength_data, group_by)
+            
+            if fig_rs_top_bottom:
+                st.plotly_chart(fig_rs_top_bottom, use_container_width=True)
+            
+            # Relative strength trends (aggregate for many groups, individual for few)
             st.subheader("📈 Relative Strength Trends Over Time")
+            if num_groups > 20:
+                st.caption(f"Showing aggregate statistics across {num_groups} {group_by}s")
             fig_rs_trends = create_relative_strength_chart(relative_strength_data, group_by)
             if fig_rs_trends:
                 st.plotly_chart(fig_rs_trends, use_container_width=True)
+            
+            # Group selector for detailed view
+            if num_groups > 20:
+                st.subheader("🔍 Compare Specific Groups")
+                selected_rs_groups = st.multiselect(
+                    f"Select {group_by}s to compare (max 10)",
+                    options=sorted(relative_strength_data[group_by].unique()),
+                    max_selections=10,
+                    help=f"Select up to 10 {group_by}s to view their individual relative strength trends",
+                    key="rs_selector"
+                )
+                
+                if selected_rs_groups:
+                    filtered_rs = relative_strength_data[relative_strength_data[group_by].isin(selected_rs_groups)]
+                    
+                    fig_selected_rs = go.Figure()
+                    colors = px.colors.qualitative.Plotly
+                    
+                    for i, group in enumerate(selected_rs_groups):
+                        group_data = filtered_rs[filtered_rs[group_by] == group]
+                        fig_selected_rs.add_trace(go.Scatter(
+                            x=group_data['fetch_date'],
+                            y=group_data['cumulative_relative_strength'],
+                            mode='lines',
+                            name=group,
+                            line=dict(color=colors[i % len(colors)], width=2),
+                            hovertemplate=f'<b>{group}</b><br>Date: %{{x}}<br>Rel Strength: %{{y:.2f}}%<extra></extra>'
+                        ))
+                    
+                    fig_selected_rs.add_hline(y=0, line_dash="dash", line_color="black", annotation_text="Market")
+                    
+                    fig_selected_rs.update_layout(
+                        title=f"Selected {group_by.title()}s Relative Strength Comparison",
+                        xaxis_title="Date",
+                        yaxis_title="Cumulative Relative Return (%)",
+                        height=600,
+                        hovermode='x unified',
+                        xaxis=dict(showgrid=True, gridcolor='lightgray'),
+                        yaxis=dict(
+                            showgrid=True,
+                            gridcolor='lightgray',
+                            zeroline=True,
+                            zerolinecolor='black',
+                            zerolinewidth=2
+                        ),
+                        legend=dict(
+                            orientation="v",
+                            yanchor="top",
+                            y=0.99,
+                            xanchor="left",
+                            x=0.01
+                        )
+                    )
+                    
+                    st.plotly_chart(fig_selected_rs, use_container_width=True)
     
     # Tab 5: Risk Analysis
     with tab5:
@@ -2012,9 +2822,20 @@ def main():
                 max_days_underwater = current_risk_metrics['days_underwater'].max()
                 st.metric("Max Days Underwater", int(max_days_underwater))
             
+            # Get number of groups
+            num_groups = len(current_risk_metrics)
+            
             # Risk metrics table
             st.subheader("📋 Current Risk Metrics")
-            risk_table = create_risk_metrics_table(current_risk_metrics, group_by)
+            if num_groups > 30:
+                st.caption(f"Showing top 20 highest risk and 20 lowest risk {group_by}s")
+                # Sort by volatility and show top/bottom
+                sorted_by_vol = current_risk_metrics.sort_values('volatility', ascending=False)
+                display_risk = pd.concat([sorted_by_vol.head(20), sorted_by_vol.tail(20)])
+            else:
+                display_risk = current_risk_metrics
+            
+            risk_table = create_risk_metrics_table(display_risk, group_by)
             if risk_table is not None:
                 st.dataframe(
                     risk_table.style.background_gradient(
@@ -2022,21 +2843,97 @@ def main():
                     ).background_gradient(
                         subset=['Current Drawdown (%)', 'Max Drawdown (%)'], cmap='RdYlGn_r'
                     ),
-                    use_container_width=True
+                    use_container_width=True,
+                    height=600 if num_groups > 30 else None
                 )
         
         if not volatility_data.empty:
+            num_groups = len(volatility_data[group_by].unique())
+            
             # Volatility chart
             st.subheader("📉 Rolling Volatility")
+            if num_groups > 20:
+                st.caption(f"Showing aggregate statistics across {num_groups} {group_by}s")
             fig_vol = create_volatility_chart(volatility_data, group_by)
             if fig_vol:
                 st.plotly_chart(fig_vol, use_container_width=True)
             
             # Drawdown chart
             st.subheader("📊 Drawdowns from Peak")
+            if num_groups > 20:
+                st.caption(f"Showing aggregate statistics across {num_groups} {group_by}s")
             fig_dd = create_drawdown_chart(volatility_data, group_by)
             if fig_dd:
                 st.plotly_chart(fig_dd, use_container_width=True)
+            
+            # Group selector for detailed view
+            if num_groups > 20:
+                st.subheader("🔍 Compare Specific Groups")
+                selected_risk_groups = st.multiselect(
+                    f"Select {group_by}s to compare (max 10)",
+                    options=sorted(volatility_data[group_by].unique()),
+                    max_selections=10,
+                    help=f"Select up to 10 {group_by}s to view their individual volatility and drawdown",
+                    key="risk_selector"
+                )
+                
+                if selected_risk_groups:
+                    filtered_vol = volatility_data[volatility_data[group_by].isin(selected_risk_groups)]
+                    
+                    # Volatility comparison
+                    fig_selected_vol = go.Figure()
+                    colors = px.colors.qualitative.Plotly
+                    
+                    for i, group in enumerate(selected_risk_groups):
+                        group_data = filtered_vol[filtered_vol[group_by] == group]
+                        fig_selected_vol.add_trace(go.Scatter(
+                            x=group_data['fetch_date'],
+                            y=group_data['volatility'],
+                            mode='lines',
+                            name=group,
+                            line=dict(color=colors[i % len(colors)], width=2),
+                            hovertemplate=f'<b>{group}</b><br>Date: %{{x}}<br>Volatility: %{{y:.2f}}%<extra></extra>'
+                        ))
+                    
+                    fig_selected_vol.update_layout(
+                        title=f"Selected {group_by.title()}s Volatility Comparison",
+                        xaxis_title="Date",
+                        yaxis_title="Volatility (%)",
+                        height=500,
+                        hovermode='x unified',
+                        xaxis=dict(showgrid=True, gridcolor='lightgray'),
+                        yaxis=dict(showgrid=True, gridcolor='lightgray')
+                    )
+                    
+                    st.plotly_chart(fig_selected_vol, use_container_width=True)
+                    
+                    # Drawdown comparison
+                    fig_selected_dd = go.Figure()
+                    
+                    for i, group in enumerate(selected_risk_groups):
+                        group_data = filtered_vol[filtered_vol[group_by] == group]
+                        fig_selected_dd.add_trace(go.Scatter(
+                            x=group_data['fetch_date'],
+                            y=group_data['drawdown'],
+                            mode='lines',
+                            name=group,
+                            line=dict(color=colors[i % len(colors)], width=2),
+                            fill='tozeroy',
+                            fillcolor=f'rgba{tuple(list(px.colors.hex_to_rgb(colors[i % len(colors)])) + [0.2])}',
+                            hovertemplate=f'<b>{group}</b><br>Date: %{{x}}<br>Drawdown: %{{y:.2f}}%<extra></extra>'
+                        ))
+                    
+                    fig_selected_dd.update_layout(
+                        title=f"Selected {group_by.title()}s Drawdown Comparison",
+                        xaxis_title="Date",
+                        yaxis_title="Drawdown (%)",
+                        height=500,
+                        hovermode='x unified',
+                        xaxis=dict(showgrid=True, gridcolor='lightgray'),
+                        yaxis=dict(showgrid=True, gridcolor='lightgray')
+                    )
+                    
+                    st.plotly_chart(fig_selected_dd, use_container_width=True)
     
     # Tab 6: Heatmaps
     with tab6:
