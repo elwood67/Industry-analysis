@@ -10,8 +10,8 @@ import glob
 from collections import defaultdict
 
 # Set page configuration to wide layout
-st.set_page_config(layout="wide", page_title="Valuation Analysis", page_icon="📊")
-st.title("📊 Valuation Analysis - Complete Suite")
+st.set_page_config(layout="wide", page_title="Market Analysis Suite", page_icon="📊")
+st.title("📊 Complete Market Analysis Suite")
 
 # ------------------------------
 # 1. Data Loading Functions
@@ -3405,14 +3405,12 @@ def main():
             
             risk_table = create_risk_metrics_table(display_risk, group_by)
             if risk_table is not None:
+                # Use container to limit height visually
                 st.dataframe(
                     risk_table.style.background_gradient(
                         subset=['Current Volatility (%)'], cmap='YlOrRd'
-                    ).background_gradient(
-                        subset=['Current Drawdown (%)', 'Max Drawdown (%)'], cmap='RdYlGn_r'
                     ),
-                    use_container_width=True,
-                    height=600 if num_groups > 30 else None
+                    use_container_width=True
                 )
         
         if not volatility_data.empty:
@@ -3555,12 +3553,10 @@ def main():
                 ]
                 
                 st.dataframe(
-                    display_signals.style.format({
-                        'Z-Score': '{:.2f}',
-                        'BB Position (%)': '{:.1f}'
-                    }).background_gradient(subset=['Z-Score'], cmap='RdYlGn_r'),
-                    use_container_width=True,
-                    height=400
+                    display_signals[[group_by.title(), 'Z-Score', 'Signal']].style.format({
+                        'Z-Score': '{:.2f}'
+                    }),
+                    use_container_width=True
                 )
             else:
                 st.info("No significant mean reversion signals currently")
@@ -3637,7 +3633,7 @@ def main():
                         'HHI': '{:.0f}',
                         'Large Cap %': '{:.1f}%',
                         'Small Cap %': '{:.1f}%'
-                    }).background_gradient(subset=['HHI'], cmap='YlOrRd'),
+                    }),
                     use_container_width=True
                 )
         elif not enable_concentration:
@@ -3698,8 +3694,7 @@ def main():
                             'Momentum %': '{:.2f}%',
                             'Rel Strength %': '{:.2f}%'
                         }),
-                        use_container_width=True,
-                        height=300
+                        use_container_width=True
                     )
             
             with col2:
@@ -3715,8 +3710,7 @@ def main():
                             'Momentum %': '{:.2f}%',
                             'Rel Strength %': '{:.2f}%'
                         }),
-                        use_container_width=True,
-                        height=300
+                        use_container_width=True
                     )
         elif not enable_rotation:
             st.warning("Rotation analysis is disabled. Enable it in the sidebar.")
@@ -3779,7 +3773,7 @@ def main():
                 st.dataframe(
                     display_streaks.style.format({
                         'Win Rate %': '{:.1f}%'
-                    }).background_gradient(subset=['Win Rate %'], cmap='RdYlGn'),
+                    }),
                     use_container_width=True
                 )
         elif not enable_streaks:
