@@ -234,38 +234,40 @@ def calculate_percent_changes(daily_data, lookback_days, group_by):
     # Sort by date
     daily_data = daily_data.sort_values('fetch_date')
     
-    # Get unique dates sorted
+    # Get unique dates sorted (these are actual trading days only)
     unique_dates = sorted(daily_data['fetch_date'].unique())
     all_groups = daily_data[group_by].unique()
     
-    # We need at least 2 * lookback_days + 1 dates for both current and previous periods
-    min_required_dates = 2 * lookback_days + 1
+    # We need at least 2 * lookback_days dates for both current and previous periods
+    min_required_dates = 2 * lookback_days
     if len(unique_dates) < min_required_dates:
         # Adjust lookback if we don't have enough data
-        max_possible_lookback = (len(unique_dates) - 1) // 2
+        max_possible_lookback = len(unique_dates) // 2
         if max_possible_lookback < 1:
-            st.warning("Not enough dates for percent change calculation with previous period")
+            st.warning("Not enough trading days for percent change calculation with previous period")
             return pd.DataFrame()
         st.warning(f"Adjusted lookback period from {lookback_days} to {max_possible_lookback} days due to data availability")
         lookback_days = max_possible_lookback
     
-    # Calculate the date indices - FIXED: Correct indexing for 5-day periods
-    # For 5 days: we want days at indices -5, -4, -3, -2, -1 (last 5 days)
-    # Previous 5 days: indices -10, -9, -8, -7, -6
+    # Calculate the date ranges using actual trading days (not calendar days)
+    # Current period: the most recent lookback_days of trading
+    # For 3 days with data [Mon, Tue, Wed, Thu, Fri], current would be [Wed, Thu, Fri]
+    latest_date = unique_dates[-1]  # Most recent trading day
     
-    latest_date = unique_dates[-1]  # This should be Aug 22
+    # Current period starts lookback_days ago (counting only trading days)
+    # Index -lookback_days gives us the start of the current period
+    # For 3 days: unique_dates[-3] is 3 trading days before the end
+    current_start_idx = -lookback_days if lookback_days <= len(unique_dates) else 0
+    current_start_date = unique_dates[current_start_idx]
     
-    # Current period: last lookback_days of data
-    # For 5 days, this gets index -6 (which is 5 days before the last day, so Aug 18)
-    current_start_date = unique_dates[-lookback_days] if lookback_days <= len(unique_dates) else unique_dates[0]
+    # Previous period ends exactly where current period starts
+    # This is the trading day immediately before the current period
+    previous_end_idx = current_start_idx - 1 if current_start_idx - 1 >= -len(unique_dates) else 0
+    previous_end_date = unique_dates[previous_end_idx]
     
-    # Previous period ends one day before current period starts
-    # For 5 days, this gets index -6 (which would be Aug 15)
-    previous_end_date = unique_dates[-(lookback_days + 1)] if lookback_days + 1 <= len(unique_dates) else unique_dates[0]
-    
-    # Previous period starts lookback_days before it ends
-    # For 5 days, this gets index -10 (which would be Aug 11)
-    previous_start_date = unique_dates[-(2 * lookback_days)] if 2 * lookback_days <= len(unique_dates) else unique_dates[0]
+    # Previous period starts lookback_days trading days before it ends
+    previous_start_idx = previous_end_idx - lookback_days + 1 if previous_end_idx - lookback_days + 1 >= -len(unique_dates) else 0
+    previous_start_date = unique_dates[previous_start_idx]
     
     # Filter data for the relevant dates
     latest_data = daily_data[daily_data['fetch_date'] == latest_date]
@@ -675,7 +677,7 @@ def main():
         
         # Update layout
         fig_pct.update_layout(
-            title=f"Percent Change by {group_by.title()} - Comparing {percent_change_days}-Day Periods",
+            title=f"Valuation Percent Change by {group_by.title()} - Comparing {percent_change_days}-Day Periods",
             xaxis_title="Percent Change (%)",
             yaxis_title=group_by.title(),
             barmode='group',

@@ -104,6 +104,115 @@ def find_data_files():
 # 2. Data Processing Functions
 # ------------------------------
 @st.cache_data
+def calculate_momentum(daily_data, periods, group_by):
+    """Calculate momentum (rate of change) for multiple periods."""
+    
+    if 'market_cap' not in daily_data.columns:
+        return pd.DataFrame()
+    
+    # Sort by date
+    daily_data = daily_data.sort_values('fetch_date')
+    
+    # Get unique dates and groups
+    unique_dates = sorted(daily_data['fetch_date'].unique())
+    all_groups = daily_data[group_by].unique()
+    
+    results = []
+    
+    for group in all_groups:
+        group_data = daily_data[daily_data[group_by] == group].copy()
+        group_data = group_data.sort_values('fetch_date')
+        
+        # Get the latest date data
+        if group_data.empty:
+            continue
+            
+        latest_row = group_data.iloc[-1]
+        latest_date = latest_row['fetch_date']
+        latest_market_cap = latest_row['market_cap']
+        
+        momentum_data = {
+            group_by: group,
+            'date': latest_date,
+            'current_market_cap': latest_market_cap
+        }
+        
+        # Calculate momentum for each period
+        for period in periods:
+            # Find the market cap N days ago (using trading days, not calendar days)
+            if len(group_data) > period:
+                past_row = group_data.iloc[-(period + 1)]
+                past_market_cap = past_row['market_cap']
+                
+                if past_market_cap > 0:
+                    # Rate of Change (ROC) as percentage
+                    roc = ((latest_market_cap - past_market_cap) / past_market_cap) * 100
+                    momentum_data[f'momentum_{period}d'] = roc
+                    momentum_data[f'momentum_{period}d_abs'] = latest_market_cap - past_market_cap
+                else:
+                    momentum_data[f'momentum_{period}d'] = 0
+                    momentum_data[f'momentum_{period}d_abs'] = 0
+            else:
+                momentum_data[f'momentum_{period}d'] = None
+                momentum_data[f'momentum_{period}d_abs'] = None
+        
+        results.append(momentum_data)
+    
+    momentum_df = pd.DataFrame(results)
+    
+    # Calculate momentum strength (average of available periods)
+    momentum_cols = [col for col in momentum_df.columns if col.startswith('momentum_') and col.endswith('d')]
+    if momentum_cols:
+        momentum_df['avg_momentum'] = momentum_df[momentum_cols].mean(axis=1, skipna=True)
+        momentum_df['momentum_consistency'] = momentum_df[momentum_cols].std(axis=1, skipna=True)
+    
+    return momentum_df
+
+@st.cache_data
+def calculate_momentum_trends(daily_data, momentum_period, group_by, lookback_days):
+    """Calculate momentum trends over time for visualization."""
+    
+    if 'market_cap' not in daily_data.columns:
+        return pd.DataFrame()
+    
+    daily_data = daily_data.sort_values('fetch_date')
+    unique_dates = sorted(daily_data['fetch_date'].unique())
+    
+    # Only use the most recent lookback_days
+    if len(unique_dates) > lookback_days:
+        start_date = unique_dates[-lookback_days]
+        daily_data = daily_data[daily_data['fetch_date'] >= start_date]
+        unique_dates = sorted(daily_data['fetch_date'].unique())
+    
+    all_groups = daily_data[group_by].unique()
+    results = []
+    
+    for group in all_groups:
+        group_data = daily_data[daily_data[group_by] == group].copy()
+        group_data = group_data.sort_values('fetch_date')
+        
+        for i in range(len(group_data)):
+            current_row = group_data.iloc[i]
+            
+            # Need enough historical data to calculate momentum
+            if i >= momentum_period:
+                past_row = group_data.iloc[i - momentum_period]
+                current_cap = current_row['market_cap']
+                past_cap = past_row['market_cap']
+                
+                if past_cap > 0:
+                    momentum = ((current_cap - past_cap) / past_cap) * 100
+                    
+                    results.append({
+                        'date': current_row['fetch_date'],
+                        group_by: group,
+                        'momentum': momentum,
+                        'market_cap': current_cap
+                    })
+    
+    return pd.DataFrame(results)
+
+@st.cache_data
 def calculate_daily_changes(market_caps_df, sectors_df, group_by):
     """Calculate daily market cap changes by sector/industry."""
     
@@ -325,6 +434,166 @@ def calculate_percent_changes(daily_data, lookback_days, group_by):
 # ------------------------------
 # 3. Visualization Functions
 # ------------------------------
+def create_momentum_bar_chart(momentum_df, periods, group_by):
+    """Create grouped bar chart showing momentum across different periods."""
+    
+    if momentum_df.empty:
+        return None
+    
+    # Sort by average momentum
+    momentum_sorted = momentum_df.sort_values('avg_momentum', ascending=True)
+    
+    fig = go.Figure()
+    
+    # Define colors for different periods
+    colors = {
+        3: 'rgb(255, 127, 14)',     # Orange
+        5: 'rgb(99, 110, 250)',      # Blue
+        10: 'rgb(239, 85, 59)',      # Red-Orange
+        20: 'rgb(0, 204, 150)',      # Green
+        30: 'rgb(171, 99, 250)',     # Purple
+    }
+    
+    # Add a bar for each period
+    for period in sorted(periods):
+        col_name = f'momentum_{period}d'
+        if col_name in momentum_sorted.columns:
+            fig.add_trace(go.Bar(
+                name=f'{period}-Day',
+                y=momentum_sorted[group_by],
+                x=momentum_sorted[col_name],
+                orientation='h',
+                marker=dict(
+                    color=colors.get(period, 'rgb(150, 150, 150)'),
+                    line=dict(width=1, color='rgb(50, 50, 50)')
+                ),
+                text=momentum_sorted[col_name].apply(lambda x: f"{x:.1f}%" if pd.notna(x) else "N/A"),
+                textposition='outside',
+                hovertemplate='<b>%{y}</b><br>' + f'{period}-Day Momentum: %{{x:.2f}}%<extra></extra>'
+            ))
+    
+    fig.update_layout(
+        title=f"Multi-Period Momentum by {group_by.title()}",
+        xaxis_title="Rate of Change (%)",
+        yaxis_title=group_by.title(),
+        barmode='group',
+        height=max(800, len(momentum_sorted) * 25),
+        xaxis=dict(
+            showgrid=True,
+            gridwidth=1,
+            gridcolor='lightgray',
+            zeroline=True,
+            zerolinecolor='black',
+            zerolinewidth=2
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridwidth=1,
+            gridcolor='lightgray'
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        margin=dict(l=200, r=100, t=80, b=50),
+        hovermode='closest'
+    )
+    
+    return fig
+
+def create_momentum_trend_lines(momentum_trends, group_by, momentum_period):
+    """Create line chart showing momentum trends over time."""
+    
+    if momentum_trends.empty:
+        return None
+    
+    fig = go.Figure()
+    
+    unique_groups = sorted(momentum_trends[group_by].unique())
+    colors = px.colors.qualitative.Plotly
+    color_dict = {group: colors[i % len(colors)] for i, group in enumerate(unique_groups)}
+    
+    for group in unique_groups:
+        group_data = momentum_trends[momentum_trends[group_by] == group]
+        
+        fig.add_trace(go.Scatter(
+            x=group_data['date'],
+            y=group_data['momentum'],
+            mode='lines',
+            name=group,
+            line=dict(color=color_dict[group], width=2),
+            hovertemplate='<b>%{fullData.name}</b><br>Date: %{x}<br>Momentum: %{y:.2f}%<extra></extra>'
+        ))
+    
+    fig.update_layout(
+        title=f"{momentum_period}-Day Momentum Trends by {group_by.title()}",
+        xaxis_title="Date",
+        yaxis_title=f"{momentum_period}-Day Rate of Change (%)",
+        height=700,
+        hovermode='x unified',
+        showlegend=False,
+        xaxis=dict(showgrid=True, gridcolor='lightgray'),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor='lightgray',
+            zeroline=True,
+            zerolinecolor='black',
+            zerolinewidth=2
+        )
+    )
+    
+    return fig
+
+def create_momentum_heatmap(momentum_trends, group_by, momentum_period):
+    """Create heatmap of momentum over time."""
+    
+    if momentum_trends.empty:
+        return None
+    
+    # Create pivot table
+    momentum_trends['date_str'] = momentum_trends['date'].dt.strftime('%Y-%m-%d')
+    pivot_data = momentum_trends.pivot(
+        index='date_str',
+        columns=group_by,
+        values='momentum'
+    )
+    
+    # Sort dates (newest first)
+    dates = sorted(pivot_data.index, reverse=True)
+    pivot_data = pivot_data.loc[dates]
+    
+    # Normalize for better color scale (cap at +/- 20% for visualization)
+    vmax = min(20, pivot_data.abs().max().max())
+    
+    fig = go.Figure(data=go.Heatmap(
+        z=pivot_data.values,
+        x=pivot_data.columns,
+        y=pivot_data.index,
+        colorscale='RdYlGn',
+        zmid=0,
+        zmin=-vmax,
+        zmax=vmax,
+        hovertemplate='<b>%{y}</b><br>%{x}<br>Momentum: %{z:.2f}%<extra></extra>',
+        colorbar=dict(title="Momentum (%)")
+    ))
+    
+    fig.update_layout(
+        title=f"{momentum_period}-Day Momentum Heatmap by {group_by.title()}",
+        xaxis_title=group_by.title(),
+        yaxis_title="Date",
+        height=max(400, len(dates) * 20),
+        xaxis=dict(
+            side='top',
+            tickangle=45 if len(pivot_data.columns) > 15 else 0
+        ),
+        yaxis=dict(type='category')
+    )
+    
+    return fig
+
 def create_trend_line_chart(filtered_scores, group_by, score_start_date):
     """Create the main trend line chart."""
     
@@ -507,7 +776,7 @@ def main():
     missing_files = [f for f in ["stock_sectors.xlsx", "market_caps.xlsx"] if f not in files_found]
     if missing_files:
         st.error(f"❌ Missing required files: {missing_files}")
-        st.info("📁 Current directory contents:")
+        st.info("🔍 Current directory contents:")
         for item in os.listdir('.'):
             if item.endswith('.xlsx'):
                 st.info(f"  Found: {item}")
@@ -569,6 +838,30 @@ def main():
         help="Number of days to look back for percent change calculation"
     )
     
+    # Momentum settings
+    st.sidebar.subheader("🚀 Momentum Settings")
+    momentum_periods = st.sidebar.multiselect(
+        "Momentum periods (days)",
+        options=[3, 5, 10, 20, 30],
+        default=[5, 10, 20],
+        help="Select multiple periods to calculate momentum rate of change"
+    )
+    
+    momentum_trend_period = st.sidebar.selectbox(
+        "Momentum trend period",
+        options=[5, 10, 20],
+        index=0,
+        help="Period for momentum trend visualization"
+    )
+    
+    momentum_lookback = st.sidebar.slider(
+        "Momentum trend lookback (days)",
+        min_value=10,
+        max_value=min(max_days, 60),
+        value=30,
+        help="How many days to show in momentum trends"
+    )
+    
     # Process data
     with st.spinner("Processing data..."):
         try:
@@ -580,6 +873,19 @@ def main():
             
             # Calculate percent changes
             percent_changes = calculate_percent_changes(daily_changes, percent_change_days, group_by)
+            
+            # Calculate momentum if periods are selected
+            momentum_data = pd.DataFrame()
+            momentum_trends_data = pd.DataFrame()
+            if momentum_periods:
+                momentum_data = calculate_momentum(daily_changes, momentum_periods, group_by)
+                if momentum_trend_period:
+                    momentum_trends_data = calculate_momentum_trends(
+                        daily_changes, 
+                        momentum_trend_period, 
+                        group_by, 
+                        momentum_lookback
+                    )
             
             # Filter for display period
             filtered_scores = trend_scores[
@@ -767,6 +1073,99 @@ def main():
                 use_container_width=True
             )
     
+    # Momentum Analysis Section
+    if not momentum_data.empty and momentum_periods:
+        st.header("🚀 Momentum Analysis")
+        st.info("""
+        **Momentum** measures the rate of change in market capitalization over different time periods. 
+        Positive momentum indicates accelerating growth, while negative momentum indicates accelerating decline.
+        """)
+        
+        # Multi-period momentum comparison
+        st.subheader(f"📊 Multi-Period Momentum Comparison")
+        fig_momentum = create_momentum_bar_chart(momentum_data, momentum_periods, group_by)
+        if fig_momentum:
+            st.plotly_chart(fig_momentum, use_container_width=True)
+        
+        # Momentum statistics
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            avg_momentum = momentum_data['avg_momentum'].mean()
+            st.metric("Average Momentum", f"{avg_momentum:.2f}%")
+        
+        with col2:
+            positive_count = (momentum_data['avg_momentum'] > 0).sum()
+            total_count = len(momentum_data)
+            st.metric("Positive Momentum", f"{positive_count}/{total_count}", 
+                     f"{(positive_count/total_count*100):.1f}%")
+        
+        with col3:
+            # Find strongest momentum
+            if not momentum_data.empty:
+                strongest_idx = momentum_data['avg_momentum'].abs().idxmax()
+                strongest_group = momentum_data.loc[strongest_idx, group_by]
+                strongest_value = momentum_data.loc[strongest_idx, 'avg_momentum']
+                st.metric("Strongest", strongest_group, f"{strongest_value:.2f}%")
+        
+        with col4:
+            # Momentum consistency (lower is more consistent across periods)
+            avg_consistency = momentum_data['momentum_consistency'].mean()
+            st.metric("Avg Consistency (σ)", f"{avg_consistency:.2f}%")
+        
+        # Momentum trends over time
+        if not momentum_trends_data.empty:
+            st.subheader(f"📈 {momentum_trend_period}-Day Momentum Trends")
+            
+            # Line chart
+            fig_momentum_trends = create_momentum_trend_lines(
+                momentum_trends_data, 
+                group_by, 
+                momentum_trend_period
+            )
+            if fig_momentum_trends:
+                st.plotly_chart(fig_momentum_trends, use_container_width=True)
+            
+            # Heatmap
+            st.subheader(f"🔥 {momentum_trend_period}-Day Momentum Heatmap")
+            fig_momentum_heatmap = create_momentum_heatmap(
+                momentum_trends_data,
+                group_by,
+                momentum_trend_period
+            )
+            if fig_momentum_heatmap:
+                st.plotly_chart(fig_momentum_heatmap, use_container_width=True)
+        
+        # Momentum rankings table
+        if st.checkbox("Show momentum rankings"):
+            st.subheader("🏆 Momentum Rankings")
+            
+            # Prepare display dataframe
+            display_cols = [group_by] + [f'momentum_{p}d' for p in sorted(momentum_periods)] + ['avg_momentum', 'momentum_consistency']
+            momentum_display = momentum_data[display_cols].copy()
+            
+            # Rename columns
+            rename_dict = {f'momentum_{p}d': f'{p}d %' for p in momentum_periods}
+            rename_dict['avg_momentum'] = 'Avg %'
+            rename_dict['momentum_consistency'] = 'Consistency (σ)'
+            momentum_display = momentum_display.rename(columns=rename_dict)
+            
+            # Sort by average momentum
+            momentum_display = momentum_display.sort_values('Avg %', ascending=False)
+            
+            # Format percentages
+            pct_cols = [col for col in momentum_display.columns if col.endswith('%') or col == 'Consistency (σ)']
+            for col in pct_cols:
+                momentum_display[col] = momentum_display[col].round(2)
+            
+            # Display with styling
+            st.dataframe(
+                momentum_display.style.format({
+                    col: '{:.2f}%' for col in pct_cols
+                }).background_gradient(subset=['Avg %'], cmap='RdYlGn'),
+                use_container_width=True
+            )
+    
     # Heatmap
     st.header("🔥 Daily Direction Heatmap")
     fig_heatmap = create_heatmap(daily_changes, group_by, display_start_date)
@@ -790,6 +1189,10 @@ def main():
             filtered_scores.to_excel(writer, sheet_name='Trend_Scores', index=False)
             if not percent_changes.empty:
                 percent_changes.to_excel(writer, sheet_name='Percent_Changes', index=False)
+            if not momentum_data.empty:
+                momentum_data.to_excel(writer, sheet_name='Momentum', index=False)
+            if not momentum_trends_data.empty:
+                momentum_trends_data.to_excel(writer, sheet_name='Momentum_Trends', index=False)
             daily_changes.to_excel(writer, sheet_name='Daily_Changes', index=False)
         
         output.seek(0)
