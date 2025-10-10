@@ -376,6 +376,260 @@ def calculate_momentum_trends(daily_data, momentum_period, group_by, lookback_da
     return pd.DataFrame(results)
 
 @st.cache_data
+def calculate_mean_reversion(daily_data, group_by, lookback_days, zscore_window=20):
+    """Calculate mean reversion signals: Z-scores, Bollinger Bands, overbought/oversold."""
+    
+    if 'market_cap' not in daily_data.columns:
+        return pd.DataFrame(), pd.DataFrame()
+    
+    daily_data = daily_data.sort_values('fetch_date')
+    unique_dates = sorted(daily_data['fetch_date'].unique())
+    
+    # Filter to lookback period
+    if len(unique_dates) > lookback_days:
+        start_date = unique_dates[-lookback_days]
+        daily_data = daily_data[daily_data['fetch_date'] >= start_date]
+    
+    results = []
+    
+    for group in daily_data[group_by].unique():
+        group_data = daily_data[daily_data[group_by] == group].copy()
+        group_data = group_data.sort_values('fetch_date')
+        
+        # Calculate returns
+        group_data['return'] = group_data['market_cap'].pct_change() * 100
+        
+        # Calculate rolling mean and std for Z-score
+        group_data['rolling_mean'] = group_data['return'].rolling(window=zscore_window, min_periods=1).mean()
+        group_data['rolling_std'] = group_data['return'].rolling(window=zscore_window, min_periods=1).std()
+        
+        # Calculate Z-score
+        group_data['zscore'] = (group_data['return'] - group_data['rolling_mean']) / group_data['rolling_std'].replace(0, np.nan)
+        
+        # Calculate Bollinger Bands (on cumulative returns for better visualization)
+        group_data['cumulative_return'] = (1 + group_data['return'] / 100).cumprod() - 1
+        group_data['bb_middle'] = group_data['cumulative_return'].rolling(window=zscore_window, min_periods=1).mean()
+        group_data['bb_std'] = group_data['cumulative_return'].rolling(window=zscore_window, min_periods=1).std()
+        group_data['bb_upper'] = group_data['bb_middle'] + (2 * group_data['bb_std'])
+        group_data['bb_lower'] = group_data['bb_middle'] - (2 * group_data['bb_std'])
+        
+        # Calculate Bollinger Band position (0-100 scale)
+        band_width = group_data['bb_upper'] - group_data['bb_lower']
+        group_data['bb_position'] = ((group_data['cumulative_return'] - group_data['bb_lower']) / band_width.replace(0, np.nan)) * 100
+        
+        # Classify signals
+        group_data['signal'] = 'Neutral'
+        group_data.loc[group_data['zscore'] > 2, 'signal'] = 'Overbought'
+        group_data.loc[group_data['zscore'] < -2, 'signal'] = 'Oversold'
+        group_data.loc[(group_data['zscore'] > 1) & (group_data['zscore'] <= 2), 'signal'] = 'Extended Up'
+        group_data.loc[(group_data['zscore'] < -1) & (group_data['zscore'] >= -2), 'signal'] = 'Extended Down'
+        
+        group_data[group_by] = group
+        results.append(group_data[[
+            'fetch_date', group_by, 'return', 'zscore', 'cumulative_return',
+            'bb_upper', 'bb_middle', 'bb_lower', 'bb_position', 'signal', 'market_cap'
+        ]])
+    
+    all_data = pd.concat(results, ignore_index=True)
+    
+    # Get current signals (latest date)
+    latest_date = all_data['fetch_date'].max()
+    current_signals = all_data[all_data['fetch_date'] == latest_date].copy()
+    
+    return all_data, current_signals
+
+@st.cache_data
+def calculate_concentration(market_caps_df, sectors_df, group_by):
+    """Calculate market cap concentration metrics within each group."""
+    
+    # Merge with sector data
+    merged_df = pd.merge(
+        market_caps_df,
+        sectors_df[['symbol', 'sector', 'industry']],
+        on='symbol',
+        how='inner'
+    )
+    
+    # Get latest date
+    latest_date = merged_df['fetch_date'].max()
+    latest_data = merged_df[merged_df['fetch_date'] == latest_date].copy()
+    
+    concentration_results = []
+    
+    for group in latest_data[group_by].unique():
+        group_data = latest_data[latest_data[group_by] == group].copy()
+        group_data = group_data.sort_values('market_cap', ascending=False)
+        
+        total_market_cap = group_data['market_cap'].sum()
+        num_stocks = len(group_data)
+        
+        # Top 10% contribution
+        top_10pct_count = max(1, int(num_stocks * 0.1))
+        top_10pct_cap = group_data.head(top_10pct_count)['market_cap'].sum()
+        top_10pct_contribution = (top_10pct_cap / total_market_cap * 100) if total_market_cap > 0 else 0
+        
+        # Top stock dominance
+        top_stock_cap = group_data.iloc[0]['market_cap'] if len(group_data) > 0 else 0
+        top_stock_pct = (top_stock_cap / total_market_cap * 100) if total_market_cap > 0 else 0
+        top_stock_name = group_data.iloc[0]['symbol'] if len(group_data) > 0 else 'N/A'
+        
+        # Herfindahl Index (concentration measure)
+        group_data['market_share'] = group_data['market_cap'] / total_market_cap
+        herfindahl_index = (group_data['market_share'] ** 2).sum() * 10000  # Scaled to 0-10000
+        
+        # Small vs Large cap split (bottom 50% vs top 50% by market cap)
+        median_cap = group_data['market_cap'].median()
+        large_cap_data = group_data[group_data['market_cap'] >= median_cap]
+        small_cap_data = group_data[group_data['market_cap'] < median_cap]
+        
+        large_cap_total = large_cap_data['market_cap'].sum()
+        small_cap_total = small_cap_data['market_cap'].sum()
+        large_cap_contribution = (large_cap_total / total_market_cap * 100) if total_market_cap > 0 else 0
+        
+        concentration_results.append({
+            group_by: group,
+            'total_stocks': num_stocks,
+            'total_market_cap': total_market_cap,
+            'top_10pct_contribution': top_10pct_contribution,
+            'top_stock_name': top_stock_name,
+            'top_stock_pct': top_stock_pct,
+            'herfindahl_index': herfindahl_index,
+            'large_cap_contribution': large_cap_contribution,
+            'small_cap_contribution': 100 - large_cap_contribution,
+            'concentration_level': 'High' if herfindahl_index > 1800 else 'Medium' if herfindahl_index > 1000 else 'Low'
+        })
+    
+    return pd.DataFrame(concentration_results)
+
+@st.cache_data
+def calculate_rotation_stages(momentum_data, relative_strength_data, group_by):
+    """Classify industries into rotation stages based on momentum and relative strength."""
+    
+    if momentum_data.empty or relative_strength_data.empty:
+        return pd.DataFrame()
+    
+    # Get latest relative strength
+    latest_rs_date = relative_strength_data['fetch_date'].max()
+    latest_rs = relative_strength_data[relative_strength_data['fetch_date'] == latest_rs_date][[
+        group_by, 'cumulative_relative_strength'
+    ]].copy()
+    
+    # Merge momentum with relative strength
+    rotation_data = pd.merge(
+        momentum_data[[group_by, 'avg_momentum']],
+        latest_rs,
+        on=group_by,
+        how='inner'
+    )
+    
+    # Classify into quadrants
+    median_momentum = rotation_data['avg_momentum'].median()
+    median_rs = rotation_data['cumulative_relative_strength'].median()
+    
+    def classify_stage(row):
+        momentum = row['avg_momentum']
+        rs = row['cumulative_relative_strength']
+        
+        if momentum > median_momentum and rs > median_rs:
+            return 'Leading (Growth)'
+        elif momentum <= median_momentum and rs > median_rs:
+            return 'Weakening (Mature)'
+        elif momentum <= median_momentum and rs <= median_rs:
+            return 'Lagging (Decline)'
+        else:  # momentum > median_momentum and rs <= median_rs
+            return 'Improving (Early)'
+    
+    rotation_data['stage'] = rotation_data.apply(classify_stage, axis=1)
+    
+    # Classify as defensive vs cyclical based on characteristics
+    # Simple heuristic: negative momentum = defensive, positive = cyclical
+    rotation_data['type'] = rotation_data['avg_momentum'].apply(
+        lambda x: 'Cyclical' if x > 0 else 'Defensive'
+    )
+    
+    return rotation_data
+
+@st.cache_data
+def calculate_streaks(daily_changes, group_by, lookback_days):
+    """Calculate win/loss streaks and pattern metrics."""
+    
+    daily_changes = daily_changes.sort_values('fetch_date')
+    unique_dates = sorted(daily_changes['fetch_date'].unique())
+    
+    # Filter to lookback period
+    if len(unique_dates) > lookback_days:
+        start_date = unique_dates[-lookback_days]
+        daily_changes = daily_changes[daily_changes['fetch_date'] >= start_date]
+    
+    streak_results = []
+    
+    for group in daily_changes[group_by].unique():
+        group_data = daily_changes[daily_changes[group_by] == group].copy()
+        group_data = group_data.sort_values('fetch_date')
+        
+        # Calculate current streak
+        current_streak = 0
+        max_win_streak = 0
+        max_loss_streak = 0
+        temp_streak = 0
+        prev_direction = 0
+        
+        up_days = 0
+        down_days = 0
+        
+        for direction in group_data['direction']:
+            if direction == 1:
+                up_days += 1
+            elif direction == -1:
+                down_days += 1
+            
+            if direction == 0:
+                temp_streak = 0
+            elif direction == prev_direction and prev_direction != 0:
+                temp_streak += 1
+            else:
+                temp_streak = 1
+            
+            if direction != 0:
+                current_streak = temp_streak if direction == group_data['direction'].iloc[-1] else 0
+                
+                if direction == 1:
+                    max_win_streak = max(max_win_streak, temp_streak)
+                elif direction == -1:
+                    max_loss_streak = max(max_loss_streak, temp_streak)
+                
+                prev_direction = direction
+        
+        # Get current direction
+        current_direction = group_data['direction'].iloc[-1]
+        if current_direction == 1:
+            current_streak_type = 'Win'
+        elif current_direction == -1:
+            current_streak_type = 'Loss'
+            current_streak = -current_streak
+        else:
+            current_streak_type = 'Neutral'
+            current_streak = 0
+        
+        # Win rate
+        total_days = up_days + down_days
+        win_rate = (up_days / total_days * 100) if total_days > 0 else 0
+        
+        streak_results.append({
+            group_by: group,
+            'current_streak': current_streak,
+            'current_streak_type': current_streak_type,
+            'max_win_streak': max_win_streak,
+            'max_loss_streak': max_loss_streak,
+            'up_days': up_days,
+            'down_days': down_days,
+            'win_rate': win_rate,
+            'total_days': total_days
+        })
+    
+    return pd.DataFrame(streak_results)
+
+@st.cache_data
 def calculate_daily_changes(market_caps_df, sectors_df, group_by):
     """Calculate daily market cap changes by sector/industry."""
     
@@ -715,8 +969,225 @@ def create_breadth_chart(breadth_data, group_by):
             y=0.99,
             xanchor="right",
             x=0.99,
-            bgcolor="rgba(255, 255, 255, 0.8)"
+            bgcolor="rgba(255, 255, 255, 0.95)",
+            bordercolor="black",
+            borderwidth=2,
+            font=dict(size=12, color="black")
         )
+    )
+    
+    return fig
+
+def create_zscore_chart(mean_reversion_data, group_by):
+    """Create chart showing Z-scores over time."""
+    
+    if mean_reversion_data.empty:
+        return None
+    
+    unique_groups = sorted(mean_reversion_data[group_by].unique())
+    num_groups = len(unique_groups)
+    
+    fig = go.Figure()
+    
+    if num_groups > 20:
+        # Aggregate statistics
+        agg_stats = mean_reversion_data.groupby('fetch_date')['zscore'].agg([
+            ('mean', 'mean'),
+            ('median', 'median'),
+            ('q75', lambda x: x.quantile(0.75)),
+            ('q25', lambda x: x.quantile(0.25))
+        ]).reset_index()
+        
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'], y=agg_stats['q75'], mode='lines',
+            name='75th Percentile', line=dict(color='rgba(99, 110, 250, 0.4)', width=1),
+            showlegend=True
+        ))
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'], y=agg_stats['q25'], mode='lines',
+            name='25th Percentile', line=dict(color='rgba(99, 110, 250, 0.4)', width=1),
+            fill='tonexty', fillcolor='rgba(99, 110, 250, 0.2)', showlegend=True
+        ))
+        fig.add_trace(go.Scatter(
+            x=agg_stats['fetch_date'], y=agg_stats['median'], mode='lines',
+            name='Median Z-Score', line=dict(color='rgb(99, 110, 250)', width=3), showlegend=True
+        ))
+    else:
+        colors = px.colors.qualitative.Plotly
+        for i, group in enumerate(unique_groups):
+            group_data = mean_reversion_data[mean_reversion_data[group_by] == group]
+            fig.add_trace(go.Scatter(
+                x=group_data['fetch_date'], y=group_data['zscore'],
+                mode='lines', name=group, line=dict(color=colors[i % len(colors)], width=2)
+            ))
+    
+    # Add reference lines
+    fig.add_hline(y=2, line_dash="dash", line_color="red", annotation_text="Overbought (+2σ)")
+    fig.add_hline(y=-2, line_dash="dash", line_color="green", annotation_text="Oversold (-2σ)")
+    fig.add_hline(y=0, line_dash="dot", line_color="gray")
+    
+    fig.update_layout(
+        title="Z-Score Analysis (Mean Reversion Signals)",
+        xaxis_title="Date", yaxis_title="Z-Score (Standard Deviations)",
+        height=600, hovermode='x unified',
+        showlegend=num_groups > 20,
+        legend=dict(
+            bgcolor="rgba(255, 255, 255, 0.95)", bordercolor="black", borderwidth=2,
+            font=dict(size=12, color="black")
+        ) if num_groups > 20 else None
+    )
+    
+    return fig
+
+def create_concentration_chart(concentration_data, group_by):
+    """Create chart showing market cap concentration."""
+    
+    if concentration_data.empty:
+        return None
+    
+    # Sort by concentration
+    sorted_data = concentration_data.sort_values('herfindahl_index', ascending=True)
+    
+    # Color by concentration level
+    color_map = {'High': 'rgb(239, 85, 59)', 'Medium': 'rgb(255, 193, 7)', 'Low': 'rgb(0, 204, 150)'}
+    colors = [color_map[level] for level in sorted_data['concentration_level']]
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Bar(
+        y=sorted_data[group_by],
+        x=sorted_data['top_10pct_contribution'],
+        orientation='h',
+        name='Top 10% Contribution',
+        marker=dict(color=colors, line=dict(width=1, color='rgb(50, 50, 50)')),
+        text=sorted_data['top_10pct_contribution'].apply(lambda x: f"{x:.1f}%"),
+        textposition='outside',
+        hovertemplate='<b>%{y}</b><br>Top 10% Contribution: %{x:.1f}%<br>Concentration: %{customdata}<extra></extra>',
+        customdata=sorted_data['concentration_level']
+    ))
+    
+    fig.update_layout(
+        title=f"Market Cap Concentration by {group_by.title()}",
+        xaxis_title="% of Market Cap from Top 10% of Stocks",
+        yaxis_title=group_by.title(),
+        height=max(600, len(sorted_data) * 20),
+        margin=dict(l=200, r=100)
+    )
+    
+    return fig
+
+def create_rotation_matrix(rotation_data, group_by):
+    """Create rotation stage matrix visualization."""
+    
+    if rotation_data.empty:
+        return None
+    
+    fig = go.Figure()
+    
+    # Define stage colors
+    stage_colors = {
+        'Leading (Growth)': 'rgb(0, 204, 150)',
+        'Weakening (Mature)': 'rgb(255, 193, 7)',
+        'Lagging (Decline)': 'rgb(239, 85, 59)',
+        'Improving (Early)': 'rgb(99, 110, 250)'
+    }
+    
+    # Create scatter plot
+    for stage in rotation_data['stage'].unique():
+        stage_data = rotation_data[rotation_data['stage'] == stage]
+        
+        fig.add_trace(go.Scatter(
+            x=stage_data['cumulative_relative_strength'],
+            y=stage_data['avg_momentum'],
+            mode='markers+text',
+            name=stage,
+            marker=dict(
+                size=15,
+                color=stage_colors.get(stage, 'gray'),
+                line=dict(width=2, color='white')
+            ),
+            text=stage_data[group_by] if len(rotation_data) <= 30 else '',
+            textposition='top center',
+            textfont=dict(size=9),
+            hovertemplate='<b>%{customdata}</b><br>Stage: ' + stage + '<br>Rel Strength: %{x:.2f}%<br>Momentum: %{y:.2f}%<extra></extra>',
+            customdata=stage_data[group_by]
+        ))
+    
+    # Add quadrant lines
+    median_momentum = rotation_data['avg_momentum'].median()
+    median_rs = rotation_data['cumulative_relative_strength'].median()
+    
+    fig.add_hline(y=median_momentum, line_dash="dash", line_color="gray")
+    fig.add_vline(x=median_rs, line_dash="dash", line_color="gray")
+    
+    # Add quadrant labels
+    fig.add_annotation(x=rotation_data['cumulative_relative_strength'].max() * 0.8, 
+                      y=rotation_data['avg_momentum'].max() * 0.9,
+                      text="<b>LEADING</b><br>(Growth)", showarrow=False, 
+                      font=dict(size=14, color="green"))
+    fig.add_annotation(x=rotation_data['cumulative_relative_strength'].max() * 0.8,
+                      y=rotation_data['avg_momentum'].min() * 0.9,
+                      text="<b>WEAKENING</b><br>(Mature)", showarrow=False,
+                      font=dict(size=14, color="orange"))
+    fig.add_annotation(x=rotation_data['cumulative_relative_strength'].min() * 0.8,
+                      y=rotation_data['avg_momentum'].min() * 0.9,
+                      text="<b>LAGGING</b><br>(Decline)", showarrow=False,
+                      font=dict(size=14, color="red"))
+    fig.add_annotation(x=rotation_data['cumulative_relative_strength'].min() * 0.8,
+                      y=rotation_data['avg_momentum'].max() * 0.9,
+                      text="<b>IMPROVING</b><br>(Early)", showarrow=False,
+                      font=dict(size=14, color="blue"))
+    
+    fig.update_layout(
+        title="Sector Rotation Matrix",
+        xaxis_title="Relative Strength vs Market (%)",
+        yaxis_title="Average Momentum (%)",
+        height=700,
+        showlegend=True,
+        legend=dict(
+            bgcolor="rgba(255, 255, 255, 0.95)",
+            bordercolor="black",
+            borderwidth=2,
+            font=dict(size=11, color="black")
+        )
+    )
+    
+    return fig
+
+def create_streaks_chart(streaks_data, group_by):
+    """Create chart showing current streaks."""
+    
+    if streaks_data.empty:
+        return None
+    
+    # Sort by current streak
+    sorted_data = streaks_data.sort_values('current_streak', ascending=True)
+    
+    # Color by streak type
+    colors = ['rgb(0, 204, 150)' if x > 0 else 'rgb(239, 85, 59)' if x < 0 else 'gray' 
+              for x in sorted_data['current_streak']]
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Bar(
+        y=sorted_data[group_by],
+        x=sorted_data['current_streak'],
+        orientation='h',
+        marker=dict(color=colors, line=dict(width=1, color='rgb(50, 50, 50)')),
+        text=sorted_data.apply(lambda row: f"{abs(row['current_streak'])} {row['current_streak_type']}", axis=1),
+        textposition='outside',
+        hovertemplate='<b>%{y}</b><br>Current Streak: %{x}<br>Win Rate: %{customdata:.1f}%<extra></extra>',
+        customdata=sorted_data['win_rate']
+    ))
+    
+    fig.add_vline(x=0, line_dash="solid", line_color="black", line_width=2)
+    
+    fig.update_layout(
+        title=f"Current Streaks by {group_by.title()}",
+        xaxis_title="Current Streak (Consecutive Days)",
+        yaxis_title=group_by.title(),
+        height=max(600, len(sorted_data) * 20),
+        margin=dict(l=200, r=100)
     )
     
     return fig
@@ -1887,7 +2358,10 @@ def create_trend_line_chart(filtered_scores, group_by, score_start_date):
             y=0.99,
             xanchor="right",
             x=0.99,
-            bgcolor="rgba(255, 255, 255, 0.8)"
+            bgcolor="rgba(255, 255, 255, 0.95)",
+            bordercolor="black",
+            borderwidth=2,
+            font=dict(size=12, color="black")
         ) if show_legend else None
     )
     
@@ -2087,6 +2561,46 @@ def main():
     # Advanced analysis settings
     st.sidebar.subheader("📈 Advanced Analysis")
     
+    enable_mean_reversion = st.sidebar.checkbox(
+        "Enable Mean Reversion Analysis",
+        value=True,
+        help="Calculate Z-scores and Bollinger Bands for mean reversion signals"
+    )
+    
+    zscore_window = st.sidebar.slider(
+        "Z-score window (days)",
+        min_value=10,
+        max_value=30,
+        value=20,
+        help="Rolling window for Z-score calculation"
+    ) if enable_mean_reversion else 20
+    
+    enable_concentration = st.sidebar.checkbox(
+        "Enable Concentration Analysis",
+        value=True,
+        help="Analyze market cap concentration within industries"
+    )
+    
+    enable_rotation = st.sidebar.checkbox(
+        "Enable Rotation Analysis",
+        value=True,
+        help="Classify industries into lifecycle stages"
+    )
+    
+    enable_streaks = st.sidebar.checkbox(
+        "Enable Streak Analysis",
+        value=True,
+        help="Track win/loss streaks and patterns"
+    )
+    
+    streaks_lookback = st.sidebar.slider(
+        "Streak lookback (days)",
+        min_value=20,
+        max_value=90,
+        value=60,
+        help="How many days to analyze for streak patterns"
+    )
+    
     breadth_lookback = st.sidebar.slider(
         "Breadth lookback (days)",
         min_value=10,
@@ -2167,6 +2681,44 @@ def main():
                 volatility_window
             )
             
+            # Calculate mean reversion signals
+            mean_reversion_data = pd.DataFrame()
+            current_signals = pd.DataFrame()
+            if enable_mean_reversion:
+                mean_reversion_data, current_signals = calculate_mean_reversion(
+                    daily_changes,
+                    group_by,
+                    breadth_lookback,
+                    zscore_window
+                )
+            
+            # Calculate concentration
+            concentration_data = pd.DataFrame()
+            if enable_concentration:
+                concentration_data = calculate_concentration(
+                    market_caps_df,
+                    sectors_df,
+                    group_by
+                )
+            
+            # Calculate rotation stages
+            rotation_data = pd.DataFrame()
+            if enable_rotation and not momentum_data.empty and not relative_strength_data.empty:
+                rotation_data = calculate_rotation_stages(
+                    momentum_data,
+                    relative_strength_data,
+                    group_by
+                )
+            
+            # Calculate streaks
+            streaks_data = pd.DataFrame()
+            if enable_streaks:
+                streaks_data = calculate_streaks(
+                    daily_changes,
+                    group_by,
+                    streaks_lookback
+                )
+            
             # Filter for display period
             filtered_scores = trend_scores[
                 trend_scores['date'] >= pd.Timestamp(display_start_date)
@@ -2190,13 +2742,17 @@ def main():
         st.metric(f"Total {group_by.title()}s", f"{len(sectors_df[group_by].unique())}")
     
     # Create tabs for different analyses
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
         "📈 Trend Scores",
         "🚀 Momentum",
-        "📊 Breadth Analysis", 
+        "📊 Breadth", 
         "🎯 Relative Strength",
-        "⚠️ Risk Analysis",
-        "🔥 Heatmaps"
+        "⚠️ Risk",
+        "🎲 Mean Reversion",
+        "🏢 Concentration",
+        "🔄 Rotation",
+        "🔥 Streaks",
+        "🗺️ Heatmaps"
     ])
     
     # Tab 1: Trend Scores
@@ -2290,7 +2846,11 @@ def main():
                             yanchor="top",
                             y=0.99,
                             xanchor="left",
-                            x=0.01
+                            x=0.01,
+                            bgcolor="rgba(255, 255, 255, 0.95)",
+                            bordercolor="black",
+                            borderwidth=2,
+                            font=dict(size=11, color="black")
                         )
                     )
                     
@@ -2516,7 +3076,11 @@ def main():
                                 yanchor="top",
                                 y=0.99,
                                 xanchor="left",
-                                x=0.01
+                                x=0.01,
+                                bgcolor="rgba(255, 255, 255, 0.95)",
+                                bordercolor="black",
+                                borderwidth=2,
+                                font=dict(size=11, color="black")
                             )
                         )
                         
@@ -2785,7 +3349,11 @@ def main():
                             yanchor="top",
                             y=0.99,
                             xanchor="left",
-                            x=0.01
+                            x=0.01,
+                            bgcolor="rgba(255, 255, 255, 0.95)",
+                            bordercolor="black",
+                            borderwidth=2,
+                            font=dict(size=11, color="black")
                         )
                     )
                     
@@ -2935,8 +3503,290 @@ def main():
                     
                     st.plotly_chart(fig_selected_dd, use_container_width=True)
     
-    # Tab 6: Heatmaps
+    # Tab 6: Mean Reversion
     with tab6:
+        st.header("🎲 Mean Reversion Analysis")
+        st.info("""
+        **Mean Reversion** identifies industries that have moved too far from their average, presenting potential reversal opportunities.
+        Z-scores > 2 = Overbought, Z-scores < -2 = Oversold.
+        """)
+        
+        if not current_signals.empty and enable_mean_reversion:
+            # Signal summary
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                overbought = (current_signals['signal'] == 'Overbought').sum()
+                st.metric("Overbought", overbought, help="Z-score > 2")
+            
+            with col2:
+                oversold = (current_signals['signal'] == 'Oversold').sum()
+                st.metric("Oversold", oversold, help="Z-score < -2")
+            
+            with col3:
+                extreme_zscore = current_signals['zscore'].abs().idxmax()
+                extreme_group = current_signals.loc[extreme_zscore, group_by]
+                extreme_value = current_signals.loc[extreme_zscore, 'zscore']
+                st.metric("Most Extreme", extreme_group, f"{extreme_value:.2f}σ")
+            
+            with col4:
+                avg_abs_zscore = current_signals['zscore'].abs().mean()
+                st.metric("Avg |Z-Score|", f"{avg_abs_zscore:.2f}σ")
+            
+            # Current signals table
+            st.subheader("📋 Current Mean Reversion Signals")
+            
+            # Filter to show only interesting signals
+            interesting_signals = current_signals[
+                (current_signals['zscore'].abs() > 1.5) | 
+                (current_signals['signal'] != 'Neutral')
+            ].copy()
+            
+            if not interesting_signals.empty:
+                display_signals = interesting_signals[[
+                    group_by, 'zscore', 'bb_position', 'signal'
+                ]].sort_values('zscore', ascending=False)
+                
+                display_signals.columns = [
+                    group_by.title(),
+                    'Z-Score',
+                    'BB Position (%)',
+                    'Signal'
+                ]
+                
+                st.dataframe(
+                    display_signals.style.format({
+                        'Z-Score': '{:.2f}',
+                        'BB Position (%)': '{:.1f}'
+                    }).background_gradient(subset=['Z-Score'], cmap='RdYlGn_r'),
+                    use_container_width=True,
+                    height=400
+                )
+            else:
+                st.info("No significant mean reversion signals currently")
+            
+            # Z-score trends
+            if not mean_reversion_data.empty:
+                st.subheader("📈 Z-Score Trends")
+                num_groups = len(mean_reversion_data[group_by].unique())
+                if num_groups > 20:
+                    st.caption(f"Showing aggregate statistics across {num_groups} {group_by}s")
+                
+                fig_zscore = create_zscore_chart(mean_reversion_data, group_by)
+                if fig_zscore:
+                    st.plotly_chart(fig_zscore, use_container_width=True)
+        elif not enable_mean_reversion:
+            st.warning("Mean reversion analysis is disabled. Enable it in the sidebar.")
+    
+    # Tab 7: Concentration
+    with tab7:
+        st.header("🏢 Market Cap Concentration Analysis")
+        st.info("""
+        **Concentration** shows how market cap is distributed within each industry. 
+        High concentration = dominated by few stocks. Low concentration = more evenly distributed.
+        """)
+        
+        if not concentration_data.empty and enable_concentration:
+            # Summary stats
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                avg_top10 = concentration_data['top_10pct_contribution'].mean()
+                st.metric("Avg Top 10% Contribution", f"{avg_top10:.1f}%")
+            
+            with col2:
+                high_concentration = (concentration_data['concentration_level'] == 'High').sum()
+                total = len(concentration_data)
+                st.metric("High Concentration", f"{high_concentration}/{total}")
+            
+            with col3:
+                most_concentrated_idx = concentration_data['herfindahl_index'].idxmax()
+                most_concentrated = concentration_data.loc[most_concentrated_idx, group_by]
+                most_concentrated_hhi = concentration_data.loc[most_concentrated_idx, 'herfindahl_index']
+                st.metric("Most Concentrated", most_concentrated, f"HHI: {most_concentrated_hhi:.0f}")
+            
+            with col4:
+                avg_large_cap = concentration_data['large_cap_contribution'].mean()
+                st.metric("Avg Large Cap %", f"{avg_large_cap:.1f}%")
+            
+            # Concentration chart
+            st.subheader("📊 Top 10% Market Cap Contribution")
+            fig_concentration = create_concentration_chart(concentration_data, group_by)
+            if fig_concentration:
+                st.plotly_chart(fig_concentration, use_container_width=True)
+            
+            # Detailed table
+            if st.checkbox("Show detailed concentration data"):
+                st.subheader("📋 Concentration Metrics")
+                
+                display_conc = concentration_data[[
+                    group_by, 'total_stocks', 'top_10pct_contribution',
+                    'top_stock_pct', 'herfindahl_index', 'concentration_level',
+                    'large_cap_contribution', 'small_cap_contribution'
+                ]].sort_values('herfindahl_index', ascending=False)
+                
+                display_conc.columns = [
+                    group_by.title(), '# Stocks', 'Top 10% %', 'Top Stock %',
+                    'HHI', 'Level', 'Large Cap %', 'Small Cap %'
+                ]
+                
+                st.dataframe(
+                    display_conc.style.format({
+                        'Top 10% %': '{:.1f}%',
+                        'Top Stock %': '{:.1f}%',
+                        'HHI': '{:.0f}',
+                        'Large Cap %': '{:.1f}%',
+                        'Small Cap %': '{:.1f}%'
+                    }).background_gradient(subset=['HHI'], cmap='YlOrRd'),
+                    use_container_width=True
+                )
+        elif not enable_concentration:
+            st.warning("Concentration analysis is disabled. Enable it in the sidebar.")
+    
+    # Tab 8: Rotation
+    with tab8:
+        st.header("🔄 Sector Rotation Analysis")
+        st.info("""
+        **Rotation Analysis** classifies industries into lifecycle stages based on momentum and relative strength:
+        - **Leading (Growth)**: High momentum + Outperforming → Strong uptrend
+        - **Weakening (Mature)**: Low momentum + Outperforming → Topping out
+        - **Lagging (Decline)**: Low momentum + Underperforming → Downtrend
+        - **Improving (Early)**: High momentum + Underperforming → Early reversal
+        """)
+        
+        if not rotation_data.empty and enable_rotation:
+            # Stage distribution
+            stage_counts = rotation_data['stage'].value_counts()
+            
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                leading = stage_counts.get('Leading (Growth)', 0)
+                st.metric("Leading (Growth)", leading)
+            
+            with col2:
+                weakening = stage_counts.get('Weakening (Mature)', 0)
+                st.metric("Weakening (Mature)", weakening)
+            
+            with col3:
+                lagging = stage_counts.get('Lagging (Decline)', 0)
+                st.metric("Lagging (Decline)", lagging)
+            
+            with col4:
+                improving = stage_counts.get('Improving (Early)', 0)
+                st.metric("Improving (Early)", improving)
+            
+            # Rotation matrix
+            st.subheader("📊 Rotation Matrix")
+            fig_rotation = create_rotation_matrix(rotation_data, group_by)
+            if fig_rotation:
+                st.plotly_chart(fig_rotation, use_container_width=True)
+            
+            # Stage breakdown tables
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.subheader("🌟 Leaders & Improvers")
+                leaders = rotation_data[rotation_data['stage'].isin(['Leading (Growth)', 'Improving (Early)'])]
+                if not leaders.empty:
+                    leaders_display = leaders[[group_by, 'stage', 'avg_momentum', 'cumulative_relative_strength']].sort_values(
+                        'cumulative_relative_strength', ascending=False
+                    )
+                    leaders_display.columns = [group_by.title(), 'Stage', 'Momentum %', 'Rel Strength %']
+                    st.dataframe(
+                        leaders_display.style.format({
+                            'Momentum %': '{:.2f}%',
+                            'Rel Strength %': '{:.2f}%'
+                        }),
+                        use_container_width=True,
+                        height=300
+                    )
+            
+            with col2:
+                st.subheader("⚠️ Weakening & Laggards")
+                laggards = rotation_data[rotation_data['stage'].isin(['Weakening (Mature)', 'Lagging (Decline)'])]
+                if not laggards.empty:
+                    laggards_display = laggards[[group_by, 'stage', 'avg_momentum', 'cumulative_relative_strength']].sort_values(
+                        'cumulative_relative_strength', ascending=True
+                    )
+                    laggards_display.columns = [group_by.title(), 'Stage', 'Momentum %', 'Rel Strength %']
+                    st.dataframe(
+                        laggards_display.style.format({
+                            'Momentum %': '{:.2f}%',
+                            'Rel Strength %': '{:.2f}%'
+                        }),
+                        use_container_width=True,
+                        height=300
+                    )
+        elif not enable_rotation:
+            st.warning("Rotation analysis is disabled. Enable it in the sidebar.")
+        else:
+            st.warning("Rotation analysis requires both momentum and relative strength data.")
+    
+    # Tab 9: Streaks
+    with tab9:
+        st.header("🔥 Streak & Pattern Analysis")
+        st.info("""
+        **Streaks** track consecutive winning or losing days. 
+        Long win streaks may indicate strong trends. Long loss streaks may indicate oversold conditions.
+        """)
+        
+        if not streaks_data.empty and enable_streaks:
+            # Summary stats
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                win_streaks = (streaks_data['current_streak'] > 0).sum()
+                total = len(streaks_data)
+                st.metric("Currently Winning", f"{win_streaks}/{total}")
+            
+            with col2:
+                longest_win_idx = streaks_data['max_win_streak'].idxmax()
+                longest_win_group = streaks_data.loc[longest_win_idx, group_by]
+                longest_win = streaks_data.loc[longest_win_idx, 'max_win_streak']
+                st.metric("Longest Win Streak", f"{longest_win} days", longest_win_group)
+            
+            with col3:
+                longest_loss_idx = streaks_data['max_loss_streak'].idxmax()
+                longest_loss_group = streaks_data.loc[longest_loss_idx, group_by]
+                longest_loss = streaks_data.loc[longest_loss_idx, 'max_loss_streak']
+                st.metric("Longest Loss Streak", f"{longest_loss} days", longest_loss_group)
+            
+            with col4:
+                avg_win_rate = streaks_data['win_rate'].mean()
+                st.metric("Avg Win Rate", f"{avg_win_rate:.1f}%")
+            
+            # Current streaks chart
+            st.subheader("📊 Current Streaks")
+            fig_streaks = create_streaks_chart(streaks_data, group_by)
+            if fig_streaks:
+                st.plotly_chart(fig_streaks, use_container_width=True)
+            
+            # Detailed streaks table
+            if st.checkbox("Show detailed streak data"):
+                st.subheader("📋 Streak Details")
+                
+                display_streaks = streaks_data[[
+                    group_by, 'current_streak', 'current_streak_type',
+                    'max_win_streak', 'max_loss_streak', 'win_rate'
+                ]].sort_values('current_streak', ascending=False)
+                
+                display_streaks.columns = [
+                    group_by.title(), 'Current Streak', 'Type',
+                    'Max Win', 'Max Loss', 'Win Rate %'
+                ]
+                
+                st.dataframe(
+                    display_streaks.style.format({
+                        'Win Rate %': '{:.1f}%'
+                    }).background_gradient(subset=['Win Rate %'], cmap='RdYlGn'),
+                    use_container_width=True
+                )
+        elif not enable_streaks:
+            st.warning("Streak analysis is disabled. Enable it in the sidebar.")
+    
+    # Tab 10: Heatmaps (formerly Tab 6)
+    with tab10:
         st.header("🔥 Daily Direction Heatmap")
         fig_heatmap = create_heatmap(daily_changes, group_by, display_start_date)
         if fig_heatmap:
@@ -2971,6 +3821,14 @@ def main():
                 volatility_data.to_excel(writer, sheet_name='Volatility_Drawdown', index=False)
             if not current_risk_metrics.empty:
                 current_risk_metrics.to_excel(writer, sheet_name='Current_Risk_Metrics', index=False)
+            if not current_signals.empty:
+                current_signals.to_excel(writer, sheet_name='Mean_Reversion_Signals', index=False)
+            if not concentration_data.empty:
+                concentration_data.to_excel(writer, sheet_name='Concentration', index=False)
+            if not rotation_data.empty:
+                rotation_data.to_excel(writer, sheet_name='Rotation_Stages', index=False)
+            if not streaks_data.empty:
+                streaks_data.to_excel(writer, sheet_name='Streaks', index=False)
             daily_changes.to_excel(writer, sheet_name='Daily_Changes', index=False)
         
         output.seek(0)
