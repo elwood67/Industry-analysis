@@ -11,7 +11,7 @@ from collections import defaultdict
 
 # Set page configuration to wide layout
 st.set_page_config(layout="wide", page_title="Market Analysis Suite", page_icon="📊")
-st.title("📊 Complete Market Analysis Suite")
+st.title("📊 Complete Market Valuation Analysis Suite")
 
 # ------------------------------
 # 1. Data Loading Functions
