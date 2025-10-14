@@ -2758,7 +2758,7 @@ def main():
         st.metric(f"Total {group_by.title()}s", f"{len(sectors_df[group_by].unique())}")
     
     # Create tabs for different analyses
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs([
         "📈 Trend Scores",
         "🚀 Momentum",
         "📊 Breadth", 
@@ -2768,7 +2768,8 @@ def main():
         "🏢 Concentration",
         "🔄 Rotation",
         "🔥 Streaks",
-        "🗺️ Heatmaps"
+        "🗺️ Heatmaps",
+        "📖 User Guide"  # ← NEW TAB!
     ])
     
     # Tab 1: Trend Scores
@@ -3814,6 +3815,283 @@ def main():
             filtered_scores.sort_values(['date', group_by]),
             use_container_width=True
         )
+
+    # Tab 11: User Guide
+    with tab11:
+        st.header("📖 Complete User Guide")
+        
+        guide_text = """
+# Market Valuation Analysis Suite - User Guide
+
+## Overview
+This application analyzes daily market capitalization changes across ~5400 stocks to identify trends, momentum shifts, and market dynamics at the sector and industry level. By tracking valuation changes rather than just price movements, it captures the full picture including share buybacks, dilution, and other corporate actions.
+
+---
+
+## 📈 Tab 1: Trend Scores
+
+### What It Does
+Tracks the cumulative "health" of each sector/industry by scoring each day as +1 (market cap increased) or -1 (market cap decreased). Think of it as a running tally of good days vs bad days.
+
+### What The Charts Tell You
+- **Trend Line Chart**: Shows momentum direction over time
+  - Rising lines = sector gaining strength
+  - Falling lines = sector weakening
+  - Flat lines = sector consolidating
+- **Current Scores Bar Chart**: Snapshot of which sectors are strongest/weakest right now
+- **Percent Change Comparison**: Shows current period performance vs previous period
+  - Blue bars (current) beating gray bars (previous) = accelerating growth
+  - Helps identify momentum shifts before they become obvious
+
+### Key Insights
+- High positive scores indicate sustained buying pressure
+- Scores near zero suggest indecision or rotation
+- Diverging scores between sectors reveal market rotation patterns
+
+---
+
+## 🚀 Tab 2: Momentum Analysis
+
+### What It Does
+Measures the rate of change in market cap over multiple time periods (3, 5, 10, 20, 30 days). It's like checking both speed AND acceleration of market movements.
+
+### What The Charts Tell You
+- **Multi-Period Bar Chart**: Compares short vs long-term momentum
+  - All bars positive = strong sustained momentum
+  - Mixed positive/negative = choppy or turning conditions
+  - Shorter periods stronger than longer = acceleration beginning
+- **Momentum Trend Lines**: Shows how momentum evolves over time
+  - Crossing above zero = bullish momentum shift
+  - Crossing below zero = bearish momentum shift
+- **Momentum Heatmap**: Bird's-eye view of momentum across all sectors
+  - Green = positive momentum, Red = negative momentum
+  - Patterns reveal sector rotation
+
+### Key Insights
+- Momentum often leads price - changes here predict future performance
+- Consistency across timeframes suggests trend strength
+- Divergences between timeframes warn of potential reversals
+
+---
+
+## 📊 Tab 3: Breadth Analysis
+
+### What It Does
+Measures market participation - what percentage of stocks in each sector are actually going up. A sector can rise even if most stocks in it are falling (if a few giants carry it).
+
+### What The Charts Tell You
+- **Breadth Trends**: Shows participation rate over time
+  - Above 50% = broad participation (healthy)
+  - Below 50% = narrow leadership (potentially unhealthy)
+  - Above 70% = very strong breadth
+  - Below 30% = very weak breadth
+- **Breadth Distribution**: How breadth is distributed across sectors
+- **Leaders & Laggards**: Which sectors have the healthiest/weakest internals
+- **Breadth Heatmap**: Daily snapshot of market participation
+
+### Key Insights
+- High prices with low breadth = weak rally vulnerable to reversal
+- Low prices with improving breadth = potential bottom forming
+- Breadth often leads price movements by days or weeks
+- Best entries often occur when breadth improves but prices haven't responded yet
+
+---
+
+## 🎯 Tab 4: Relative Strength Analysis
+
+### What It Does
+Compares each sector's performance against the overall market. Shows who's winning and losing in relative terms.
+
+### What The Charts Tell You
+- **Relative Strength Trends**: Cumulative outperformance/underperformance
+  - Rising line = beating the market
+  - Falling line = lagging the market
+  - Flat line = performing in-line with market
+- **Distribution Chart**: Shows spread of relative performance
+- **Leaders & Laggards Rankings**: Current relative strength rankings
+
+### Key Insights
+- Money flows to relative strength leaders
+- Persistent relative strength indicates institutional accumulation
+- Relative strength often persists for months
+- Major tops/bottoms often coincide with relative strength reversals
+
+---
+
+## ⚠️ Tab 5: Risk Analysis
+
+### What It Does
+Measures volatility (daily swing intensity) and drawdowns (peak-to-current decline) to assess risk levels.
+
+### What The Charts Tell You
+- **Volatility Chart**: Shows stability vs chaos
+  - Low volatility = calm markets
+  - Rising volatility = increasing uncertainty
+  - Extreme volatility = potential turning points
+- **Drawdown Chart**: Shows current pain from recent peaks
+  - 0% = at all-time highs
+  - -10% = minor correction
+  - -20% = significant correction
+  - Below -30% = severe decline
+
+### Key Insights
+- Low volatility often precedes big moves
+- Deep drawdowns with decreasing volatility = potential bottoms
+- Shallow drawdowns with increasing volatility = potential tops
+- Risk metrics help size positions appropriately
+
+---
+
+## 🎲 Tab 6: Mean Reversion Analysis
+
+### What It Does
+Identifies sectors that have moved too far too fast and may snap back. Uses Z-scores to measure how many standard deviations away from normal.
+
+### What The Charts Tell You
+- **Z-Score Trends**: Statistical distance from average
+  - Above +2 = Overbought (due for pullback)
+  - Below -2 = Oversold (due for bounce)
+  - Between -1 and +1 = Normal range
+- **Current Signals Table**: Which sectors are at extremes right now
+
+### Key Insights
+- Extreme readings often precede reversals
+- Best used as a timing tool, not directional predictor
+- More reliable in range-bound markets
+- Combine with trend analysis - oversold in uptrends = buying opportunity
+
+---
+
+## 🏢 Tab 7: Concentration Analysis
+
+### What It Does
+Measures how concentrated market cap is within each sector. High concentration means a few stocks dominate.
+
+### What The Charts Tell You
+- **Concentration Bar Chart**: Shows % of market cap from top 10% of stocks
+  - Below 50% = Well-distributed (healthy competition)
+  - 50-70% = Moderate concentration
+  - Above 70% = High concentration (few companies dominate)
+- **HHI (Herfindahl Index)**: Mathematical measure of concentration
+  - Under 1000 = Low concentration
+  - 1000-1800 = Medium concentration  
+  - Over 1800 = High concentration
+
+### Key Insights
+- High concentration = higher risk if leaders stumble
+- Low concentration = more opportunities for stock picking
+- Concentration changes reveal industry consolidation/disruption
+- Mega-caps can distort sector performance
+
+---
+
+## 🔄 Tab 8: Rotation Analysis
+
+### What It Does
+Classifies sectors into four lifecycle stages based on momentum and relative strength, revealing where money is flowing.
+
+### What The Charts Tell You
+- **Rotation Matrix**: Four-quadrant chart showing lifecycle position
+  - **Leading (Growth)**: High momentum + outperforming = Buy and hold
+  - **Weakening (Mature)**: Low momentum + still outperforming = Consider reducing
+  - **Lagging (Decline)**: Low momentum + underperforming = Avoid
+  - **Improving (Early)**: High momentum + still underperforming = Early opportunity
+
+### Key Insights
+- Money rotates predictably through sectors
+- Leading sectors often stay strong for months
+- Improving sectors offer best risk/reward
+- Weakening sectors are distribution candidates
+
+---
+
+## 🔥 Tab 9: Streak Analysis
+
+### What It Does
+Tracks consecutive winning/losing days and win rates to identify persistent trends and potential exhaustion points.
+
+### What The Charts Tell You
+- **Current Streaks Bar Chart**: Shows ongoing win/loss streaks
+  - Long green bars = sustained winning streak
+  - Long red bars = sustained losing streak
+- **Win Rate Statistics**: Historical tendency to go up or down
+
+### Key Insights
+- Streaks reveal trend persistence
+- Very long streaks often precede reversals
+- High win rates identify consistent performers
+- Streaks breaking can signal regime changes
+
+---
+
+## 🗺️ Tab 10: Heatmaps
+
+### What It Does
+Provides a visual calendar view of daily up/down movements across all sectors.
+
+### What The Charts Tell You
+- **Daily Direction Heatmap**: Green = up day, Red = down day, White = flat
+  - Vertical patterns = market-wide moves
+  - Horizontal patterns = sector-specific trends
+  - Checkerboard = high volatility/rotation
+
+### Key Insights
+- Quickly spot market regime changes
+- Identify sector rotation patterns
+- See correlation/decorrelation between sectors
+- Useful for understanding market breadth at a glance
+
+---
+
+## 💡 How to Use This Tool Effectively
+
+### For Market Timing
+1. Check Breadth to confirm market health
+2. Review Momentum for acceleration/deceleration signals
+3. Use Mean Reversion for entry/exit timing
+4. Monitor Risk metrics for position sizing
+
+### For Sector Selection
+1. Focus on Relative Strength leaders
+2. Look for "Improving" sectors in Rotation analysis
+3. Avoid high concentration sectors if risk-averse
+4. Use Streak analysis to ride trends
+
+### For Risk Management
+1. Reduce exposure when breadth weakens
+2. Watch for volatility spikes as warning signals
+3. Monitor drawdowns for stop-loss levels
+4. Use concentration analysis to avoid single-stock risk
+
+### Red Flags to Watch
+- Breadth below 40% while prices rise
+- Relative strength leaders starting to lag
+- Volatility spiking from low levels
+- Multiple sectors showing extreme Z-scores
+- Long winning streaks breaking down
+
+### Green Lights to Act On
+- Improving breadth from oversold levels
+- New sectors entering "Leading" quadrant
+- Volatility compressing after high readings
+- Oversold readings in strong relative strength sectors
+- Momentum turning positive across multiple timeframes
+
+---
+
+## 📝 Final Notes
+
+This tool's unconventional approach - using market cap instead of just price - captures important dynamics others miss:
+- Share buybacks and dilution effects
+- True sector rotation based on capital flows
+- Market structure changes over time
+- Early warning signals from breadth and momentum
+
+The key is not relying on any single indicator but looking for confluence across multiple analyses. When breadth, momentum, and relative strength all align, the signals are strongest.
+
+Remember: This tool identifies what IS happening, not what SHOULD happen. Markets can remain irrational longer than expected, but this analysis helps you stay on the right side of the trend.
+"""
+        st.markdown(guide_text)    
     
     # Export functionality
     if st.button("💾 Export All Data"):

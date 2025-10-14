@@ -1029,7 +1029,7 @@ def create_zscore_chart(mean_reversion_data, group_by):
     fig.update_layout(
         title="Z-Score Analysis (Mean Reversion Signals)",
         xaxis_title="Date", yaxis_title="Z-Score (Standard Deviations)",
-        height=600, hovermode='x unified',
+        height=600, hovermode='closest',
         showlegend=num_groups > 20,
         legend=dict(
             bgcolor="rgba(255, 255, 255, 0.95)", bordercolor="black", borderwidth=2,
@@ -1050,28 +1050,44 @@ def create_concentration_chart(concentration_data, group_by):
     
     # Color by concentration level
     color_map = {'High': 'rgb(239, 85, 59)', 'Medium': 'rgb(255, 193, 7)', 'Low': 'rgb(0, 204, 150)'}
-    colors = [color_map[level] for level in sorted_data['concentration_level']]
     
     fig = go.Figure()
     
-    fig.add_trace(go.Bar(
-        y=sorted_data[group_by],
-        x=sorted_data['top_10pct_contribution'],
-        orientation='h',
-        name='Top 10% Contribution',
-        marker=dict(color=colors, line=dict(width=1, color='rgb(50, 50, 50)')),
-        text=sorted_data['top_10pct_contribution'].apply(lambda x: f"{x:.1f}%"),
-        textposition='outside',
-        hovertemplate='<b>%{y}</b><br>Top 10% Contribution: %{x:.1f}%<br>Concentration: %{customdata}<extra></extra>',
-        customdata=sorted_data['concentration_level']
-    ))
+    # Add bars by concentration level for legend
+    for level in ['Low', 'Medium', 'High']:
+        level_data = sorted_data[sorted_data['concentration_level'] == level]
+        if not level_data.empty:
+            fig.add_trace(go.Bar(
+                y=level_data[group_by],
+                x=level_data['top_10pct_contribution'],
+                orientation='h',
+                name=f'{level} Concentration',
+                marker=dict(color=color_map[level], line=dict(width=1, color='rgb(50, 50, 50)')),
+                text=level_data['top_10pct_contribution'].apply(lambda x: f"{x:.1f}%"),
+                textposition='outside',
+                hovertemplate='<b>%{y}</b><br>Top 10%: %{x:.1f}%<br>Level: ' + level + '<br>HHI: %{customdata:.0f}<extra></extra>',
+                customdata=level_data['herfindahl_index']
+            ))
     
     fig.update_layout(
         title=f"Market Cap Concentration by {group_by.title()}",
         xaxis_title="% of Market Cap from Top 10% of Stocks",
         yaxis_title=group_by.title(),
         height=max(600, len(sorted_data) * 20),
-        margin=dict(l=200, r=100)
+        margin=dict(l=200, r=100),
+        showlegend=True,
+        legend=dict(
+            title=dict(text="Concentration Level", font=dict(size=12, color="white")),
+            orientation="v",
+            yanchor="top",
+            y=0.99,
+            xanchor="right",
+            x=0.99,
+            bgcolor="rgba(255, 255, 255, 0.95)",
+            bordercolor="black",
+            borderwidth=2,
+            font=dict(size=11, color="black")
+        )
     )
     
     return fig
@@ -3062,7 +3078,7 @@ def main():
                             xaxis_title="Date",
                             yaxis_title=f"{momentum_trend_period}-Day Momentum (%)",
                             height=600,
-                            hovermode='x unified',
+                            hovermode='closest',
                             xaxis=dict(showgrid=True, gridcolor='lightgray'),
                             yaxis=dict(
                                 showgrid=True,
@@ -3335,7 +3351,7 @@ def main():
                         xaxis_title="Date",
                         yaxis_title="Cumulative Relative Return (%)",
                         height=600,
-                        hovermode='x unified',
+                        hovermode='closest',
                         xaxis=dict(showgrid=True, gridcolor='lightgray'),
                         yaxis=dict(
                             showgrid=True,
@@ -3466,7 +3482,7 @@ def main():
                         xaxis_title="Date",
                         yaxis_title="Volatility (%)",
                         height=500,
-                        hovermode='x unified',
+                        hovermode='closest',
                         xaxis=dict(showgrid=True, gridcolor='lightgray'),
                         yaxis=dict(showgrid=True, gridcolor='lightgray')
                     )
@@ -3494,7 +3510,7 @@ def main():
                         xaxis_title="Date",
                         yaxis_title="Drawdown (%)",
                         height=500,
-                        hovermode='x unified',
+                        hovermode='closest',
                         xaxis=dict(showgrid=True, gridcolor='lightgray'),
                         yaxis=dict(showgrid=True, gridcolor='lightgray')
                     )
@@ -3579,7 +3595,12 @@ def main():
         st.header("🏢 Market Cap Concentration Analysis")
         st.info("""
         **Concentration** shows how market cap is distributed within each industry. 
-        High concentration = dominated by few stocks. Low concentration = more evenly distributed.
+        
+        **🟢 Low Concentration (HHI <1000)**: Market cap evenly distributed - healthy, diverse industry  
+        **🟡 Medium Concentration (HHI 1000-1800)**: Moderate concentration - few leaders but not dominated  
+        **🔴 High Concentration (HHI >1800)**: Dominated by few stocks - risk if leaders stumble
+        
+        *Higher % = More power in fewer hands*
         """)
         
         if not concentration_data.empty and enable_concentration:
