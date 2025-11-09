@@ -835,7 +835,7 @@ def create_market_health_card(data_entry: Dict, volume_history: List[Dict] = Non
         st.markdown(f"""
         <div class="metric-card {health_class}">
             <div class="big-metric">{health_score:.0f}</div>
-            <div class="metric-label">Market Health Score</div>
+            <div class="metric-label">Market Volume Sentiment Score</div>
             <div class="metric-delta">{health_status}</div>
             {trend_text}
         </div>
@@ -1278,12 +1278,13 @@ def create_market_structure_display(data_entry: Dict, volume_history: List[Dict]
             # Use consistent 24h lookback for each point's structure calculation
             struct = analyze_market_structure(entry, 24)
             
+            # Safely get values with defaults
             structure_evolution.append({
                 'timestamp': entry['timestamp'],
-                'bullish_pct': struct['bullish_pct'],
-                'bearish_pct': struct['bearish_pct'],
-                'sideways_pct': struct['sideways_pct'],
-                'strength': struct['strength']
+                'bullish_pct': struct.get('bullish_pct', 0),
+                'bearish_pct': struct.get('bearish_pct', 0),
+                'sideways_pct': struct.get('sideways_pct', 0),
+                'strength': struct.get('strength', 0)
             })
         
         # Create line chart
@@ -2653,7 +2654,7 @@ def create_market_health_card(data_entry: Dict, volume_history: List[Dict] = Non
         st.markdown(f"""
         <div class="metric-card {health_class}">
             <div class="big-metric">{health_score:.0f}{trend_str}</div>
-            <div class="metric-label">Market Health Score</div>
+            <div class="metric-label">Market Volume Sentiment Score</div>
             <div class="metric-delta">{health_status}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -4615,7 +4616,10 @@ def show_new_features_analysis(data_entry: Dict, assets_df: pd.DataFrame, volume
 # ================================================================================
 
 def configure_enhanced_sidebar():
-    """Configure enhanced sidebar with all controls"""
+    """
+    Configure enhanced sidebar with all controls
+    FIXED: Now uses date-based selection to handle 551+ files
+    """
     st.sidebar.header("🎛️ Control Panel")
     
     # Data status
@@ -4632,16 +4636,153 @@ def configure_enhanced_sidebar():
     if available_files['scanner_data']:
         st.sidebar.info("✅ Persistent scanner data found")
     
-    # File selection
+    # File selection with DATE-BASED APPROACH
     st.sidebar.subheader("📁 Data Selection")
     
     if available_files['hourly']:
-        selected_file = st.sidebar.selectbox(
-            "Select Data File",
-            available_files['hourly'],
-            format_func=lambda x: os.path.basename(x)[:30] + "...",
-            key="data_file_selector"
+        # Extract all unique dates from filenames
+        dates_dict = {}  # date -> list of files
+        
+        for f in available_files['hourly']:
+            try:
+                # Extract date from filename: hourly_volume_data_YYYYMMDD_HHMM.json
+                basename = os.path.basename(f)
+                date_str = basename.split('_')[3][:8]  # YYYYMMDD
+                date_obj = datetime.strptime(date_str, '%Y%m%d').date()
+                
+                if date_obj not in dates_dict:
+                    dates_dict[date_obj] = []
+                dates_dict[date_obj].append(f)
+            except:
+                # Skip files that don't match expected format
+                pass
+        
+        # Sort dates (most recent first)
+        unique_dates = sorted(dates_dict.keys(), reverse=True)
+        
+        if not unique_dates:
+            st.sidebar.error("No valid data files found!")
+            return None
+        
+        # Show date range info
+        oldest_date = min(unique_dates)
+        newest_date = max(unique_dates)
+        total_days = (newest_date - oldest_date).days + 1
+        
+        st.sidebar.info(f"📅 Data: {oldest_date} to {newest_date} ({total_days} days)")
+        
+        # Date selection method
+        selection_method = st.sidebar.radio(
+            "Selection Method",
+            ["📅 By Date", "📊 Latest", "🔍 Date Range"],
+            key="date_selection_method"
         )
+        
+        selected_file = None
+        
+        if selection_method == "📅 By Date":
+            # Select specific date
+            selected_date = st.sidebar.selectbox(
+                "Select Date",
+                unique_dates,
+                format_func=lambda d: d.strftime('%Y-%m-%d (%A)'),
+                key="specific_date_selector"
+            )
+            
+            # Get files for that date
+            files_for_date = sorted(dates_dict[selected_date], reverse=True)
+            
+            if len(files_for_date) == 1:
+                selected_file = files_for_date[0]
+                st.sidebar.success(f"✓ Using file from {selected_date}")
+            else:
+                # Show time selector if multiple files per day
+                selected_file = st.sidebar.selectbox(
+                    f"Select Time ({len(files_for_date)} snapshots)",
+                    files_for_date,
+                    format_func=lambda x: os.path.basename(x).split('_')[4].replace('.json', ''),
+                    key="time_selector"
+                )
+        
+        elif selection_method == "📊 Latest":
+            # Simple slider for last N days
+            days_back = st.sidebar.slider(
+                "Days Back",
+                min_value=1,
+                max_value=min(30, total_days),
+                value=1,
+                key="days_back_slider"
+            )
+            
+            # Get files from last N days
+            cutoff_date = newest_date - timedelta(days=days_back - 1)
+            recent_files = []
+            for date in unique_dates:
+                if date >= cutoff_date:
+                    recent_files.extend(dates_dict[date])
+            
+            recent_files = sorted(recent_files, reverse=True)
+            
+            if recent_files:
+                # Show most recent file or let user pick
+                if days_back == 1:
+                    selected_file = recent_files[0]
+                    st.sidebar.success(f"✓ Latest file: {newest_date}")
+                else:
+                    selected_file = st.sidebar.selectbox(
+                        f"Select File ({len(recent_files)} available)",
+                        recent_files[:50],  # Limit to 50 for performance
+                        format_func=lambda x: os.path.basename(x),
+                        key="recent_file_selector"
+                    )
+        
+        else:  # Date Range
+            # Select start and end date
+            col1, col2 = st.sidebar.columns(2)
+            
+            with col1:
+                start_date = st.date_input(
+                    "From",
+                    value=newest_date - timedelta(days=7),
+                    min_value=oldest_date,
+                    max_value=newest_date,
+                    key="start_date"
+                )
+            
+            with col2:
+                end_date = st.date_input(
+                    "To",
+                    value=newest_date,
+                    min_value=oldest_date,
+                    max_value=newest_date,
+                    key="end_date"
+                )
+            
+            # Get files in range
+            range_files = []
+            for date in unique_dates:
+                if start_date <= date <= end_date:
+                    range_files.extend(dates_dict[date])
+            
+            range_files = sorted(range_files, reverse=True)
+
+            st.session_state.range_files = range_files
+            
+            if range_files:
+                st.sidebar.info(f"📊 {len(range_files)} files in range")
+                selected_file = st.sidebar.selectbox(
+                    "Select File",
+                    range_files[:100],  # Limit to 100 for performance
+                    format_func=lambda x: os.path.basename(x),
+                    key="range_file_selector"
+                )
+            else:
+                st.sidebar.warning("No files in selected range")
+        
+        if not selected_file:
+            st.sidebar.error("No file selected!")
+            return None
+            
     else:
         st.sidebar.error("No data files found!")
         st.sidebar.code("python enhanced_scanner.py", language="bash")
@@ -4709,8 +4850,9 @@ def configure_enhanced_sidebar():
             file_size = file_stats.st_size / 1024
             mod_time = datetime.fromtimestamp(file_stats.st_mtime)
             
-            st.sidebar.caption(f"Size: {file_size:.1f} KB")
-            st.sidebar.caption(f"Modified: {mod_time.strftime('%Y-%m-%d %H:%M')}")
+            st.sidebar.caption(f"📄 {os.path.basename(selected_file)}")
+            st.sidebar.caption(f"💾 Size: {file_size:.1f} KB")
+            st.sidebar.caption(f"🕒 Modified: {mod_time.strftime('%Y-%m-%d %H:%M')}")
         except:
             pass
     
@@ -4800,12 +4942,71 @@ def export_to_csv(assets_df: pd.DataFrame) -> bytes:
     
     return export_df.to_csv(index=False).encode('utf-8')
 
+def load_multiple_files_combined(file_list):
+    """
+    Load and combine data from multiple files
+    Returns combined volume_history from all files
+    """
+    combined_history = []
+    latest_entry = None
+    failed_files = []
+    
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    for idx, file_path in enumerate(file_list):
+        try:
+            status_text.text(f"Loading {idx+1}/{len(file_list)}: {os.path.basename(file_path)}")
+            data = load_enhanced_volume_data(file_path)
+            
+            if data and 'volume_history' in data and data['volume_history']:
+                # Add all entries from this file
+                combined_history.extend(data['volume_history'])
+                
+                # Keep track of the most recent entry
+                if not latest_entry or data['volume_history'][-1]['timestamp'] > latest_entry['timestamp']:
+                    latest_entry = data['volume_history'][-1]
+            else:
+                failed_files.append(os.path.basename(file_path))
+                
+        except Exception as e:
+            failed_files.append(f"{os.path.basename(file_path)}: {str(e)}")
+        
+        # Update progress
+        progress_bar.progress((idx + 1) / len(file_list))
+    
+    progress_bar.empty()
+    status_text.empty()
+    
+    if failed_files:
+        with st.expander(f"⚠️ {len(failed_files)} files failed to load"):
+            for f in failed_files[:10]:
+                st.caption(f"• {f}")
+            if len(failed_files) > 10:
+                st.caption(f"... and {len(failed_files) - 10} more")
+    
+    # Sort combined history by timestamp
+    combined_history.sort(key=lambda x: x['timestamp'])
+    
+    # Create combined data structure
+    combined_data = {
+        'volume_history': combined_history,
+        '_metadata': {
+            'is_combined': True,
+            'file_count': len(file_list),
+            'failed_count': len(failed_files),
+            'entry_count': len(combined_history)
+        }
+    }
+    
+    return combined_data, latest_entry    
+
 # ================================================================================
 # MAIN APPLICATION
 # ================================================================================
 
 def main():
-    """Main application function"""
+    """Main application function - ENHANCED for multi-file loading"""
     
     # Initialize session state
     initialize_session_state()
@@ -4814,7 +5015,7 @@ def main():
     st.title("🚀 Elwood's CB Dash")
     st.markdown("*Hourly TF Analysis*")
     
-    # Configure sidebar and get selected file
+    # Configure sidebar and get selected file(s)
     selected_file = configure_enhanced_sidebar()
     
     if not selected_file:
@@ -4834,23 +5035,74 @@ def main():
         """)
         return
     
+    # Check if we're in date range mode with multiple files selected
+    selection_method = st.session_state.get('date_selection_method', '📅 By Date')
+    
+    # Determine if we need to load multiple files
+    load_multiple = False
+    files_to_load = [selected_file]
+    
+    if selection_method == "🔍 Date Range":
+        # Check if we have a list of files in the range
+        if 'range_files' in st.session_state and st.session_state.range_files:
+            range_files = st.session_state.range_files
+            
+            # Offer option to load all files in range or just the selected one
+            st.sidebar.subheader("📊 Range Loading")
+            load_all = st.sidebar.checkbox(
+                f"Load all {len(range_files)} files in range",
+                value=True,
+                key="load_all_in_range",
+                help="Load and combine all files in the selected date range for complete historical analysis"
+            )
+            
+            if load_all and len(range_files) > 1:
+                load_multiple = True
+                files_to_load = range_files
+                
+                # Add a limit for performance
+                max_files = st.sidebar.slider(
+                    "Max files to load",
+                    min_value=1,
+                    max_value=min(len(range_files), 500),
+                    value=min(len(range_files), 200),
+                    key="max_files_to_load",
+                    help="Limit number of files to prevent slow loading"
+                )
+                
+                files_to_load = range_files[:max_files]
+    
     # Load data
     with st.spinner("Loading data..."):
-        data = load_enhanced_volume_data(selected_file)
+        if load_multiple and len(files_to_load) > 1:
+            # Load and combine multiple files
+            st.info(f"🔄 Loading {len(files_to_load)} files from date range...")
+            data, latest_entry = load_multiple_files_combined(files_to_load)
+            
+            if data and data['volume_history']:
+                st.success(f"✅ Loaded {len(data['volume_history'])} data points from {len(files_to_load)} files")
+        else:
+            # Load single file (original behavior)
+            data = load_enhanced_volume_data(selected_file)
+            latest_entry = None
+            if data and 'volume_history' in data and data['volume_history']:
+                latest_entry = data['volume_history'][-1]
     
     if not data or 'volume_history' not in data or not data['volume_history']:
         st.error("Failed to load data or data is empty!")
         return
     
-    # Get latest entry and prepare dataframes
+    # Get volume history and latest entry
     volume_history = data['volume_history']
-    latest_entry = volume_history[-1]
+    if not latest_entry:
+        latest_entry = volume_history[-1]
     
-    # Show data freshness
-    freshness_text, freshness_type, age_hours = get_data_freshness(latest_entry)
+    # Show data info
+    col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
     
-    col1, col2, col3 = st.columns([2, 3, 2])
     with col1:
+        # Show data freshness
+        freshness_text, freshness_type, age_hours = get_data_freshness(latest_entry)
         if freshness_type == "success":
             st.success(freshness_text)
         elif freshness_type == "warning":
@@ -4865,6 +5117,16 @@ def main():
     
     with col3:
         st.info(f"📅 {latest_entry['timestamp'].strftime('%Y-%m-%d %H:%M')}")
+    
+    with col4:
+        # Show data range info
+        if len(volume_history) > 1:
+            oldest = volume_history[0]['timestamp']
+            newest = volume_history[-1]['timestamp']
+            hours = len(volume_history)
+            st.info(f"📈 {hours} hours of data")
+        else:
+            st.info(f"📈 Single snapshot")
     
     # Prepare assets dataframe
     assets_list = filter_assets_for_analysis(latest_entry['assets'])
@@ -4966,12 +5228,20 @@ def main():
     
     # Auto-refresh
     if st.session_state.auto_refresh:
-        time.sleep(1800)  # 5 minutes
+        import time
+        time.sleep(300)  # 5 minutes
         st.rerun()
     
     # Footer
     st.markdown("---")
-    st.caption(f"Enhanced Dashboard v6.0 | Data: {len(assets_df)} assets | Quality: {quality_score:.0%}")
+    
+    # Enhanced footer with data info
+    if data.get('_metadata', {}).get('is_combined'):
+        footer_text = f"Enhanced Dashboard v6.0 | {data['_metadata']['file_count']} files | {len(data['volume_history'])} data points | {len(assets_df)} assets | Quality: {quality_score:.0%}"
+    else:
+        footer_text = f"Enhanced Dashboard v6.0 | Data: {len(assets_df)} assets | Quality: {quality_score:.0%}"
+    
+    st.caption(footer_text)
 
 # ================================================================================
 # RUN APPLICATION
