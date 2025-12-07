@@ -32,15 +32,39 @@ warnings.filterwarnings('ignore')
 # Set page configuration
 st.set_page_config(
     layout="wide",
-    page_title="Industry Score Analysis Suite",
+    page_title="Elwood's Industry Score Analysis Suite",
     page_icon="📊"
 )
 
-st.title("📊 Industry Score Analysis Suite")
+st.title("📊 Elwood's Industry Score Analysis Suite")
 st.markdown("*Comprehensive analysis of bullish/bearish scores at the industry level*")
 
-# Configuration
-DATA_DIR = Path(r"C:\Users\davet\Documents\new_dev\Industry-analysis\score_analysis\data")
+# Configuration - Uses relative path to work with GitHub repo structure
+# When running from the repo root, data is in Data/stock_scores/
+# The script auto-detects if running locally or from repo
+def find_data_directory():
+    """Find the data directory - works for both local dev and GitHub repo structure."""
+    possible_paths = [
+        Path("Data/stock_scores"),                    # Running from repo root
+        Path("../Data/stock_scores"),                 # Running from a subdirectory
+        Path("../../Data/stock_scores"),              # Running from deeper subdirectory
+        Path(__file__).parent / "Data" / "stock_scores",  # Relative to script location
+        Path(__file__).parent.parent / "Data" / "stock_scores",
+        Path(r"C:\Users\davet\Documents\GitHub\Industry-analysis\Data\stock_scores"),  # Dave's local
+        Path(r"C:\Users\davet\Documents\new_dev\Industry-analysis\score_analysis\data"),  # Dave's alt local
+    ]
+    
+    for path in possible_paths:
+        try:
+            if path.exists() and (path / "historical_data.parquet.gzip").exists():
+                return path
+        except:
+            continue
+    
+    # Default fallback - will show error if not found
+    return Path("Data/stock_scores")
+
+DATA_DIR = find_data_directory()
 
 # Color schemes
 BULLISH_COLOR = '#00cc66'
@@ -60,7 +84,14 @@ def load_historical_scores(data_dir):
         parquet_path = Path(data_dir) / 'historical_data.parquet.gzip'
         
         if not parquet_path.exists():
-            st.error(f"❌ Historical data file not found: {parquet_path}")
+            st.error(f"❌ Historical data file not found!")
+            st.error(f"Looking for: `{parquet_path}`")
+            st.info("""
+            **To fix this:**
+            1. Make sure you're running from the repository root directory
+            2. Ensure the file `Data/stock_scores/historical_data.parquet.gzip` exists
+            3. Or update the `find_data_directory()` function with your local path
+            """)
             st.stop()
         
         df = pd.read_parquet(parquet_path)
@@ -78,6 +109,7 @@ def load_historical_scores(data_dir):
         st.sidebar.success(f"✅ Loaded {len(df):,} records")
         st.sidebar.info(f"📅 {unique_dates} trading days ({date_range})")
         st.sidebar.info(f"🏭 {unique_industries} industries, {unique_sectors} sectors")
+        st.sidebar.info(f"📂 Data: {data_dir}")
         
         return df
         
