@@ -18,6 +18,13 @@ import json
 import warnings
 warnings.filterwarnings('ignore')
 
+# Try to import yfinance - it may fail on some cloud deployments
+try:
+    import yfinance as yf
+    YFINANCE_AVAILABLE = True
+except ImportError:
+    YFINANCE_AVAILABLE = False
+
 # Page config
 st.set_page_config(
     layout="wide",
@@ -1452,22 +1459,68 @@ def main():
     with col2:
         lookback_days = st.selectbox("Lookback Period", [90, 180, 365, 'All'], index=1)
     
-    # Get SPY data
-    @st.cache_data(ttl=3600)
+    # Get SPY data with robust error handling for cloud deployment
+    @st.cache_data(ttl=3600, show_spinner=False)
     def get_spy_data():
-        import yfinance as yf
-        spy = yf.download('SPY', start='2024-01-01', progress=False)
-        spy = spy.reset_index()
-        spy.columns = [col[0] if isinstance(col, tuple) else col for col in spy.columns]
-        spy['Date'] = pd.to_datetime(spy['Date']).dt.normalize()
-        return spy
+        """Fetch SPY data with multiple fallback methods."""
+        if not YFINANCE_AVAILABLE:
+            return None
+            
+        import time
+        
+        # Method 1: Standard yfinance download
+        try:
+            spy = yf.download('SPY', start='2024-01-01', progress=False, timeout=10)
+            if len(spy) > 0:
+                spy = spy.reset_index()
+                spy.columns = [col[0] if isinstance(col, tuple) else col for col in spy.columns]
+                spy['Date'] = pd.to_datetime(spy['Date']).dt.normalize()
+                return spy
+        except Exception as e:
+            pass
+        
+        # Method 2: Try with Ticker object (sometimes more reliable)
+        try:
+            time.sleep(1)  # Brief pause before retry
+            ticker = yf.Ticker('SPY')
+            spy = ticker.history(start='2024-01-01', timeout=10)
+            if len(spy) > 0:
+                spy = spy.reset_index()
+                spy['Date'] = pd.to_datetime(spy['Date']).dt.normalize()
+                # Rename columns to match expected format
+                spy = spy.rename(columns={'index': 'Date'})
+                return spy
+        except Exception as e:
+            pass
+        
+        # Method 3: Try alternative ticker symbol
+        try:
+            time.sleep(1)
+            spy = yf.download('^GSPC', start='2024-01-01', progress=False, timeout=10)  # S&P 500 index
+            if len(spy) > 0:
+                spy = spy.reset_index()
+                spy.columns = [col[0] if isinstance(col, tuple) else col for col in spy.columns]
+                spy['Date'] = pd.to_datetime(spy['Date']).dt.normalize()
+                return spy
+        except Exception as e:
+            pass
+        
+        return None
+    
+    # Try to get SPY data
+    spy_data = None
+    has_spy = False
     
     try:
-        spy_data = get_spy_data()
-        has_spy = True
-    except:
-        has_spy = False
-        st.warning("Could not fetch SPY data for overlay")
+        with st.spinner("Loading SPY data..."):
+            spy_data = get_spy_data()
+            if spy_data is not None and len(spy_data) > 0:
+                has_spy = True
+    except Exception as e:
+        pass
+    
+    if not has_spy:
+        st.warning("⚠️ Could not fetch SPY data for overlay. This sometimes happens on cloud deployments due to rate limiting. The signal indicators below still work!")
     
     # Filter data by lookback
     if lookback_days != 'All':
