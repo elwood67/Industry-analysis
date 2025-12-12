@@ -1447,17 +1447,48 @@ def main():
     st.subheader("📈 Historical Signal Chart")
     st.markdown("*See when signals fired in the past and what happened after*")
     
+    # Build signal options including individual signals AND confluence patterns
+    signal_options = {}
+    
+    # Add individual signals
+    st.markdown("##### Individual Signals & Confluence Patterns")
+    for k, s in SIGNALS.items():
+        signal_options[f"📊 {s['name']} ({'Bullish' if s['type'] == 'bullish' else 'Bearish'})"] = ('single', k)
+    
+    # Add confluence patterns
+    signal_options["─────── CONFLUENCE PATTERNS ───────"] = ('separator', None)
+    
+    # Bullish confluence
+    for combo_id, combo in CONFLUENCE_RULES.get('bullish', {}).items():
+        tier_emoji = "🔥" if combo['tier'] == 'S' else "💪" if combo['tier'] == 'A' else "📈"
+        signal_options[f"{tier_emoji} {combo['name']} ({combo['win_rate']}% WR)"] = ('confluence_bullish', combo_id)
+    
+    # Bearish confluence  
+    for combo_id, combo in CONFLUENCE_RULES.get('bearish', {}).items():
+        tier_emoji = "🚨" if combo['tier'] == 'S' else "⚠️" if combo['tier'] == 'A' else "📉"
+        signal_options[f"{tier_emoji} {combo['name']} ({combo['win_rate']}% WR)"] = ('confluence_bearish', combo_id)
+    
+    # Count-based confluence
+    signal_options["─────── COUNT-BASED CONFLUENCE ───────"] = ('separator', None)
+    signal_options["🏆 3+ Tier 1 Bullish Signals (85.1% WR)"] = ('count', 'tier1_bullish_3plus')
+    signal_options["🥇 2+ Tier 1 Bullish Signals (77.5% WR)"] = ('count', 'tier1_bullish_2plus')
+    signal_options["🚨 4+ Bearish Signals - SHORT (75.0% WR)"] = ('count', 'bearish_4plus')
+    signal_options["⚠️ 3+ Bearish Signals (59.5% WR)"] = ('count', 'bearish_3plus')
+    
     # Signal selector
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        signal_options = {f"{s['name']} ({'Bullish' if s['type'] == 'bullish' else 'Bearish'})": k 
-                         for k, s in SIGNALS.items()}
         selected_signal_name = st.selectbox("Select Signal to View", list(signal_options.keys()))
-        selected_signal_id = signal_options[selected_signal_name]
+        signal_type, signal_id = signal_options[selected_signal_name]
     
     with col2:
         lookback_days = st.selectbox("Lookback Period", [90, 180, 365, 'All'], index=1)
+    
+    # Handle separator selection
+    if signal_type == 'separator':
+        st.info("👆 Please select a signal or confluence pattern from the dropdown above")
+        return
     
     # Get SPY data with robust error handling for cloud deployment
     @st.cache_data(ttl=3600, show_spinner=False)
@@ -1529,27 +1560,135 @@ def main():
     else:
         chart_data = market_agg.copy()
     
-    # Detect historical signals
-    selected_signal = SIGNALS[selected_signal_id]
-    metric = selected_signal['metric']
-    threshold = selected_signal['threshold']
-    direction = selected_signal['direction']
+    # ===========================================
+    # DETECT SIGNALS BASED ON TYPE
+    # ===========================================
     
-    # Add previous values for crossover detection
-    chart_data['prev_value'] = chart_data[metric].shift(1)
+    # First, detect ALL individual signals for confluence detection
+    for sig_id, sig in SIGNALS.items():
+        metric = sig['metric']
+        threshold = sig['threshold']
+        direction = sig['direction']
+        
+        if metric not in chart_data.columns:
+            chart_data[f'sig_{sig_id}'] = False
+            continue
+        
+        current = chart_data[metric].fillna(0)
+        
+        if direction == 'below':
+            chart_data[f'sig_{sig_id}'] = current < threshold
+        elif direction == 'above':
+            chart_data[f'sig_{sig_id}'] = current > threshold
+        elif direction == 'crosses_above':
+            if metric == 'market_net':
+                prev = chart_data['prev_net'].fillna(0) if 'prev_net' in chart_data.columns else current.shift(1).fillna(0)
+            elif metric == 'market_breadth':
+                prev = chart_data['prev_breadth'].fillna(0) if 'prev_breadth' in chart_data.columns else current.shift(1).fillna(0)
+            else:
+                prev = current.shift(1).fillna(0)
+            chart_data[f'sig_{sig_id}'] = (prev < threshold) & (current >= threshold)
+        else:
+            chart_data[f'sig_{sig_id}'] = False
     
-    # Detect when signal fired
-    if direction == 'below':
-        chart_data['signal_fired'] = chart_data[metric] < threshold
-    elif direction == 'above':
-        chart_data['signal_fired'] = chart_data[metric] > threshold
-    elif direction == 'crosses_above':
-        chart_data['signal_fired'] = (chart_data['prev_value'] < threshold) & (chart_data[metric] >= threshold)
+    # Calculate signal counts
+    bullish_signals = [s for s, sig in SIGNALS.items() if sig['type'] == 'bullish']
+    bearish_signals = [s for s, sig in SIGNALS.items() if sig['type'] == 'bearish']
+    tier1_bullish = [s for s, sig in SIGNALS.items() if sig['type'] == 'bullish' and sig.get('tier', 2) == 1]
+    
+    chart_data['bullish_count'] = chart_data[[f'sig_{s}' for s in bullish_signals]].sum(axis=1)
+    chart_data['bearish_count'] = chart_data[[f'sig_{s}' for s in bearish_signals]].sum(axis=1)
+    chart_data['tier1_bullish_count'] = chart_data[[f'sig_{s}' for s in tier1_bullish]].sum(axis=1)
+    
+    # Now detect the selected signal/confluence
+    if signal_type == 'single':
+        # Single signal
+        selected_signal = SIGNALS[signal_id]
+        metric = selected_signal['metric']
+        threshold = selected_signal['threshold']
+        direction = selected_signal['direction']
+        chart_data['signal_fired'] = chart_data[f'sig_{signal_id}']
+        signal_name = selected_signal['name']
+        is_bullish = selected_signal['type'] == 'bullish'
+        win_rate = selected_signal.get('win_rate', 0)
+        avg_return = selected_signal.get('avg_return', 0)
+        
+    elif signal_type == 'confluence_bullish':
+        # Bullish confluence pattern
+        combo = CONFLUENCE_RULES['bullish'][signal_id]
+        required_signals = combo['signals']
+        # Signal fires when ALL required signals fire
+        chart_data['signal_fired'] = chart_data[[f'sig_{s}' for s in required_signals if f'sig_{s}' in chart_data.columns]].all(axis=1)
+        signal_name = combo['name']
+        metric = 'market_breadth'  # Default display metric
+        is_bullish = True
+        win_rate = combo['win_rate']
+        avg_return = combo['avg_return']
+        
+    elif signal_type == 'confluence_bearish':
+        # Bearish confluence pattern
+        combo = CONFLUENCE_RULES['bearish'][signal_id]
+        required_signals = combo['signals']
+        chart_data['signal_fired'] = chart_data[[f'sig_{s}' for s in required_signals if f'sig_{s}' in chart_data.columns]].all(axis=1)
+        signal_name = combo['name']
+        metric = 'market_breadth'
+        is_bullish = False
+        win_rate = combo['win_rate']
+        avg_return = combo['avg_return']
+        
+    elif signal_type == 'count':
+        # Count-based confluence
+        if signal_id == 'tier1_bullish_3plus':
+            chart_data['signal_fired'] = chart_data['tier1_bullish_count'] >= 3
+            signal_name = "3+ Tier 1 Bullish Signals"
+            metric = 'tier1_bullish_count'
+            is_bullish = True
+            win_rate = 85.1
+            avg_return = 2.25
+        elif signal_id == 'tier1_bullish_2plus':
+            chart_data['signal_fired'] = chart_data['tier1_bullish_count'] >= 2
+            signal_name = "2+ Tier 1 Bullish Signals"
+            metric = 'tier1_bullish_count'
+            is_bullish = True
+            win_rate = 77.5
+            avg_return = 1.84
+        elif signal_id == 'bearish_4plus':
+            chart_data['signal_fired'] = chart_data['bearish_count'] >= 4
+            signal_name = "4+ Bearish Signals (SHORT)"
+            metric = 'bearish_count'
+            is_bullish = False
+            win_rate = 75.0
+            avg_return = 1.20
+        elif signal_id == 'bearish_3plus':
+            chart_data['signal_fired'] = chart_data['bearish_count'] >= 3
+            signal_name = "3+ Bearish Signals"
+            metric = 'bearish_count'
+            is_bullish = False
+            win_rate = 59.5
+            avg_return = 0.50
+        else:
+            chart_data['signal_fired'] = False
+            signal_name = "Unknown"
+            metric = 'market_breadth'
+            is_bullish = True
+            win_rate = 0
+            avg_return = 0
     else:
         chart_data['signal_fired'] = False
+        signal_name = "Unknown"
+        metric = 'market_breadth'
+        is_bullish = True
+        win_rate = 0
+        avg_return = 0
     
     # Get signal dates
     signal_dates = chart_data[chart_data['signal_fired']]['date'].tolist()
+    
+    # Determine which metric to show in middle panel
+    if metric in chart_data.columns:
+        display_metric = metric
+    else:
+        display_metric = 'market_breadth'
     
     # Create the chart
     fig = make_subplots(
@@ -1557,7 +1696,7 @@ def main():
         shared_xaxes=True,
         vertical_spacing=0.05,
         row_heights=[0.5, 0.25, 0.25],
-        subplot_titles=('SPY Price with Signal Markers', f'{selected_signal["name"]} Indicator', 'Market Breadth')
+        subplot_titles=('SPY Price with Signal Markers', f'{signal_name} Indicator', 'Market Breadth')
     )
     
     # Row 1: SPY with signals
@@ -1583,13 +1722,13 @@ def main():
             signal_spy = spy_filtered[spy_filtered['Date'].isin(signal_dates)]
             
             if not signal_spy.empty:
-                marker_color = '#00ff00' if selected_signal['type'] == 'bullish' else '#ff4444'
-                marker_symbol = 'triangle-up' if selected_signal['type'] == 'bullish' else 'triangle-down'
+                marker_color = '#00ff00' if is_bullish else '#ff4444'
+                marker_symbol = 'triangle-up' if is_bullish else 'triangle-down'
                 
                 fig.add_trace(
                     go.Scatter(
                         x=signal_spy['Date'],
-                        y=signal_spy['Low'] * 0.995 if selected_signal['type'] == 'bullish' else signal_spy['High'] * 1.005,
+                        y=signal_spy['Low'] * 0.995 if is_bullish else signal_spy['High'] * 1.005,
                         mode='markers',
                         marker=dict(
                             symbol=marker_symbol,
@@ -1597,7 +1736,7 @@ def main():
                             color=marker_color,
                             line=dict(color='white', width=1)
                         ),
-                        name=f'{selected_signal["name"]} Signal',
+                        name=f'{signal_name} Signal',
                         hovertemplate='%{x}<br>Signal Fired<extra></extra>'
                     ),
                     row=1, col=1
@@ -1605,36 +1744,54 @@ def main():
     
     # Row 2: Signal indicator
     # Use cyan/blue for signal indicator
-    fig.add_trace(
-        go.Scatter(
-            x=chart_data['date'],
-            y=chart_data[metric],
-            mode='lines',
-            name=metric.replace('_', ' ').title(),
-            line=dict(color='#00ffff', width=2),
-            fill='tozeroy',
-            fillcolor='rgba(0, 255, 255, 0.15)'
-        ),
-        row=2, col=1
-    )
-    
-    # Add threshold line
-    fig.add_hline(
-        y=threshold,
-        line_dash="dash",
-        line_color='#ffaa00',
-        annotation_text=f"T",
-        annotation_position="right",
-        row=2, col=1
-    )
+    if display_metric in chart_data.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=chart_data['date'],
+                y=chart_data[display_metric],
+                mode='lines',
+                name=display_metric.replace('_', ' ').title(),
+                line=dict(color='#00ffff', width=2),
+                fill='tozeroy',
+                fillcolor='rgba(0, 255, 255, 0.15)'
+            ),
+            row=2, col=1
+        )
+        
+        # Add threshold line for single signals
+        if signal_type == 'single':
+            selected_signal = SIGNALS[signal_id]
+            threshold = selected_signal['threshold']
+            fig.add_hline(
+                y=threshold,
+                line_dash="dash",
+                line_color='#ffaa00',
+                annotation_text=f"T",
+                annotation_position="right",
+                row=2, col=1
+            )
+        elif signal_type == 'count':
+            # Add threshold for count-based
+            if 'tier1_bullish' in signal_id:
+                thresh = 3 if '3plus' in signal_id else 2
+            else:
+                thresh = 4 if '4plus' in signal_id else 3
+            fig.add_hline(
+                y=thresh,
+                line_dash="dash",
+                line_color='#ffaa00',
+                annotation_text=f"Min: {thresh}",
+                annotation_position="right",
+                row=2, col=1
+            )
     
     # Mark signal points on indicator
     signal_points = chart_data[chart_data['signal_fired']]
-    if not signal_points.empty:
+    if not signal_points.empty and display_metric in chart_data.columns:
         fig.add_trace(
             go.Scatter(
                 x=signal_points['date'],
-                y=signal_points[metric],
+                y=signal_points[display_metric],
                 mode='markers',
                 marker=dict(
                     symbol='circle',
@@ -1655,7 +1812,7 @@ def main():
             mode='lines',
             name='Breadth %',
             line=dict(color='#aa55ff', width=2),
-            fill='tonexty' if metric != 'market_breadth' else 'tozeroy',
+            fill='tonexty' if display_metric != 'market_breadth' else 'tozeroy',
             fillcolor='rgba(170, 85, 255, 0.2)'
         ),
         row=3, col=1
@@ -1693,16 +1850,19 @@ def main():
         'real_estate_breadth': 'RE Breadth %',
         'utilities_breadth': 'Util Breadth %',
         'financials_breadth': 'Fin Breadth %',
+        'tier1_bullish_count': 'T1 Bullish Count',
+        'bullish_count': 'Bullish Count',
+        'bearish_count': 'Bearish Count',
     }
     
     fig.update_yaxes(title_text="Price", row=1, col=1)
-    fig.update_yaxes(title_text=metric_labels.get(metric, metric), row=2, col=1)
+    fig.update_yaxes(title_text=metric_labels.get(display_metric, display_metric), row=2, col=1)
     fig.update_yaxes(title_text="Breadth %", row=3, col=1, range=[0, 100])
     
     st.plotly_chart(fig, use_container_width=True)
     
     # Signal performance summary
-    st.markdown(f"### 📊 {selected_signal['name']} - Historical Performance")
+    st.markdown(f"### 📊 {signal_name} - Historical Performance")
     
     col1, col2, col3, col4 = st.columns(4)
     
@@ -1710,13 +1870,13 @@ def main():
         st.metric("Times Fired", len(signal_dates))
     
     with col2:
-        st.metric("Win Rate", f"{selected_signal['win_rate']}%")
+        st.metric("Win Rate", f"{win_rate}%")
     
     with col3:
-        st.metric("Avg 10d Return", f"+{selected_signal['avg_return']}%")
+        st.metric("Avg 10d Return", f"+{avg_return}%")
     
     with col4:
-        signal_type_emoji = "🟢 Bullish" if selected_signal['type'] == 'bullish' else "🔴 Bearish"
+        signal_type_emoji = "🟢 Bullish" if is_bullish else "🔴 Bearish"
         st.metric("Signal Type", signal_type_emoji)
     
     # List recent signal dates
@@ -1727,7 +1887,7 @@ def main():
             
             signal_df = pd.DataFrame({
                 'Date': [d.strftime('%Y-%m-%d') for d in recent_signals],
-                'Signal': [selected_signal['name']] * len(recent_signals)
+                'Signal': [signal_name] * len(recent_signals)
             })
             
             st.dataframe(signal_df, use_container_width=True, hide_index=True)
