@@ -1796,7 +1796,7 @@ def main():
                 marker=dict(
                     symbol='circle',
                     size=8,
-                    color='#00ff00' if selected_signal['type'] == 'bullish' else '#ff4444'
+                    color='#00ff00' if is_bullish else '#ff4444'
                 ),
                 name='Signal Points',
                 showlegend=False
