@@ -865,6 +865,338 @@ def calculate_composite_score(signal_results):
 
 
 # =============================================================================
+# CONFLUENCE ALERTS - Based on backtested signal combinations
+# =============================================================================
+
+# Define high-probability signal combinations from backtesting
+CONFLUENCE_RULES = {
+    'bullish': {
+        # 100% Win Rate Combos
+        'bull_roc_convergence': {
+            'name': '🔥 Bull Washout + Convergence',
+            'signals': ['bull_roc_washout', 'bull_bear_convergence'],
+            'win_rate': 100.0,
+            'avg_return': 3.04,
+            'occurrences': 7,
+            'tier': 'S'
+        },
+        'net_positive_re_bearish': {
+            'name': '🔥 Net Positive + RE Bearish',
+            'signals': ['net_score_turns_positive', 'real_estate_extreme_bearish'],
+            'win_rate': 100.0,
+            'avg_return': 2.68,
+            'occurrences': 6,
+            'tier': 'S'
+        },
+        'net_positive_util_bearish': {
+            'name': '🔥 Net Positive + Utilities Bearish',
+            'signals': ['net_score_turns_positive', 'utilities_extreme_bearish'],
+            'win_rate': 100.0,
+            'avg_return': 1.36,
+            'occurrences': 5,
+            'tier': 'S'
+        },
+        # 90%+ Win Rate Combos
+        'net_positive_rotation': {
+            'name': '💪 Net Positive + Sharp Rotation',
+            'signals': ['net_score_turns_positive', 'sharp_rotation_to_value'],
+            'win_rate': 93.3,
+            'avg_return': 1.97,
+            'occurrences': 15,
+            'tier': 'A'
+        },
+        'net_positive_breadth_cross': {
+            'name': '💪 Net Positive + Breadth Cross 50%',
+            'signals': ['net_score_turns_positive', 'breadth_crosses_above_50'],
+            'win_rate': 91.7,
+            'avg_return': 1.50,
+            'occurrences': 12,
+            'tier': 'A'
+        },
+        'extreme_fear_low_breadth': {
+            'name': '💪 Extreme Fear + Very Low Breadth',
+            'signals': ['avg_bearish_extreme', 'breadth_very_low'],
+            'win_rate': 90.0,
+            'avg_return': 4.51,
+            'occurrences': 10,
+            'tier': 'A'
+        },
+        're_bearish_low_breadth': {
+            'name': '💪 RE Bearish + Very Low Breadth',
+            'signals': ['real_estate_extreme_bearish', 'breadth_very_low'],
+            'win_rate': 90.0,
+            'avg_return': 4.51,
+            'occurrences': 10,
+            'tier': 'A'
+        },
+        # Triple Combos
+        'triple_washout': {
+            'name': '🎯 Triple: Washout + Convergence + Oversold',
+            'signals': ['bull_roc_washout', 'bull_bear_convergence', 'zscore_oversold'],
+            'win_rate': 100.0,
+            'avg_return': 3.11,
+            'occurrences': 4,
+            'tier': 'S'
+        },
+        'triple_washout_momentum': {
+            'name': '🎯 Triple: Washout + Convergence + Neg Momentum',
+            'signals': ['bull_roc_washout', 'bull_bear_convergence', 'momentum_strong_negative'],
+            'win_rate': 100.0,
+            'avg_return': 3.04,
+            'occurrences': 7,
+            'tier': 'S'
+        },
+    },
+    'bearish': {
+        # Best Short Combos
+        'breadth_high_overbought': {
+            'name': '⚠️ Breadth >70% + Overbought Z',
+            'signals': ['breadth_crosses_above_70', 'zscore_overbought'],
+            'win_rate': 66.7,
+            'avg_return': 1.49,
+            'occurrences': 6,
+            'tier': 'A'
+        },
+        'net_high_overbought': {
+            'name': '⚠️ Net >20 + Overbought Z',
+            'signals': ['net_score_above_20', 'zscore_overbought'],
+            'win_rate': 61.1,
+            'avg_return': 0.52,
+            'occurrences': 36,
+            'tier': 'B'
+        },
+        'net_high_financials': {
+            'name': '⚠️ Net >20 + Financials Bullish',
+            'signals': ['net_score_above_20', 'financial_services_extreme_bullish'],
+            'win_rate': 60.4,
+            'avg_return': 0.56,
+            'occurrences': 48,
+            'tier': 'B'
+        },
+        'triple_overbought': {
+            'name': '🚨 Triple: Breadth >70 + Net >20 + Overbought Z',
+            'signals': ['breadth_crosses_above_70', 'net_score_above_20', 'zscore_overbought'],
+            'win_rate': 66.7,
+            'avg_return': 1.49,
+            'occurrences': 6,
+            'tier': 'A'
+        },
+    },
+    'confluence_levels': {
+        'tier1_bullish_3plus': {
+            'name': '🏆 3+ Tier 1 Bullish Signals',
+            'description': 'Three or more Tier 1 bullish signals firing',
+            'win_rate': 85.1,
+            'avg_return': 2.25,
+            'occurrences': 67,
+            'tier': 'S'
+        },
+        'tier1_bullish_2plus': {
+            'name': '🥇 2+ Tier 1 Bullish Signals',
+            'description': 'Two or more Tier 1 bullish signals firing',
+            'win_rate': 77.5,
+            'avg_return': 1.84,
+            'occurrences': 151,
+            'tier': 'A'
+        },
+        'bearish_4plus': {
+            'name': '🚨 4+ Bearish Signals',
+            'description': 'Four or more bearish signals firing - SHORT SIGNAL',
+            'win_rate': 75.0,
+            'avg_return': 1.20,
+            'occurrences': 8,
+            'tier': 'S'
+        },
+        'bearish_3plus': {
+            'name': '⚠️ 3+ Bearish Signals',
+            'description': 'Three or more bearish signals firing',
+            'win_rate': 59.5,
+            'avg_return': 0.50,
+            'occurrences': 37,
+            'tier': 'B'
+        },
+    }
+}
+
+
+def check_confluence(signal_results):
+    """Check which confluence patterns are currently firing."""
+    
+    firing_signals = set()
+    for signal_id, result in signal_results.items():
+        if result['is_firing']:
+            firing_signals.add(signal_id)
+    
+    alerts = {
+        'S_tier': [],  # 100% or highest conviction
+        'A_tier': [],  # 90%+ win rate
+        'B_tier': [],  # 60-90% win rate
+    }
+    
+    # Check specific bullish combos
+    for combo_id, combo in CONFLUENCE_RULES['bullish'].items():
+        required_signals = set(combo['signals'])
+        if required_signals.issubset(firing_signals):
+            alert = {
+                'name': combo['name'],
+                'type': 'bullish',
+                'win_rate': combo['win_rate'],
+                'avg_return': combo['avg_return'],
+                'occurrences': combo['occurrences'],
+                'signals': [SIGNALS[s]['name'] for s in combo['signals'] if s in SIGNALS]
+            }
+            tier = combo['tier']
+            alerts[f'{tier}_tier'].append(alert)
+    
+    # Check specific bearish combos
+    for combo_id, combo in CONFLUENCE_RULES['bearish'].items():
+        required_signals = set(combo['signals'])
+        if required_signals.issubset(firing_signals):
+            alert = {
+                'name': combo['name'],
+                'type': 'bearish',
+                'win_rate': combo['win_rate'],
+                'avg_return': combo['avg_return'],
+                'occurrences': combo['occurrences'],
+                'signals': [SIGNALS[s]['name'] for s in combo['signals'] if s in SIGNALS]
+            }
+            tier = combo['tier']
+            alerts[f'{tier}_tier'].append(alert)
+    
+    # Check confluence levels (count-based)
+    bullish_t1_firing = sum(1 for s, r in signal_results.items() 
+                           if r['is_firing'] and r['signal']['type'] == 'bullish' 
+                           and r['signal'].get('tier', 2) == 1)
+    
+    bearish_firing = sum(1 for s, r in signal_results.items() 
+                        if r['is_firing'] and r['signal']['type'] == 'bearish')
+    
+    # Tier 1 bullish confluence
+    if bullish_t1_firing >= 3:
+        rule = CONFLUENCE_RULES['confluence_levels']['tier1_bullish_3plus']
+        alerts['S_tier'].append({
+            'name': rule['name'],
+            'type': 'bullish',
+            'win_rate': rule['win_rate'],
+            'avg_return': rule['avg_return'],
+            'occurrences': rule['occurrences'],
+            'signals': [f"{bullish_t1_firing} Tier 1 signals firing"]
+        })
+    elif bullish_t1_firing >= 2:
+        rule = CONFLUENCE_RULES['confluence_levels']['tier1_bullish_2plus']
+        alerts['A_tier'].append({
+            'name': rule['name'],
+            'type': 'bullish',
+            'win_rate': rule['win_rate'],
+            'avg_return': rule['avg_return'],
+            'occurrences': rule['occurrences'],
+            'signals': [f"{bullish_t1_firing} Tier 1 signals firing"]
+        })
+    
+    # Bearish confluence
+    if bearish_firing >= 4:
+        rule = CONFLUENCE_RULES['confluence_levels']['bearish_4plus']
+        alerts['S_tier'].append({
+            'name': rule['name'],
+            'type': 'bearish',
+            'win_rate': rule['win_rate'],
+            'avg_return': rule['avg_return'],
+            'occurrences': rule['occurrences'],
+            'signals': [f"{bearish_firing} bearish signals firing"]
+        })
+    elif bearish_firing >= 3:
+        rule = CONFLUENCE_RULES['confluence_levels']['bearish_3plus']
+        alerts['B_tier'].append({
+            'name': rule['name'],
+            'type': 'bearish',
+            'win_rate': rule['win_rate'],
+            'avg_return': rule['avg_return'],
+            'occurrences': rule['occurrences'],
+            'signals': [f"{bearish_firing} bearish signals firing"]
+        })
+    
+    return alerts, bullish_t1_firing, bearish_firing
+
+
+def display_confluence_alerts(signal_results):
+    """Display confluence alerts in the dashboard."""
+    
+    alerts, t1_bullish_count, bearish_count = check_confluence(signal_results)
+    
+    # Count total alerts
+    total_alerts = len(alerts['S_tier']) + len(alerts['A_tier']) + len(alerts['B_tier'])
+    
+    if total_alerts == 0:
+        st.info("📊 **No High-Conviction Confluence Patterns Detected**  \n"
+                "Waiting for multiple signals to align...")
+        return
+    
+    st.subheader("🚨 CONFLUENCE ALERTS")
+    
+    # S-Tier Alerts (Highest Conviction)
+    if alerts['S_tier']:
+        for alert in alerts['S_tier']:
+            if alert['type'] == 'bullish':
+                st.success(
+                    f"### {alert['name']}  \n"
+                    f"**Win Rate: {alert['win_rate']}%** | "
+                    f"**Avg Return: +{alert['avg_return']:.2f}%** | "
+                    f"Historical: {alert['occurrences']}x  \n"
+                    f"Signals: {', '.join(alert['signals'])}"
+                )
+            else:
+                st.error(
+                    f"### {alert['name']}  \n"
+                    f"**Short Win Rate: {alert['win_rate']}%** | "
+                    f"**Avg Short Return: +{alert['avg_return']:.2f}%** | "
+                    f"Historical: {alert['occurrences']}x  \n"
+                    f"Signals: {', '.join(alert['signals'])}"
+                )
+    
+    # A-Tier Alerts
+    if alerts['A_tier']:
+        for alert in alerts['A_tier']:
+            if alert['type'] == 'bullish':
+                st.success(
+                    f"### {alert['name']}  \n"
+                    f"**Win Rate: {alert['win_rate']}%** | "
+                    f"**Avg Return: +{alert['avg_return']:.2f}%** | "
+                    f"Historical: {alert['occurrences']}x  \n"
+                    f"Signals: {', '.join(alert['signals'])}"
+                )
+            else:
+                st.warning(
+                    f"### {alert['name']}  \n"
+                    f"**Short Win Rate: {alert['win_rate']}%** | "
+                    f"**Avg Short Return: +{alert['avg_return']:.2f}%** | "
+                    f"Historical: {alert['occurrences']}x  \n"
+                    f"Signals: {', '.join(alert['signals'])}"
+                )
+    
+    # B-Tier Alerts
+    if alerts['B_tier']:
+        with st.expander(f"📋 Lower Conviction Alerts ({len(alerts['B_tier'])})"):
+            for alert in alerts['B_tier']:
+                signal_type = "Long" if alert['type'] == 'bullish' else "Short"
+                st.info(
+                    f"**{alert['name']}**  \n"
+                    f"{signal_type} WR: {alert['win_rate']}% | "
+                    f"Avg: +{alert['avg_return']:.2f}% | "
+                    f"{alert['occurrences']}x  \n"
+                    f"Signals: {', '.join(alert['signals'])}"
+                )
+    
+    # Summary stats
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Tier 1 Bullish Signals Firing", t1_bullish_count, 
+                  help="Need 3+ for 85% win rate signal")
+    with col2:
+        st.metric("Bearish Signals Firing", bearish_count,
+                  help="4+ signals = 75% short win rate")
+
+
+# =============================================================================
 # MAIN APP
 # =============================================================================
 
@@ -903,6 +1235,13 @@ def main():
     with col2:
         fig = create_composite_gauge(composite_score, bullish_firing, bearish_firing)
         st.plotly_chart(fig, use_container_width=True)
+    
+    st.divider()
+    
+    # ===================
+    # 🚨 CONFLUENCE ALERTS
+    # ===================
+    display_confluence_alerts(signal_results)
     
     st.divider()
     
