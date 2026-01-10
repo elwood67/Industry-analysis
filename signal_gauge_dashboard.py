@@ -1701,7 +1701,10 @@ def main():
     
     # Row 1: SPY with signals
     if has_spy:
-        spy_filtered = spy_data[spy_data['Date'] >= chart_data['date'].min()]
+        # Ensure date comparison works by normalizing both to datetime
+        chart_min_date = pd.to_datetime(chart_data['date'].min())
+        spy_data['Date'] = pd.to_datetime(spy_data['Date'])
+        spy_filtered = spy_data[spy_data['Date'] >= chart_min_date]
         
         fig.add_trace(
             go.Candlestick(
