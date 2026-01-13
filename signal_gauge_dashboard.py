@@ -1560,6 +1560,9 @@ def main():
     else:
         chart_data = market_agg.copy()
     
+    # Ensure dates are normalized datetime
+    chart_data['date'] = pd.to_datetime(chart_data['date']).dt.normalize()
+    
     # ===========================================
     # DETECT SIGNALS BASED ON TYPE
     # ===========================================
@@ -1681,8 +1684,8 @@ def main():
         win_rate = 0
         avg_return = 0
     
-    # Get signal dates
-    signal_dates = chart_data[chart_data['signal_fired']]['date'].tolist()
+    # Get signal dates - normalize to ensure consistent datetime format
+    signal_dates = pd.to_datetime(chart_data[chart_data['signal_fired']]['date']).dt.normalize().tolist()
     
     # Determine which metric to show in middle panel
     if metric in chart_data.columns:
@@ -1702,8 +1705,8 @@ def main():
     # Row 1: SPY with signals
     if has_spy:
         # Ensure date comparison works by normalizing both to datetime
-        chart_min_date = pd.to_datetime(chart_data['date'].min())
-        spy_data['Date'] = pd.to_datetime(spy_data['Date'])
+        chart_min_date = pd.to_datetime(chart_data['date'].min()).normalize()
+        spy_data['Date'] = pd.to_datetime(spy_data['Date']).dt.normalize()
         spy_filtered = spy_data[spy_data['Date'] >= chart_min_date]
         
         fig.add_trace(
@@ -1722,7 +1725,11 @@ def main():
         
         # Add signal markers
         if signal_dates:
-            signal_spy = spy_filtered[spy_filtered['Date'].isin(signal_dates)]
+            # Normalize SPY dates for comparison
+            spy_dates_normalized = pd.to_datetime(spy_filtered['Date']).dt.normalize()
+            signal_dates_normalized = pd.to_datetime(signal_dates).normalize()
+            signal_mask = spy_dates_normalized.isin(signal_dates_normalized)
+            signal_spy = spy_filtered[signal_mask]
             
             if not signal_spy.empty:
                 marker_color = '#00ff00' if is_bullish else '#ff4444'
