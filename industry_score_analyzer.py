@@ -577,6 +577,92 @@ def create_momentum_scatter(current_data, x_col='net_roc_5d', y_col='cumulative_
     return fig
 
 
+def create_multi_period_momentum_chart(current_data, metric='net', periods=[5, 10, 20], top_n=20):
+    """Create multi-period momentum comparison bar chart (like market cap suite)."""
+    
+    # Build column names based on metric type
+    if metric == 'net':
+        col_map = {p: f'net_roc_{p}d' for p in periods}
+        title_prefix = "Net Score"
+    elif metric == 'breadth':
+        col_map = {p: f'breadth_roc_{p}d' for p in periods}
+        title_prefix = "Breadth"
+    else:
+        col_map = {p: f'bull_roc_{p}d' for p in periods}
+        title_prefix = "Bull Score"
+    
+    # Check which columns exist
+    available = {p: col for p, col in col_map.items() if col in current_data.columns}
+    if not available:
+        return None
+    
+    # Sort by the shortest available period for display order
+    sort_col = available[min(available.keys())]
+    plot_data = current_data.dropna(subset=[sort_col]).sort_values(sort_col, ascending=True)
+    
+    # If too many industries, take top and bottom N
+    if len(plot_data) > top_n * 2:
+        top = plot_data.nlargest(top_n, sort_col)
+        bottom = plot_data.nsmallest(top_n, sort_col)
+        plot_data = pd.concat([top, bottom]).drop_duplicates().sort_values(sort_col, ascending=True)
+    
+    fig = go.Figure()
+    
+    colors = {
+        5: 'rgb(99, 110, 250)',    # Blue
+        10: 'rgb(239, 85, 59)',    # Red/Orange
+        20: 'rgb(0, 204, 150)',    # Green
+    }
+    
+    for period in sorted(available.keys()):
+        col = available[period]
+        fig.add_trace(go.Bar(
+            name=f'{period}-Day',
+            y=plot_data['industry'],
+            x=plot_data[col],
+            orientation='h',
+            marker=dict(
+                color=colors.get(period, 'rgb(150, 150, 150)'),
+                line=dict(width=1, color='rgb(50, 50, 50)')
+            ),
+            text=plot_data[col].apply(lambda x: f"{x:.1f}%" if pd.notna(x) else "N/A"),
+            textposition='outside',
+            hovertemplate='<b>%{y}</b><br>' + f'{period}-Day Change: %{{x:.2f}}<extra></extra>'
+        ))
+    
+    fig.update_layout(
+        title=f"Multi-Period Momentum by Industry ({title_prefix} ROC)",
+        xaxis_title="Rate of Change (points)",
+        yaxis_title="Industry",
+        barmode='group',
+        height=max(800, len(plot_data) * 25),
+        xaxis=dict(
+            showgrid=True,
+            gridwidth=1,
+            gridcolor='lightgray',
+            zeroline=True,
+            zerolinecolor='black',
+            zerolinewidth=2
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridwidth=1,
+            gridcolor='lightgray'
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        margin=dict(l=200, r=100, t=80, b=50),
+        hovermode='closest'
+    )
+    
+    return fig
+
+
 def create_breadth_chart(industry_agg, top_n=20):
     """Create breadth over time chart."""
     
@@ -950,6 +1036,8 @@ def main():
         **What This Shows:** How quickly industry scores are CHANGING, not just where they are now.
         
         - **5d Change** = How much the net score changed over the last 5 trading days.
+        - **10d Change** = How much the net score changed over the last 10 trading days.
+        - **20d Change** = How much the net score changed over the last 20 trading days (approx 1 month).
         - **Positive momentum** = Scores are improving (getting more bullish).
         - **Negative momentum** = Scores are deteriorating (getting more bearish).
         
@@ -958,10 +1046,13 @@ def main():
         
         🎯 *Key insight from backtesting: When bullish scores drop more than 10 points in 5 days, 
         markets often bounce (85% win rate historically).*
+        
+        ⚡ *Watch for momentum divergences — when 5d and 20d point in opposite directions, 
+        it often signals a turning point!*
         """)
         
         if enable_momentum:
-            # Momentum metrics
+            # Momentum metrics - 5d, 10d, 20d
             col1, col2, col3 = st.columns(3)
             
             with col1:
@@ -978,23 +1069,108 @@ def main():
                     avg_breadth_mom = current_data['breadth_roc_5d'].mean()
                     st.metric("Avg Breadth Momentum", f"{avg_breadth_mom:.2f}")
             
-            # Momentum rankings
+            # 10d and 20d summary row
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                if 'net_roc_10d' in current_data.columns:
+                    improving_10 = len(current_data[current_data['net_roc_10d'] > 0])
+                    st.metric("Industries Improving (10d)", f"{improving_10}/{len(current_data)}")
+            
+            with col2:
+                if 'net_roc_10d' in current_data.columns:
+                    avg_mom_10 = current_data['net_roc_10d'].mean()
+                    st.metric("Avg 10d Momentum", f"{avg_mom_10:.2f}")
+            
+            with col3:
+                if 'net_roc_20d' in current_data.columns:
+                    improving_20 = len(current_data[current_data['net_roc_20d'] > 0])
+                    st.metric("Industries Improving (20d)", f"{improving_20}/{len(current_data)}")
+            
+            with col4:
+                if 'net_roc_20d' in current_data.columns:
+                    avg_mom_20 = current_data['net_roc_20d'].mean()
+                    st.metric("Avg 20d Momentum", f"{avg_mom_20:.2f}")
+            
+            # Multi-Period Momentum Comparison Chart
+            st.markdown("---")
+            st.subheader("📊 Multi-Period Momentum Comparison")
+            
+            momentum_metric = st.selectbox(
+                "Momentum Metric", 
+                ['net', 'breadth', 'bull'],
+                format_func=lambda x: {'net': 'Net Score ROC', 'breadth': 'Breadth ROC', 'bull': 'Bull Score ROC'}[x],
+                key='momentum_metric_select'
+            )
+            
+            momentum_top_n = st.slider("Industries to show (top/bottom)", 10, 40, 20, key='momentum_topn')
+            
+            fig_multi = create_multi_period_momentum_chart(
+                current_data, metric=momentum_metric, periods=[5, 10, 20], top_n=momentum_top_n
+            )
+            if fig_multi:
+                st.plotly_chart(fig_multi, use_container_width=True)
+            
+            # Momentum rankings - expanded with 10d and 20d columns
             if 'net_roc_5d' in current_data.columns:
+                st.markdown("---")
                 col1, col2 = st.columns(2)
                 
                 with col1:
                     st.subheader("🚀 Fastest Improving")
-                    top_mom = current_data.nlargest(10, 'net_roc_5d')[['industry', 'sector', 'net_roc_5d', 'net_mean']]
-                    top_mom.columns = ['Industry', 'Sector', '5d Change', 'Current Net']
-                    st.dataframe(top_mom.style.format({'5d Change': '{:+.2f}', 'Current Net': '{:.1f}'}),
+                    mom_cols = ['industry', 'sector', 'net_roc_5d']
+                    col_names = ['Industry', 'Sector', '5d Change']
+                    fmt = {'5d Change': '{:+.2f}'}
+                    
+                    if 'net_roc_10d' in current_data.columns:
+                        mom_cols.append('net_roc_10d')
+                        col_names.append('10d Change')
+                        fmt['10d Change'] = '{:+.2f}'
+                    if 'net_roc_20d' in current_data.columns:
+                        mom_cols.append('net_roc_20d')
+                        col_names.append('20d Change')
+                        fmt['20d Change'] = '{:+.2f}'
+                    
+                    mom_cols.append('net_mean')
+                    col_names.append('Current Net')
+                    fmt['Current Net'] = '{:.1f}'
+                    
+                    top_mom = current_data.nlargest(10, 'net_roc_5d')[mom_cols]
+                    top_mom.columns = col_names
+                    st.dataframe(top_mom.style.format(fmt),
                                use_container_width=True, hide_index=True)
                 
                 with col2:
                     st.subheader("📉 Fastest Declining")
-                    bot_mom = current_data.nsmallest(10, 'net_roc_5d')[['industry', 'sector', 'net_roc_5d', 'net_mean']]
-                    bot_mom.columns = ['Industry', 'Sector', '5d Change', 'Current Net']
-                    st.dataframe(bot_mom.style.format({'5d Change': '{:+.2f}', 'Current Net': '{:.1f}'}),
+                    bot_mom = current_data.nsmallest(10, 'net_roc_5d')[mom_cols]
+                    bot_mom.columns = col_names
+                    st.dataframe(bot_mom.style.format(fmt),
                                use_container_width=True, hide_index=True)
+            
+            # Momentum Divergence - industries where short and long term disagree
+            if 'net_roc_5d' in current_data.columns and 'net_roc_20d' in current_data.columns:
+                st.markdown("---")
+                st.subheader("⚡ Momentum Divergences")
+                st.caption("Industries where 5-day and 20-day momentum point in opposite directions — potential turning points.")
+                
+                divergence = current_data.dropna(subset=['net_roc_5d', 'net_roc_20d']).copy()
+                divergence['divergence'] = divergence['net_roc_5d'] * divergence['net_roc_20d']
+                diverging = divergence[divergence['divergence'] < 0].copy()
+                
+                if not diverging.empty:
+                    diverging['signal'] = np.where(
+                        (diverging['net_roc_5d'] > 0) & (diverging['net_roc_20d'] < 0),
+                        '🟢 Turning Bullish (5d up, 20d down)',
+                        '🔴 Turning Bearish (5d down, 20d up)'
+                    )
+                    
+                    div_cols = ['industry', 'sector', 'net_roc_5d', 'net_roc_20d', 'net_mean', 'signal']
+                    div_display = diverging.sort_values('divergence')[div_cols]
+                    div_display.columns = ['Industry', 'Sector', '5d Change', '20d Change', 'Current Net', 'Signal']
+                    st.dataframe(
+                        div_display.style.format({'5d Change': '{:+.2f}', '20d Change': '{:+.2f}', 'Current Net': '{:.1f}'}),
+                        use_container_width=True, hide_index=True
+                    )
         else:
             st.warning("Momentum analysis is disabled. Enable it in the sidebar.")
     
