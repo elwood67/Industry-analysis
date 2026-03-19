@@ -1,12 +1,12 @@
 {
   "date_range": {
     "start": "2024-01-01",
-    "end": "2026-03-17"
+    "end": "2026-03-18"
   },
-  "total_trading_days": 563,
-  "total_records": 3151517,
-  "successful_files": 563,
+  "total_trading_days": 564,
+  "total_records": 3157095,
+  "successful_files": 564,
   "failed_files": 0,
-  "file_size_mb": 16.97496509552002,
-  "last_updated": "2026-03-17 17:50:57"
+  "file_size_mb": 17.001806259155273,
+  "last_updated": "2026-03-19 08:58:35"
 }
