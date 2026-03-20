@@ -290,7 +290,7 @@ def calculate_trend_scores(industry_agg, start_date):
 
 
 @st.cache_data
-def calculate_mean_reversion_signals(industry_agg, zscore_window=20):
+def calculate_mean_reversion_signals(industry_agg, zscore_window=50):
     """Calculate mean reversion signals using z-scores."""
     
     industry_agg = industry_agg.sort_values(['industry', 'date'])
@@ -884,7 +884,7 @@ def main():
     enable_streaks = st.sidebar.checkbox("Enable Streak Analysis", value=True)
     
     # Z-score window
-    zscore_window = st.sidebar.slider("Z-Score Window", 10, 40, 20)
+    zscore_window = st.sidebar.slider("Z-Score Window", 10, 100, 50)
     
     # Load data
     with st.spinner("Loading data..."):
