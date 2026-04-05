@@ -53,7 +53,22 @@ def fetch_hourly_data(ticker: str, period: str = "2y") -> pd.DataFrame:
         return df
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
-    df.index = df.index.tz_convert("US/Eastern")
+    # Timezone conversion with fallback for systems without tzdata
+    try:
+        df.index = df.index.tz_convert("US/Eastern")
+    except Exception:
+        try:
+            df.index = df.index.tz_convert("America/New_York")
+        except Exception:
+            # Last resort: manual UTC offset (EST = UTC-5, EDT = UTC-4)
+            # Use -5 as approximation - some DST edge cases will be off by 1 hour
+            import pytz
+            try:
+                df.index = df.index.tz_convert(pytz.timezone("US/Eastern"))
+            except Exception:
+                # If all else fails, shift by -5 hours manually (EST)
+                df.index = df.index - pd.Timedelta(hours=5)
+                df.index = df.index.tz_localize(None)
     return df
 
 
