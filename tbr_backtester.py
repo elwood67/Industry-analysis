@@ -30,20 +30,33 @@ warnings.filterwarnings('ignore')
 
 # ── Asset Configuration ──────────────────────────────────────────────────────
 ASSET_MAP = {
-    "NQ (QQQ proxy)": "QQQ",
-    "ES (SPY proxy)": "SPY",
-    "Gold (GLD)": "GLD",
+    # Futures (continuous contracts via yfinance =F suffix) — what most Elwood's Place traders use
+    "NQ Futures": "NQ=F",
+    "ES Futures": "ES=F",
+    "YM (Dow) Futures": "YM=F",
+    "RTY (Russell) Futures": "RTY=F",
+    "Gold Futures": "GC=F",
+    "Silver Futures": "SI=F",
+    "WTI Crude Futures": "CL=F",
+    "Brent Crude Futures": "BZ=F",
+    "Natural Gas Futures": "NG=F",
+    # Crypto
     "BTC-USD": "BTC-USD",
     "ETH-USD": "ETH-USD",
+    # ETF proxies (kept for backward comparison vs futures)
+    "NQ (QQQ proxy)": "QQQ",
+    "ES (SPY proxy)": "SPY",
+    "Gold (GLD proxy)": "GLD",
+    "Silver (SLV proxy)": "SLV",
+    "Oil (USO proxy)": "USO",
+    "DIA (Dow proxy)": "DIA",
+    "IWM (Russell proxy)": "IWM",
+    # Individual stocks
     "AAPL": "AAPL",
     "TSLA": "TSLA",
     "NVDA": "NVDA",
     "AMZN": "AMZN",
     "META": "META",
-    "DIA (Dow proxy)": "DIA",
-    "IWM (Russell proxy)": "IWM",
-    "USO (Oil proxy)": "USO",
-    "SLV (Silver proxy)": "SLV",
 }
 
 
@@ -591,7 +604,7 @@ def main():
     # ── Sidebar ──────────────────────────────────────────────────────────────
     st.sidebar.header("⚙️ Backtest Settings")
     selected_assets = st.sidebar.multiselect("Select Assets", options=list(ASSET_MAP.keys()),
-        default=["NQ (QQQ proxy)", "ES (SPY proxy)", "BTC-USD", "Gold (GLD)"])
+        default=["NQ Futures", "ES Futures", "Gold Futures", "Silver Futures", "WTI Crude Futures", "BTC-USD", "ETH-USD"])
     tbr_hours = st.sidebar.multiselect("TBR Candle Hours (EST)", options=[9, 15], default=[9, 15],
         format_func=lambda x: "9:00 AM" if x == 9 else "3:00 PM")
     period = st.sidebar.selectbox("Lookback Period", options=["6mo", "1y", "2y"], index=2,
